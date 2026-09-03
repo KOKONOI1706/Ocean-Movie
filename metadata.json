@@ -1,0 +1,6 @@
+{
+  "name": "BIỂN PHIM — Oceans of Cinema & AI Discovery",
+  "description": "Nền tảng khám phá phim và series điện ảnh đại dương với giao diện hiện đại, thư thái, tinh tế và công nghệ gợi ý AI thông minh.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

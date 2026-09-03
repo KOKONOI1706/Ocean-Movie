@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --color-deep-navy: #062B45;
+  --color-ocean-blue: #087EA4;
+  --color-sea-blue: #19A7C7;
+  --color-turquoise: #35C2C8;
+  --color-sky: #EAF8FC;
+  --color-sand: #F6F1E7;
+  --color-sand-light: #FAF8F5;
+  --color-white: #FFFFFF;
+}
+
+/* Custom ocean scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #EAF8FC;
+}
+::-webkit-scrollbar-thumb {
+  background: #19A7C7;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #087EA4;
+}
+
+/* Smooth subtle water ripple / wave glow */
+@keyframes waveSlow {
+  0% {
+    transform: translateX(0) translateZ(0) scaleY(1);
+  }
+  50% {
+    transform: translateX(-25%) translateZ(0) scaleY(1.04);
+  }
+  100% {
+    transform: translateX(-50%) translateZ(0) scaleY(1);
+  }
+}
+
+.animate-wave-slow {
+  animation: waveSlow 18s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite;
+}
+
+/* Hide scrollbar for clean horizontal rails while maintaining scrollability */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
