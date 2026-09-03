@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MediaItem, MediaType } from '../types';
 import { Sparkles, Search, X, Star, Clock, Play, MapPin, SlidersHorizontal, Loader2, ArrowRight } from 'lucide-react';
 import { CINEMA_ITEMS } from '../data/cinemaData';
+import { aiApi } from '../lib/api';
 
 interface AISearchModalProps {
   isOpen: boolean;
@@ -23,17 +24,13 @@ export const AISearchModal: React.FC<AISearchModalProps> = ({
   const [activeFilter, setActiveFilter] = useState<'all' | MediaType>('all');
   const [hasSearched, setHasSearched] = useState(false);
 
-  // Editable AI understanding interpretation
-  const [aiUnderstanding, setAiUnderstanding] = useState({
-    genre: 'Khoa học viễn tưởng (Sci-Fi)',
-    tone: 'Giàu cảm xúc (Emotional)',
-    complexity: 'Vừa phải / Tự nhiên',
-    similarity: 'Interstellar / After Yang',
-    mood: 'Sâu lắng & Khơi gợi',
-    ending: 'Tươi sáng / Đọng lại hy vọng',
-    pace: 'Chậm rãi, lắng đọng'
+  // Result state
+  const [aiUnderstanding, setAiUnderstanding] = useState<any>({
+    genre: 'Sci-Fi',
+    tone: 'Sâu lắng & Giàu cảm xúc',
+    complexity: 'Vừa phải',
+    similarity: 'Điện ảnh chiêm nghiệm',
   });
-
   const [aiExplanation, setAiExplanation] = useState<string>('');
   const [curatorNote, setCuratorNote] = useState<string>('');
   const [matchedResults, setMatchedResults] = useState<MediaItem[]>([]);
@@ -47,26 +44,13 @@ export const AISearchModal: React.FC<AISearchModalProps> = ({
     'Phim ngắn dưới 30 phút ấn tượng'
   ];
 
+  // Sync initial query
   useEffect(() => {
-    if (initialQuery && isOpen) {
+    if (initialQuery) {
       setQuery(initialQuery);
-      setHasSearched(false);
-      setMatchedResults([]);
-      setAiExplanation('');
-      setCuratorNote('');
-      setAiUnderstanding({
-        genre: '',
-        tone: '',
-        complexity: '',
-        similarity: '',
-        mood: '',
-        ending: '',
-        pace: ''
-      });
       performSearch(initialQuery);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialQuery, isOpen]);
+  }, [initialQuery]);
 
   const performSearch = async (searchQueryText: string) => {
     if (!searchQueryText.trim()) return;
@@ -74,36 +58,23 @@ export const AISearchModal: React.FC<AISearchModalProps> = ({
     setHasSearched(true);
 
     try {
-      const res = await fetch('/api/ai-search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: searchQueryText, filterType: activeFilter })
-      });
+      const result = await aiApi.search(searchQueryText);
+      if (result.aiUnderstanding) {
+        setAiUnderstanding(result.aiUnderstanding);
+      }
+      setAiExplanation(result.explanation || 'Đề xuất dựa trên tâm trạng và mong muốn của bạn.');
+      setCuratorNote(result.curatorNote || 'Mỗi bộ phim là một hòn đảo đang chờ bạn ghé thăm.');
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.aiUnderstanding) {
-          setAiUnderstanding(data.aiUnderstanding);
-        }
-        setAiExplanation(data.explanation || 'Đề xuất dựa trên tâm trạng và thời lượng bạn tìm kiếm.');
-        setCuratorNote(data.aiCuratorNote || 'Mỗi bộ phim là một hòn đảo đang chờ bạn ghé thăm.');
-
-        const ids: string[] = data.matchedItemIds || [];
-        const found = ids.map((id) => CINEMA_ITEMS.find((c) => c.id === id)).filter(Boolean) as MediaItem[];
-
-        if (found.length === 0) {
-          const fallback = CINEMA_ITEMS.filter(
-            (c) =>
-              c.title.toLowerCase().includes(searchQueryText.toLowerCase()) ||
-              c.genres.some((g) => searchQueryText.toLowerCase().includes(g.toLowerCase())) ||
-              c.moods.some((m) => searchQueryText.toLowerCase().includes(m.toLowerCase()))
-          );
-          setMatchedResults(fallback.length > 0 ? fallback : CINEMA_ITEMS.slice(0, 4));
-        } else {
-          setMatchedResults(found);
-        }
+      if (result.items && result.items.length > 0) {
+        setMatchedResults(result.items);
       } else {
-        throw new Error('Search failed');
+        const fallback = CINEMA_ITEMS.filter(
+          (c) =>
+            c.title.toLowerCase().includes(searchQueryText.toLowerCase()) ||
+            c.genres.some((g) => searchQueryText.toLowerCase().includes(g.toLowerCase())) ||
+            c.moods.some((m) => searchQueryText.toLowerCase().includes(m.toLowerCase()))
+        );
+        setMatchedResults(fallback.length > 0 ? fallback : CINEMA_ITEMS.slice(0, 4));
       }
     } catch (err) {
       console.warn('API Search error, fallback heuristic:', err);

@@ -1,0 +1,575 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ==========================================
+// 1. USER & AUTHENTICATION
+// ==========================================
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  username     String    @unique
+  passwordHash String
+  displayName  String
+  avatarUrl    String?
+  role         String    @default("USER") // USER, ADMIN, CURATOR
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  preference   UserPreference?
+  watchlist    Watchlist[]
+  watchHistory WatchHistory[]
+  progress     WatchProgress[]
+  ratings      Rating[]
+
+  @@index([email])
+  @@index([username])
+}
+
+model UserPreference {
+  id                    String   @id @default(uuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  favoriteGenres        String[] @default([])
+  favoriteMoods         String[] @default([])
+  favoriteLanguages     String[] @default([])
+  preferredRuntime      String?
+  preferredContentTypes String[] @default([])
+  preferredProviders    String[] @default([])
+  editorialSummary      String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// ==========================================
+// 2. CORE MEDIA ENTITIES (MOVIE & SERIES)
+// ==========================================
+
+enum MediaType {
+  MOVIE
+  SERIES
+  SHORT
+  AI_FILM
+  DOCUMENTARY
+  ANIME
+}
+
+enum MediaStatus {
+  RELEASED
+  UPCOMING
+  IN_PRODUCTION
+}
+
+model Movie {
+  id                  String       @id @default(uuid())
+  slug                String       @unique
+  title               String
+  originalTitle       String?
+  tagline             String?
+  synopsis            String
+  year                Int
+  runtimeMinutes      Int
+  rating              Float        @default(0.0)
+  posterUrl           String
+  backdropUrl         String
+  monochromePosterUrl String?
+  type                MediaType    @default(MOVIE)
+  status              MediaStatus  @default(RELEASED)
+  isCoverFeature      Boolean      @default(false)
+  isTrending          Boolean      @default(false)
+  editorialQuote      String?
+
+  // AI Film specific fields
+  isAiFilm            Boolean      @default(false)
+  toolsUsed           String[]     @default([])
+  promptDirector      String?
+  workflowNotes       String?
+
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  // Relations
+  genres              MovieGenre[]
+  moods               MovieMood[]
+  creators            MovieCreator[]
+  availability        Availability[]
+  subtitles           Subtitle[]
+  ratings             Rating[]
+  watchlist           Watchlist[]
+  watchHistory        WatchHistory[]
+  watchProgress       WatchProgress[]
+  aiInsight           AIInsight?
+  collectionItems     CollectionMovie[]
+
+  @@index([title])
+  @@index([slug])
+  @@index([year])
+  @@index([rating])
+  @@index([type])
+  @@index([isTrending])
+}
+
+model Series {
+  id                  String       @id @default(uuid())
+  slug                String       @unique
+  title               String
+  originalTitle       String?
+  tagline             String?
+  synopsis            String
+  startYear           Int
+  endYear             Int?
+  rating              Float        @default(0.0)
+  posterUrl           String
+  backdropUrl         String
+  monochromePosterUrl String?
+  status              MediaStatus  @default(RELEASED)
+  isCoverFeature      Boolean      @default(false)
+  isTrending          Boolean      @default(false)
+  editorialQuote      String?
+
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  // Relations
+  seasons             Season[]
+  genres              SeriesGenre[]
+  moods               SeriesMood[]
+  creators            SeriesCreator[]
+  availability        Availability[]
+  subtitles           Subtitle[]
+  ratings             Rating[]
+  watchlist           Watchlist[]
+  watchHistory        WatchHistory[]
+  aiInsight           AIInsight?
+  collectionItems     CollectionSeries[]
+
+  @@index([title])
+  @@index([slug])
+  @@index([startYear])
+  @@index([rating])
+  @@index([isTrending])
+}
+
+// ==========================================
+// 3. SERIES HIERARCHY: SEASONS & EPISODES
+// ==========================================
+
+model Season {
+  id           String    @id @default(uuid())
+  seriesId     String
+  series       Series    @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  seasonNumber Int
+  title        String
+  overview     String?
+  posterUrl    String?
+  year         Int?
+  episodeCount Int       @default(0)
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  episodes     Episode[]
+
+  @@unique([seriesId, seasonNumber])
+  @@index([seriesId])
+}
+
+model Episode {
+  id                 String          @id @default(uuid())
+  seasonId           String
+  season             Season          @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  episodeNumber      Int
+  title              String
+  overview           String
+  runtimeMinutes     Int
+  airDate            String?
+  thumbnailUrl       String?
+
+  // Editorial & AI Recap
+  aiRecap            String?
+  keyCharacters      String[]        @default([])
+  majorThemes        String[]        @default([])
+  emotionalTone      String?
+  importantEvents    String[]        @default([])
+  beforeYouWatchNote String?
+
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  subtitles          Subtitle[]
+  watchProgress      WatchProgress[]
+  aiInsight          AIInsight?
+
+  @@unique([seasonId, episodeNumber])
+  @@index([seasonId])
+}
+
+// ==========================================
+// 4. TAXONOMY: GENRES, MOODS & CREATORS
+// ==========================================
+
+model Genre {
+  id          String        @id @default(uuid())
+  name        String        @unique
+  slug        String        @unique
+  createdAt   DateTime      @default(now())
+
+  movies      MovieGenre[]
+  series      SeriesGenre[]
+
+  @@index([slug])
+}
+
+model MovieGenre {
+  movieId String
+  movie   Movie   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  genreId String
+  genre   Genre   @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([movieId, genreId])
+  @@index([movieId])
+  @@index([genreId])
+}
+
+model SeriesGenre {
+  seriesId String
+  series   Series  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  genreId  String
+  genre    Genre   @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([seriesId, genreId])
+  @@index([seriesId])
+  @@index([genreId])
+}
+
+model Mood {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  slug        String      @unique
+  subtitle    String?
+  manifesto   String?
+  accentQuote String?
+  createdAt   DateTime    @default(now())
+
+  movies      MovieMood[]
+  series      SeriesMood[]
+
+  @@index([slug])
+}
+
+model MovieMood {
+  movieId String
+  movie   Movie   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  moodId  String
+  mood    Mood    @relation(fields: [moodId], references: [id], onDelete: Cascade)
+
+  @@id([movieId, moodId])
+  @@index([movieId])
+  @@index([moodId])
+}
+
+model SeriesMood {
+  seriesId String
+  series   Series  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  moodId   String
+  mood     Mood    @relation(fields: [moodId], references: [id], onDelete: Cascade)
+
+  @@id([seriesId, moodId])
+  @@index([seriesId])
+  @@index([moodId])
+}
+
+model Creator {
+  id           String          @id @default(uuid())
+  name         String
+  slug         String          @unique
+  role         String
+  portrait     String?
+  bio          String?
+  bornLocation String?
+  manifesto    String?
+  filmsCount   Int             @default(0)
+  followers    Int             @default(0)
+  views        String?
+  toolsUsed    String[]        @default([])
+  knownFor     String[]        @default([])
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  movies       MovieCreator[]
+  series       SeriesCreator[]
+
+  @@index([slug])
+  @@index([name])
+}
+
+model MovieCreator {
+  movieId   String
+  movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  creatorId String
+  creator   Creator  @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  role      String   @default("Director") // Director, Screenwriter, Actor, etc.
+
+  @@id([movieId, creatorId, role])
+  @@index([movieId])
+  @@index([creatorId])
+}
+
+model SeriesCreator {
+  seriesId  String
+  series    Series   @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  creatorId String
+  creator   Creator  @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  role      String   @default("Creator")
+
+  @@id([seriesId, creatorId, role])
+  @@index([seriesId])
+  @@index([creatorId])
+}
+
+// ==========================================
+// 5. EDITORIAL COLLECTIONS
+// ==========================================
+
+model Collection {
+  id          String             @id @default(uuid())
+  slug        String             @unique
+  title       String
+  subtitle    String?
+  curator     String?
+  issue       String?
+  heroImage   String
+  description String
+  tags        String[]           @default([])
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  movies      CollectionMovie[]
+  series      CollectionSeries[]
+
+  @@index([slug])
+}
+
+model CollectionMovie {
+  collectionId String
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  movieId      String
+  movie        Movie      @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  order        Int        @default(0)
+
+  @@id([collectionId, movieId])
+  @@index([collectionId])
+  @@index([movieId])
+}
+
+model CollectionSeries {
+  collectionId String
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  seriesId     String
+  series       Series     @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  order        Int        @default(0)
+
+  @@id([collectionId, seriesId])
+  @@index([collectionId])
+  @@index([seriesId])
+}
+
+// ==========================================
+// 6. STREAMING PROVIDERS & AVAILABILITY
+// ==========================================
+
+enum AvailabilityType {
+  FREE
+  SUBSCRIPTION
+  RENT
+  BUY
+}
+
+model Provider {
+  id           String         @id @default(uuid())
+  name         String         @unique
+  slug         String         @unique
+  logoUrl      String?
+  websiteUrl   String?
+  createdAt    DateTime       @default(now())
+
+  availability Availability[]
+
+  @@index([slug])
+}
+
+model Availability {
+  id          String           @id @default(uuid())
+  providerId  String
+  provider    Provider         @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  movieId     String?
+  movie       Movie?           @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  seriesId    String?
+  series      Series?          @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+
+  region      String           @default("Global")
+  type        AvailabilityType @default(SUBSCRIPTION)
+  url         String
+  price       String?
+  currency    String?
+  badge       String?
+  available   Boolean          @default(true)
+  lastChecked DateTime         @default(now())
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([providerId])
+  @@index([movieId])
+  @@index([seriesId])
+  @@index([region])
+}
+
+// ==========================================
+// 7. SUBTITLES
+// ==========================================
+
+model Subtitle {
+  id               String   @id @default(uuid())
+  movieId          String?
+  movie            Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  seriesId         String?
+  series           Series?  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  episodeId        String?
+  episode          Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  language         String
+  isAiAssisted     Boolean  @default(false)
+  sampleOriginal   String?
+  sampleTranslated String?
+  createdAt        DateTime @default(now())
+
+  @@index([movieId])
+  @@index([seriesId])
+  @@index([episodeId])
+}
+
+// ==========================================
+// 8. USER ACTIVITY & INTERACTIONS
+// ==========================================
+
+enum WatchlistCategory {
+  WISHLIST
+  WATCHING
+  WATCHED
+  FAVORITE
+}
+
+model Watchlist {
+  id        String            @id @default(uuid())
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movieId   String?
+  movie     Movie?            @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  seriesId  String?
+  series    Series?           @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  category  WatchlistCategory @default(WISHLIST)
+  userNote  String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@unique([userId, movieId])
+  @@unique([userId, seriesId])
+  @@index([userId])
+  @@index([category])
+}
+
+model WatchProgress {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movieId         String?
+  movie           Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  episodeId       String?
+  episode         Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  progressSeconds Int      @default(0)
+  durationSeconds Int      @default(0)
+  percentage      Int      @default(0) // 0 - 100
+  completed       Boolean  @default(false)
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, movieId])
+  @@unique([userId, episodeId])
+  @@index([userId])
+}
+
+model WatchHistory {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movieId         String?
+  movie           Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  seriesId        String?
+  series          Series?  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+
+  seasonNumber    Int?
+  episodeNumber   Int?
+  watchedAt       DateTime @default(now())
+  progressSeconds Int      @default(0)
+  completed       Boolean  @default(false)
+
+  @@index([userId])
+  @@index([watchedAt])
+}
+
+model Rating {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movieId   String?
+  movie     Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  seriesId  String?
+  series    Series?  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+
+  score     Int // 1 - 10
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, movieId])
+  @@unique([userId, seriesId])
+  @@index([userId])
+  @@index([score])
+}
+
+// ==========================================
+// 9. AI INSIGHTS & CACHED ANALYSIS
+// ==========================================
+
+model AIInsight {
+  id                 String   @id @default(uuid())
+  movieId            String?  @unique
+  movie              Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  seriesId           String?  @unique
+  series             Series?  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  episodeId          String?  @unique
+  episode            Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  aiMatchScore       Int?
+  whyYouMayLike      String?
+  themes             String?
+  mood               String?
+  visualStyle        String?
+  narrativeStyle     String?
+  emotionalIntensity String?
+  audienceFit        String?
+  rawJson            Json?
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([movieId])
+  @@index([seriesId])
+  @@index([episodeId])
+}

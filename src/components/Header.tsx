@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Compass, Sparkles, User, Menu, X, Waves, Film, Tv, Bookmark } from 'lucide-react';
+import { Search, Compass, Sparkles, User, Menu, X, Waves, Film, Tv, Bookmark, ChevronDown } from 'lucide-react';
 
 interface HeaderProps {
   currentTab: string;
@@ -10,13 +10,12 @@ interface HeaderProps {
 }
 
 const NAV_ITEMS = [
-  { id: 'discover',     label: 'Trang chủ' },
-  { id: 'explore',      label: 'Khám phá' },
-  { id: 'movies',       label: 'Phim' },
-  { id: 'series',       label: 'Series' },
-  { id: 'shorts',       label: 'Phim ngắn' },
-  { id: 'ai-films',     label: 'AI Films' },
-  { id: 'collections',  label: 'Bộ sưu tập' },
+  { id: 'explore',      label: 'KHÁM PHÁ' },
+  { id: 'movies',       label: 'PHIM' },
+  { id: 'series',       label: 'SERIES' },
+  { id: 'collections',  label: 'BỘ SƯU TẬP' },
+  { id: 'ai-discovery', label: 'AI GỢI Ý' },
+  { id: 'my-cinema',    label: 'HẢI TRÌNH CỦA TÔI' },
 ];
 
 export const Header: React.FC<HeaderProps> = ({
@@ -29,9 +28,9 @@ export const Header: React.FC<HeaderProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  // Detect scroll for elevated header shadow
+  // Deepen navbar background on scroll
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 10);
+    const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -39,178 +38,133 @@ export const Header: React.FC<HeaderProps> = ({
   const handleNav = (tab: string) => {
     onSelectTab(tab);
     setMobileMenuOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
     <header
-      className={`sticky top-0 z-40 bg-[#060F1A]/90 backdrop-blur-md border-b border-[#19A7C7]/15 transition-all duration-300 ${
-        scrolled ? 'shadow-lg shadow-[#060F1A]/80' : ''
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 select-none ${
+        scrolled
+          ? 'bg-[#030A14]/90 backdrop-blur-xl border-b border-cyan-900/20 shadow-2xl'
+          : 'bg-gradient-to-b from-[#030A14]/80 via-[#030A14]/40 to-transparent backdrop-blur-xs'
       }`}
     >
-      {/* === TOP ANNOUNCEMENT BAR === */}
-      <div className="bg-[#062B45] text-white px-4 sm:px-8 py-1.5 flex justify-between items-center text-xs">
-        <div className="flex items-center gap-2 text-[#35C2C8]">
-          <Waves className="w-3 h-3" />
-          <span className="font-semibold text-[10px] sm:text-xs uppercase tracking-wider">BIỂN PHIM</span>
-          <span className="hidden sm:inline text-white/30">·</span>
-          <span className="hidden sm:inline text-white/70 text-[11px]">
-            Nơi mọi câu chuyện cập bến — Nền tảng khám phá điện ảnh AI
-          </span>
-        </div>
-        <div className="flex items-center gap-3 text-[11px]">
-          <button
-            onClick={() => onOpenSearch('phim nhẹ nhàng xem tối nay')}
-            className="hidden md:inline text-[#35C2C8] hover:text-white transition-colors cursor-pointer font-medium"
-          >
-            🌊 Gợi ý phim cho tối nay
-          </button>
-          <span className="hidden md:inline text-white/20">|</span>
-          <span className="flex items-center gap-1.5 text-[#35C2C8] font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#35C2C8] animate-pulse" />
-            AI Sẵn sàng
-          </span>
-        </div>
-      </div>
-
-      {/* === MAIN NAVIGATION BAR === */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-4">
-
-        {/* ─── Logo / Brand ─── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+        {/* ─── Left: Brand Logo & Wordmark ─── */}
         <button
-          className="flex items-center gap-2.5 cursor-pointer select-none group shrink-0"
           onClick={() => handleNav('discover')}
+          className="flex items-center gap-3 cursor-pointer group shrink-0 text-left focus:outline-none"
           aria-label="Về trang chủ Biển Phim"
         >
-          {/* Logo mark */}
-          <div className="relative w-10 h-10 rounded-xl bg-[#062B45] flex items-center justify-center shadow-md overflow-hidden group-hover:bg-[#087EA4] transition-colors duration-300">
-            <Waves className="absolute bottom-0.5 w-8 h-5 text-[#19A7C7] opacity-60" />
-            <Film className="w-4.5 h-4.5 text-white relative z-10" />
+          {/* Wave Icon */}
+          <div className="w-8 h-8 rounded-lg bg-cyan-950/40 border border-cyan-500/30 flex items-center justify-center text-cyan-400 group-hover:border-cyan-400 group-hover:bg-cyan-900/40 transition-all">
+            <Waves className="w-4 h-4" />
           </div>
-          {/* Wordmark */}
-          <div className="hidden sm:block">
-            <div className="font-extrabold text-xl tracking-tight text-white group-hover:text-[#35C2C8] transition-colors leading-none">
-              BIỂN PHIM
-            </div>
-            <div className="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#35C2C8]/70 mt-0.5">
-              Oceans of Cinema
-            </div>
-          </div>
+          <span className="font-sans font-bold text-lg tracking-wider text-white group-hover:text-cyan-300 transition-colors uppercase">
+            BIỂN PHIM
+          </span>
         </button>
 
-        {/* ─── Desktop Navigation (center) ─── */}
-        <nav className="hidden lg:flex items-center gap-1 flex-1 justify-center" role="navigation" aria-label="Main navigation">
+        {/* ─── Center: Editorial Navigation Links ─── */}
+        <nav
+          className="hidden md:flex items-center gap-6 lg:gap-8 justify-center"
+          role="navigation"
+          aria-label="Main Navigation"
+        >
           {NAV_ITEMS.map((item) => {
             const isActive = currentTab === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => handleNav(item.id)}
-                className={`relative px-2.5 xl:px-3.5 py-1.5 rounded-xl text-xs xl:text-sm font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap ${
+                className={`relative py-1 text-xs tracking-wider uppercase font-sans font-medium transition-all duration-200 cursor-pointer ${
                   isActive
-                    ? 'text-[#35C2C8] bg-[#19A7C7]/15'
-                    : 'text-[#8BA7B8] hover:text-[#E8F4F8] hover:bg-[#0C1E2E]'
+                    ? 'text-cyan-300 font-semibold'
+                    : 'text-gray-300/80 hover:text-white'
                 }`}
                 aria-current={isActive ? 'page' : undefined}
               >
                 {item.label}
-                {/* Active underline indicator */}
                 {isActive && (
-                  <span className="absolute bottom-0.5 left-2.5 right-2.5 xl:left-3.5 xl:right-3.5 h-0.5 rounded-full bg-[#35C2C8]" />
+                  <span className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-cyan-400 to-cyan-200 rounded-full" />
                 )}
               </button>
             );
           })}
         </nav>
 
-        {/* ─── Right Actions ─── */}
-        <div className="flex items-center gap-2 ml-auto">
-          {/* AI Search CTA */}
+        {/* ─── Right: Search & User Profile ─── */}
+        <div className="flex items-center gap-4 shrink-0">
+          {/* Search Trigger */}
           <button
             onClick={() => onOpenSearch()}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-[#0C1E2E] hover:bg-[#19A7C7]/15 border border-[#19A7C7]/25 text-xs sm:text-sm font-semibold text-[#E8F4F8] transition-all cursor-pointer group shadow-xs"
-            title="Tìm kiếm bằng AI"
-            aria-label="Mở tìm kiếm AI"
+            className="p-2 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+            title="Tìm kiếm (⌘K)"
+            aria-label="Mở tìm kiếm"
           >
-            <Sparkles className="w-4 h-4 text-[#087EA4] group-hover:rotate-12 transition-transform duration-300" />
-            <span className="hidden sm:inline text-[#E8F4F8]">Tìm với AI</span>
-            <kbd className="hidden md:inline-block px-1.5 py-0.5 text-[10px] font-semibold text-[#35C2C8] bg-[#071525] border border-[#19A7C7]/25 rounded-md ml-0.5">
-              ⌘K
-            </kbd>
+            <Search className="w-4.5 h-4.5" />
           </button>
 
-          {/* Watchlist Button */}
-          <button
-            onClick={() => handleNav('my-cinema')}
-            className={`relative flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
-              currentTab === 'my-cinema'
-                ? 'bg-[#19A7C7]/20 text-[#35C2C8] border border-[#19A7C7]/30'
-                : 'text-[#8BA7B8] hover:bg-[#0C1E2E] border border-transparent hover:border-[#19A7C7]/20'
-            }`}
-            title="Hải trình của tôi"
-            aria-label={`Hải trình của tôi — ${savedCount} phim đã lưu`}
-          >
-            <Compass className={`w-4 h-4 ${currentTab === 'my-cinema' ? 'text-[#35C2C8]' : 'text-[#19A7C7]'}`} />
-            <span className="hidden sm:inline">Hải trình</span>
-            {savedCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#087EA4] text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
-                {savedCount > 9 ? '9+' : savedCount}
-              </span>
-            )}
-          </button>
-
-          {/* Profile */}
+          {/* User Profile Avatar with dropdown arrow */}
           <button
             onClick={onOpenProfile}
-            className="w-9 h-9 rounded-xl bg-[#0C1E2E] hover:bg-[#19A7C7]/20 border border-[#19A7C7]/20 flex items-center justify-center text-[#35C2C8] transition-all cursor-pointer hover:shadow-sm"
-            title="Hồ sơ người xem"
-            aria-label="Xem hồ sơ người xem"
+            className="flex items-center gap-2 p-1 pl-1.5 rounded-full hover:bg-white/5 border border-white/10 hover:border-cyan-500/30 transition-all cursor-pointer group"
+            title="Hồ sơ người dùng"
+            aria-label="Hồ sơ tài khoản"
           >
-            <User className="w-4 h-4" />
+            <div className="relative w-8 h-8 rounded-full overflow-hidden ring-1 ring-cyan-500/40">
+              <img
+                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"
+                alt="Avatar"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <ChevronDown className="w-3.5 h-3.5 text-gray-400 group-hover:text-white transition-colors mr-1" />
           </button>
 
-          {/* Mobile menu toggle */}
+          {/* Mobile Hamburger Menu Toggle */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden w-9 h-9 rounded-xl flex items-center justify-center text-[#8BA7B8] hover:bg-[#0C1E2E] transition-colors cursor-pointer border border-[#19A7C7]/15"
-            aria-label={mobileMenuOpen ? 'Đóng menu' : 'Mở menu'}
-            aria-expanded={mobileMenuOpen}
+            className="md:hidden p-2 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 cursor-pointer"
+            aria-label="Menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </div>
 
-      {/* === MOBILE DRAWER MENU === */}
+      {/* ─── Mobile Dropdown Menu ─── */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-[#19A7C7]/15 bg-[#071525] px-4 py-4 shadow-lg animate-fade-in">
-          <div className="grid grid-cols-2 gap-2">
-            {NAV_ITEMS.map((item) => {
-              const isActive = currentTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleNav(item.id)}
-                  className={`px-4 py-3 rounded-xl text-sm font-semibold text-left transition-all ${
-                    isActive
-                      ? 'bg-[#19A7C7]/20 text-[#35C2C8] border border-[#19A7C7]/30'
-                      : 'bg-[#0C1E2E] text-[#8BA7B8] hover:bg-[#0A1E30] hover:text-[#E8F4F8]'
-                  }`}
-                >
-                  {item.label}
-                  {isActive && <span className="ml-2 text-[#35C2C8]">·</span>}                </button>
-              );
-            })}
-          </div>
-
-          {/* Bottom links */}
-          <div className="pt-3 mt-3 border-t border-[#19A7C7]/15 flex items-center justify-between text-xs text-[#8BA7B8]">
-            <span className="text-[#35C2C8] font-semibold">Biển Phim v2.0</span>
+        <div className="md:hidden bg-[#030A14]/98 border-b border-cyan-900/30 px-6 py-6 space-y-4 backdrop-blur-2xl animate-fade-in text-left">
+          {NAV_ITEMS.map((item) => (
             <button
-              onClick={() => { onOpenProfile(); setMobileMenuOpen(false); }}
-              className="text-[#35C2C8] font-semibold hover:text-[#E8F4F8] transition-colors cursor-pointer"
+              key={item.id}
+              onClick={() => handleNav(item.id)}
+              className={`block w-full text-left text-sm uppercase tracking-wider font-semibold py-2.5 transition-colors ${
+                currentTab === item.id ? 'text-cyan-300' : 'text-gray-300'
+              }`}
             >
-              Gu điện ảnh của tôi →
+              {item.label}
+            </button>
+          ))}
+          <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenSearch();
+              }}
+              className="flex items-center gap-2 text-xs font-semibold text-cyan-300 uppercase tracking-wider"
+            >
+              <Search className="w-4 h-4" />
+              <span>Tìm kiếm với AI</span>
+            </button>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenProfile();
+              }}
+              className="text-xs font-semibold text-gray-400 hover:text-white"
+            >
+              Hồ sơ của tôi
             </button>
           </div>
         </div>

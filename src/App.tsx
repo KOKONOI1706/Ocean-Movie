@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { AIFeatureSection } from './components/AIFeatureSection';
@@ -19,6 +19,12 @@ import { CINEMA_ITEMS } from './data/cinemaData';
 import { INITIAL_USER_TASTE } from './data/collectionsData';
 import { MediaItem, SavedMediaItem, Creator } from './types';
 import {
+  discoverApi,
+  watchlistApi,
+  moviesApi,
+  seriesApi,
+} from './lib/api';
+import {
   Sparkles,
   Compass,
   Tv,
@@ -29,7 +35,14 @@ import {
   Waves,
 } from 'lucide-react';
 
-export function App() {
+import { OceanDepthProvider } from './context/OceanDepthContext';
+import { OceanBackground } from './components/ocean/OceanBackground';
+import { VerticalDepthIndicator } from './components/ocean/VerticalDepthIndicator';
+import { DepthHUD } from './components/ocean/DepthHUD';
+import { AIDiscoveryConsole } from './components/ocean/AIDiscoveryConsole';
+import { OceanFooter } from './components/ocean/OceanFooter';
+
+function AppContent() {
   const [currentTab, setCurrentTab] = useState<string>('discover');
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
   const [seriesModalMedia, setSeriesModalMedia] = useState<MediaItem | null>(null);
@@ -39,7 +52,27 @@ export function App() {
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [searchInitialQuery, setSearchInitialQuery] = useState<string>('');
 
-  // Watchlist state (using unified 'category' field matching SavedMediaItem)
+  // API State for Rails
+  const [trendingList, setTrendingList] = useState<MediaItem[]>(() =>
+    CINEMA_ITEMS.filter((i) => i.isTrending || i.rating >= 8.6)
+  );
+  const [newArrivalsList, setNewArrivalsList] = useState<MediaItem[]>(() =>
+    CINEMA_ITEMS.filter((i) => i.year >= 2025).slice(0, 8)
+  );
+  const [seriesList, setSeriesList] = useState<MediaItem[]>(() =>
+    CINEMA_ITEMS.filter((i) => i.type === 'series')
+  );
+  const [shortFilmsList, setShortFilmsList] = useState<MediaItem[]>(() =>
+    CINEMA_ITEMS.filter((i) => i.type === 'short' || (i.runtimeMinutes > 0 && i.runtimeMinutes <= 40))
+  );
+  const [aiFilmsList, setAiFilmsList] = useState<MediaItem[]>(() =>
+    CINEMA_ITEMS.filter((i) => i.type === 'ai_film' || i.aiInvolvement?.isAiFilm)
+  );
+  const [forYouList, setForYouList] = useState<MediaItem[]>(() =>
+    CINEMA_ITEMS.filter((i) => i.aiMatchScore && i.aiMatchScore >= 90).slice(0, 8)
+  );
+
+  // Watchlist state synced with backend API
   const [savedItems, setSavedItems] = useState<SavedMediaItem[]>([
     { mediaId: 'frieren-journey',  savedAt: '2026-03-12', category: 'wishlist' },
     { mediaId: 'blade-runner-2049', savedAt: '2026-03-14', category: 'wishlist' },
@@ -53,31 +86,139 @@ export function App() {
     'the-last-signal':   9,
   });
 
+  // Load content rails from backend API on mount
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadBackendData() {
+      try {
+        const [trendingRes, newRes, shortsRes, aiRes, forYouRes, seriesRes] = await Promise.allSettled([
+          discoverApi.getTrending(),
+          discoverApi.getNewArrivals(),
+          discoverApi.getShortFilms(),
+          discoverApi.getAiFilms(),
+          discoverApi.getRecommended(),
+          seriesApi.getAll(),
+        ]);
+
+        if (!isMounted) return;
+
+        if (trendingRes.status === 'fulfilled' && trendingRes.value.movies.length > 0) {
+          setTrendingList([...trendingRes.value.movies, ...trendingRes.value.series]);
+        }
+        if (newRes.status === 'fulfilled' && newRes.value.length > 0) {
+          setNewArrivalsList(newRes.value);
+        }
+        if (shortsRes.status === 'fulfilled' && shortsRes.value.length > 0) {
+          setShortFilmsList(shortsRes.value);
+        }
+        if (aiRes.status === 'fulfilled' && aiRes.value.length > 0) {
+          setAiFilmsList(aiRes.value);
+        }
+        if (forYouRes.status === 'fulfilled' && forYouRes.value.length > 0) {
+          setForYouList(forYouRes.value);
+        }
+        if (seriesRes.status === 'fulfilled' && seriesRes.value.items.length > 0) {
+          setSeriesList(seriesRes.value.items);
+        }
+      } catch (err) {
+        console.warn('Backend discovery load error, using initial mock:', err);
+      }
+
+      // Load user watchlist from DB if authenticated or demo token available
+      try {
+        const dbWatchlist = await watchlistApi.getWatchlist();
+        if (isMounted && dbWatchlist && dbWatchlist.length > 0) {
+          setSavedItems(dbWatchlist);
+        }
+      } catch (_err) {
+        // Fallback to local state
+      }
+    }
+
+    loadBackendData();
+
+    // Check URL parameters for direct link routing (?movie=..., ?series=..., ?tab=...)
+    const params = new URLSearchParams(window.location.search);
+    const movieSlug = params.get('movie');
+    const seriesSlug = params.get('series');
+    const tabParam = params.get('tab');
+
+    if (tabParam) {
+      setCurrentTab(tabParam);
+    }
+
+    if (movieSlug) {
+      moviesApi
+        .getById(movieSlug)
+        .then((m) => {
+          if (isMounted && m) setSelectedMedia(m);
+        })
+        .catch(() => {
+          const fallback = CINEMA_ITEMS.find((c) => c.id === movieSlug);
+          if (isMounted && fallback) setSelectedMedia(fallback);
+        });
+    } else if (seriesSlug) {
+      seriesApi
+        .getById(seriesSlug)
+        .then((s) => {
+          if (isMounted && s) setSeriesModalMedia(s);
+        })
+        .catch(() => {
+          const fallback = CINEMA_ITEMS.find((c) => c.id === seriesSlug);
+          if (isMounted && fallback) setSeriesModalMedia(fallback);
+        });
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const handleOpenSearch = (initialPrompt?: string) => {
     setSearchInitialQuery(initialPrompt || '');
     setIsSearchOpen(true);
   };
 
-  const handleToggleSave = (item: MediaItem) => {
+  const handleToggleSave = async (item: MediaItem) => {
+    const isSaved = savedItems.some((s) => s.mediaId === item.id);
+    const isSeries = item.type === 'series' || (item.seasons && item.seasons.length > 0);
+
+    // Optimistic UI update
     setSavedItems((prev) => {
-      const exists = prev.some((s) => s.mediaId === item.id);
-      if (exists) {
-        return prev.filter((s) => s.mediaId !== item.id);
-      }
+      if (isSaved) return prev.filter((s) => s.mediaId !== item.id);
       return [
         ...prev,
         { mediaId: item.id, savedAt: new Date().toISOString(), category: 'wishlist' },
       ];
     });
+
+    // Backend database persistence
+    try {
+      if (isSaved) {
+        await watchlistApi.remove(item.id);
+      } else {
+        await watchlistApi.add(item.id, isSeries, 'WISHLIST');
+      }
+    } catch (err) {
+      console.warn('Failed to sync watchlist to database:', err);
+    }
   };
 
   const handleToggleSaveById = (itemId: string) => {
-    const item = CINEMA_ITEMS.find((c) => c.id === itemId);
+    const item =
+      trendingList.find((c) => c.id === itemId) ||
+      CINEMA_ITEMS.find((c) => c.id === itemId);
     if (item) handleToggleSave(item);
   };
 
-  const handleRemoveSaved = (mediaId: string) => {
+  const handleRemoveSaved = async (mediaId: string) => {
     setSavedItems((prev) => prev.filter((s) => s.mediaId !== mediaId));
+    try {
+      await watchlistApi.remove(mediaId);
+    } catch (err) {
+      console.warn('Failed to remove from database watchlist:', err);
+    }
   };
 
   const handleUpdateEpisodeProgress = (episodeId: string, percentage: number) => {
@@ -85,35 +226,67 @@ export function App() {
   };
 
   const handleSelectMedia = (item: MediaItem) => {
-    if (item.type === 'series' || (item.seasons && item.seasons.length > 0)) {
+    const isSeries = item.type === 'series' || (item.seasons && item.seasons.length > 0);
+    const url = new URL(window.location.href);
+    if (isSeries) {
       setSeriesModalMedia(item);
+      url.searchParams.set('series', item.id);
+      url.searchParams.delete('movie');
     } else {
       setSelectedMedia(item);
+      url.searchParams.set('movie', item.id);
+      url.searchParams.delete('series');
     }
+    window.history.pushState({}, '', url.toString());
+  };
+
+  const handleCloseModals = () => {
+    setSelectedMedia(null);
+    setSeriesModalMedia(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('movie');
+    url.searchParams.delete('series');
+    window.history.pushState({}, '', url.toString());
   };
 
   const handleNavigate = (tab: string) => {
     setCurrentTab(tab);
+    const url = new URL(window.location.href);
+    if (tab === 'discover') {
+      url.searchParams.delete('tab');
+    } else {
+      url.searchParams.set('tab', tab);
+    }
+    window.history.pushState({}, '', url.toString());
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const savedItemIds = savedItems.map((s) => s.mediaId);
 
-  // ─── Categorized content rails ───
-  const trendingItems    = CINEMA_ITEMS.filter((i) => i.isTrending || i.rating >= 8.6);
-  const newArrivals      = CINEMA_ITEMS.filter((i) => i.year >= 2025).slice(0, 8);
-  const seriesItems      = CINEMA_ITEMS.filter((i) => i.type === 'series');
+  // ─── Categorized content rails mapped to Ocean Depth Descent ───
+  const trendingItems    = trendingList;
+  const newArrivals      = newArrivalsList;
+  const seriesItems      = seriesList;
   const animeItems       = CINEMA_ITEMS.filter((i) => i.type === 'anime' || i.genres.includes('Animation'));
-  const shortFilms       = CINEMA_ITEMS.filter((i) => i.type === 'short' || (i.runtimeMinutes > 0 && i.runtimeMinutes <= 40));
-  const aiFilms          = CINEMA_ITEMS.filter((i) => i.type === 'ai_film' || i.aiInvolvement?.isAiFilm);
+  const shortFilms       = shortFilmsList;
+  const aiFilms          = aiFilmsList;
   const deepWaterItems   = CINEMA_ITEMS.filter((i) => i.moods.includes('philosophical') || i.genres.includes('Mystery'));
-  const forYouItems      = CINEMA_ITEMS.filter((i) => i.aiMatchScore && i.aiMatchScore >= 90).slice(0, 8);
+  const forYouItems      = forYouList;
 
-  const featuredFilm = CINEMA_ITEMS.find((c) => c.id === 'the-last-signal') || CINEMA_ITEMS[0];
+  const featuredFilm = trendingList[0] || CINEMA_ITEMS.find((c) => c.id === 'the-last-signal') || CINEMA_ITEMS[0];
 
   return (
-    <div className="min-h-screen bg-[#060F1A] text-[#E8F4F8] font-sans flex flex-col antialiased">
-      {/* ─── Header ─── */}
+    <div className="min-h-screen text-[#E8F4F8] font-sans flex flex-col antialiased relative selection:bg-[#19A7C7]/30 selection:text-white bg-[#030A14]">
+      {/* Dynamic Ocean Atmosphere & Vintage Marine Life Engine */}
+      <OceanBackground />
+
+      {/* Left Scientific Vertical Depth Indicator (Matching Reference Image) */}
+      <VerticalDepthIndicator />
+
+      {/* Bathysphere Depth Gauge HUD (Bottom right, collapsible) */}
+      <DepthHUD />
+
+      {/* ─── Minimal Cinematic Header ─── */}
       <Header
         currentTab={currentTab}
         onSelectTab={handleNavigate}
@@ -122,156 +295,104 @@ export function App() {
         savedCount={savedItems.length}
       />
 
-      {/* ─── Main Content ─── */}
-      <main className="flex-1 pb-20 lg:pb-0" id="main-content">
+      {/* ─── Main Content Container (Padded left for depth indicator) ─── */}
+      <main className="flex-1 pb-20 lg:pb-0 relative z-10 lg:pl-16 xl:pl-20" id="main-content">
 
         {/* ======= DISCOVER / HOME TAB ======= */}
         {currentTab === 'discover' && (
           <div>
-            {/* Hero Section */}
-            <Hero
-              featuredItem={featuredFilm}
-              onSelectMedia={handleSelectMedia}
-              onTriggerAISearch={handleOpenSearch}
-            />
+            {/* 1. Cinematic Hero with Whale & Telemetry */}
+            <div id="hero-section">
+              <Hero
+                featuredItem={featuredFilm}
+                onSelectMedia={handleSelectMedia}
+                onTriggerAISearch={handleOpenSearch}
+              />
+            </div>
 
-            {/* AI Feature Section — USP */}
-            <AIFeatureSection
-              onSelectMedia={handleSelectMedia}
-              onToggleSave={handleToggleSaveById}
-              onOpenAISearchModal={handleOpenSearch}
-              savedItemIds={savedItemIds}
-              catalog={CINEMA_ITEMS}
-            />
-
-            {/* ─── Content Rails with visual variety matching Section 10 ─── */}
-
-            {/* Rail 1: ĐANG NỔI (Trending) */}
-            <MovieRail
-              title="ĐANG NỔI — Sóng Điện Ảnh Thịnh Hành"
-              subtitle="Những tác phẩm đang tạo nên làn sóng thảo luận và đánh giá cao trên toàn cầu"
-              items={trendingItems}
-              onSelectMedia={handleSelectMedia}
-              onToggleSave={handleToggleSaveById}
-              onWhereToWatch={(item) => setWatchModalMedia(item)}
-              onViewAll={() => handleNavigate('explore')}
-              savedItemIds={savedItemIds}
-              icon={<TrendingUp className="w-5 h-5 text-[#35C2C8]" />}
-              accentVariant="default"
-            />
-
-            {/* Rail 2: MỚI CẬP BẾN (New Arrivals) */}
-            <MovieRail
-              title="MỚI CẬP BẾN — Làn Gió Điện Ảnh 2025–2026"
-              subtitle="Các tác phẩm vừa hoàn thành hải trình và cập bến nền tảng, đón chào người xem đầu tiên"
-              items={newArrivals}
-              onSelectMedia={handleSelectMedia}
-              onToggleSave={handleToggleSaveById}
-              onWhereToWatch={(item) => setWatchModalMedia(item)}
-              onViewAll={() => handleNavigate('explore')}
-              savedItemIds={savedItemIds}
-              icon={<Waves className="w-5 h-5 text-[#19A7C7]" />}
-              accentVariant="sand"
-            />
-
-            {/* Rail 3: PHÙ HỢP VỚI BẠN (AI Personalized Recommendation with Explanations) */}
-            <div className="bg-[#05111D] py-4">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
-                <div className="bg-gradient-to-r from-[#0C1E2E] via-[#082236] to-[#0C1E2E] p-4 sm:p-5 rounded-2xl border border-[#19A7C7]/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-left">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#19A7C7]/20 flex items-center justify-center text-[#35C2C8] shrink-0 mt-0.5">
-                      <Sparkles className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded-md bg-[#19A7C7] text-white text-[10px] font-bold uppercase tracking-wider">
-                          94% PHÙ HỢP
-                        </span>
-                        <span className="text-xs text-[#35C2C8] font-bold">Theo AI</span>
-                      </div>
-                      <p className="text-xs sm:text-sm text-[#E8F4F8] mt-1 font-medium">
-                        "Bạn thường thích sci-fi có nhịp chậm, giàu cảm xúc và chủ đề về sự gắn kết con người giữa vũ trụ bao la."
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleOpenSearch('Đề xuất phim phù hợp gu của tôi')}
-                    className="px-4 py-2 rounded-xl bg-[#087EA4] hover:bg-[#19A7C7] text-white text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer shrink-0"
-                  >
-                    Hỏi AI lý do →
-                  </button>
-                </div>
-              </div>
-
+            {/* 2. ĐANG THỊNH HÀNH (Trending) */}
+            <div id="trending-section">
               <MovieRail
-                title="PHÙ HỢP VỚI BẠN — Gợi Ý Cá Nhân Hóa"
-                subtitle="Đề xuất điện ảnh dựa trên nhịp điệu cảm xúc, thẩm mỹ thị giác và các câu chuyện bạn đã yêu thích"
+                title="ĐANG THỊNH HÀNH"
+                subtitle="Những tác phẩm được khám phá nhiều nhất trên toàn cầu"
+                items={trendingItems}
+                onSelectMedia={handleSelectMedia}
+                onToggleSave={handleToggleSaveById}
+                onWhereToWatch={(item) => setWatchModalMedia(item)}
+                onViewAll={() => handleNavigate('explore')}
+                savedItemIds={savedItemIds}
+                aspectRatio="landscape"
+              />
+            </div>
+
+            {/* 3. ĐỀ XUẤT TỪ AI (Dành riêng cho bạn) */}
+            <div id="ai-recommendations-section">
+              <MovieRail
+                title="ĐỀ XUẤT TỪ AI"
+                subtitle="Dành riêng cho bạn"
                 items={forYouItems}
                 onSelectMedia={handleSelectMedia}
                 onToggleSave={handleToggleSaveById}
                 onWhereToWatch={(item) => setWatchModalMedia(item)}
                 onViewAll={() => handleNavigate('explore')}
                 savedItemIds={savedItemIds}
-                icon={<Sparkles className="w-5 h-5 text-amber-400" />}
-                accentVariant="navy"
+                aspectRatio="landscape"
+                showAiBadge={true}
               />
             </div>
 
-            {/* Rail 4: VÙNG NƯỚC SÂU (Deep Water - Philosophical & Contemplative) */}
-            <MovieRail
-              title="VÙNG NƯỚC SÂU — Chiêm Nghiệm & Triết Học"
-              subtitle="Điện ảnh chậm, giàu ẩn dụ và khơi gợi những suy tư về thời gian, ký ức và sự hiện hữu của con người"
-              items={deepWaterItems}
-              onSelectMedia={handleSelectMedia}
-              onToggleSave={handleToggleSaveById}
-              onWhereToWatch={(item) => setWatchModalMedia(item)}
-              onViewAll={() => handleNavigate('explore')}
-              savedItemIds={savedItemIds}
-              icon={<Moon className="w-5 h-5 text-[#35C2C8]" />}
-              accentVariant="default"
-            />
+            {/* 4. MỚI CẬP NHẬT (Những gì vừa xuất hiện trong đại dương) */}
+            <div id="new-arrivals-section">
+              <MovieRail
+                title="MỚI CẬP NHẬT"
+                subtitle="Những gì vừa xuất hiện trong đại dương"
+                items={newArrivals}
+                onSelectMedia={handleSelectMedia}
+                onToggleSave={handleToggleSaveById}
+                onWhereToWatch={(item) => setWatchModalMedia(item)}
+                onViewAll={() => handleNavigate('explore')}
+                savedItemIds={savedItemIds}
+                aspectRatio="landscape"
+              />
+            </div>
 
-            {/* Rail 5: PHIM NGẮN (Short Films) */}
-            <MovieRail
-              title="PHIM NGẮN — Khoảng Lặng Dưới 40 Phút"
-              subtitle="Khoảng lặng điện ảnh súc tích cho những buổi tối cần thư giãn nhanh và trải nghiệm sâu"
-              items={shortFilms}
-              onSelectMedia={handleSelectMedia}
-              onToggleSave={handleToggleSaveById}
-              onWhereToWatch={(item) => setWatchModalMedia(item)}
-              onViewAll={() => handleNavigate('explore')}
-              savedItemIds={savedItemIds}
-              icon={<Film className="w-5 h-5 text-[#19A7C7]" />}
-              accentVariant="sand"
-            />
+            {/* 5. SERIES (Những hành trình dài hơn) */}
+            <div id="series-section">
+              <MovieRail
+                title="SERIES"
+                subtitle="Những hành trình dài hơn"
+                items={seriesItems}
+                onSelectMedia={handleSelectMedia}
+                onToggleSave={handleToggleSaveById}
+                onWhereToWatch={(item) => setWatchModalMedia(item)}
+                onViewAll={() => handleNavigate('series')}
+                savedItemIds={savedItemIds}
+                aspectRatio="landscape"
+              />
+            </div>
 
-            {/* Rail 6: SERIES ĐÁNG BINGE (Binge-Worthy Series) */}
-            <MovieRail
-              title="SERIES ĐÁNG BINGE — Cuốn Hút & Liền Mạch"
-              subtitle="Những hải trình truyền hình kịch tính, nhiều lớp lang và khó dứt ra một khi đã bắt đầu"
-              items={seriesItems}
-              onSelectMedia={handleSelectMedia}
-              onToggleSave={handleToggleSaveById}
-              onWhereToWatch={(item) => setWatchModalMedia(item)}
-              onViewAll={() => handleNavigate('explore')}
-              savedItemIds={savedItemIds}
-              icon={<Tv className="w-5 h-5 text-[#35C2C8]" />}
-              accentVariant="default"
-            />
+            {/* 6. NHỮNG GÌ NẰM BÊN DƯỚI (Deep Ocean / Hidden Gems) */}
+            <div id="hidden-gems-section">
+              <MovieRail
+                title="NHỮNG GÌ NẰM BÊN DƯỚI"
+                subtitle="Không phải câu chuyện nào cũng nằm trên mặt nước."
+                items={deepWaterItems}
+                onSelectMedia={handleSelectMedia}
+                onToggleSave={handleToggleSaveById}
+                onWhereToWatch={(item) => setWatchModalMedia(item)}
+                onViewAll={() => handleNavigate('explore')}
+                savedItemIds={savedItemIds}
+                aspectRatio="landscape"
+              />
+            </div>
 
-            {/* Rail 7: BIỂN AI (AI Generative Films) */}
-            <MovieRail
-              title="BIỂN AI — Điện Ảnh Kỷ Nguyên Mới"
-              subtitle="Các tác phẩm thể nghiệm kết hợp trí tuệ nhân tạo, đồ họa generative và thị giác tương lai"
-              items={aiFilms}
-              onSelectMedia={handleSelectMedia}
-              onToggleSave={handleToggleSaveById}
-              onWhereToWatch={(item) => setWatchModalMedia(item)}
-              onViewAll={() => handleNavigate('explore')}
-              savedItemIds={savedItemIds}
-              icon={<Zap className="w-5 h-5 text-purple-400" />}
-              accentVariant="navy"
-            />
+            {/* 7. ĐỂ AI DẪN ĐƯỜNG (Interactive AI Console) */}
+            <div id="ai-discovery-section">
+              <AIDiscoveryConsole onSearch={handleOpenSearch} />
+            </div>
+
+            {/* 8. Deep Abyssal Footer */}
+            <OceanFooter onNavigate={handleNavigate} />
           </div>
         )}
 
@@ -351,10 +472,17 @@ export function App() {
             onOpenCreator={(creator) => setSelectedCreator(creator)}
           />
         )}
+
+        {/* ======= AI DISCOVERY TAB ======= */}
+        {currentTab === 'ai-discovery' && (
+          <div className="py-12 min-h-[70vh] flex items-center justify-center">
+            <AIDiscoveryConsole onSearch={handleOpenSearch} />
+          </div>
+        )}
       </main>
 
-      {/* ─── Footer ─── */}
-      <Footer onNavigate={handleNavigate} />
+      {/* ─── Deep Ocean Editorial Footer ─── */}
+      <OceanFooter onNavigate={handleNavigate} />
 
       {/* ─── Mobile Bottom Navigation ─── */}
       <BottomNav
@@ -371,7 +499,7 @@ export function App() {
       {selectedMedia && (
         <MovieDetailModal
           item={selectedMedia}
-          onClose={() => setSelectedMedia(null)}
+          onClose={handleCloseModals}
           onSelectMedia={handleSelectMedia}
           onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
           onOpenSeriesDetail={(item) => {
@@ -387,7 +515,7 @@ export function App() {
       {seriesModalMedia && (
         <SeriesDetailModal
           item={seriesModalMedia}
-          onClose={() => setSeriesModalMedia(null)}
+          onClose={handleCloseModals}
           onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
           isSaved={savedItemIds.includes(seriesModalMedia.id)}
           onToggleSave={handleToggleSave}
@@ -433,6 +561,14 @@ export function App() {
         }}
       />
     </div>
+  );
+}
+
+export function App() {
+  return (
+    <OceanDepthProvider>
+      <AppContent />
+    </OceanDepthProvider>
   );
 }
 

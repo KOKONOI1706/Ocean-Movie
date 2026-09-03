@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MediaItem } from '../types';
 import {
   X,
@@ -48,6 +48,8 @@ const getProviderColor = (name: string) => {
   return 'bg-[#062B45]';
 };
 
+import { moviesApi, aiApi } from '../lib/api';
+
 export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
   item,
   onClose,
@@ -60,6 +62,37 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'ai' | 'streaming' | 'subtitles'>('overview');
   const [selectedSub, setSelectedSub] = useState(item.subtitlesAvailable?.[0]?.language || 'Tiếng Việt');
+  const [userScore, setUserScore] = useState<number | null>(null);
+  const [ratingMessage, setRatingMessage] = useState<string>('');
+  const [aiInsight, setAiInsight] = useState<any>(item.aiMattersAnalysis);
+
+  useEffect(() => {
+    // Load cached AI insight from PostgreSQL
+    let isMounted = true;
+    aiApi
+      .getFilmInsight(item.id)
+      .then((data) => {
+        if (isMounted && data) {
+          setAiInsight(data);
+        }
+      })
+      .catch((err) => console.warn('Could not fetch AI insight:', err));
+
+    return () => {
+      isMounted = false;
+    };
+  }, [item.id]);
+
+  const handleRate = async (score: number) => {
+    setUserScore(score);
+    try {
+      await moviesApi.rate(item.id, score);
+      setRatingMessage(`Cảm ơn bạn đã chấm ${score}/10!`);
+      setTimeout(() => setRatingMessage(''), 3000);
+    } catch (err) {
+      console.warn('Failed to save rating:', err);
+    }
+  };
 
   const similarFilms = CINEMA_ITEMS.filter(
     (other) =>
@@ -328,6 +361,36 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
                   )}
                 </div>
               )}
+
+              {/* Interactive Rating Card */}
+              <div className="p-4 rounded-2xl bg-[#F6F1E7]/70 border border-[#087EA4]/15">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-[#062B45] flex items-center gap-1.5">
+                    <Star className="w-3.5 h-3.5 text-amber-500 fill-current" />
+                    Chấm điểm tác phẩm này (Lưu vào hồ sơ)
+                  </span>
+                  {ratingMessage && (
+                    <span className="text-xs font-semibold text-emerald-600 animate-fade-in">
+                      {ratingMessage}
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => (
+                    <button
+                      key={score}
+                      onClick={() => handleRate(score)}
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        userScore === score
+                          ? 'bg-[#087EA4] text-white shadow-md'
+                          : 'bg-white hover:bg-[#EAF8FC] text-gray-700 border border-gray-200 hover:border-[#19A7C7]'
+                      }`}
+                    >
+                      {score}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
@@ -345,7 +408,7 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
                   </h3>
                 </div>
                 <p className="text-sm text-gray-700 leading-relaxed">
-                  {item.whyYouMayLike || 'Tác phẩm sở hữu ngôn ngữ điện ảnh sâu sắc, phù hợp cho những ai tìm kiếm sự chiêm nghiệm và xúc cảm lắng đọng.'}
+                  {aiInsight?.whyYouMayLike || item.whyYouMayLike || 'Tác phẩm sở hữu ngôn ngữ điện ảnh sâu sắc, phù hợp cho những ai tìm kiếm sự chiêm nghiệm và xúc cảm lắng đọng.'}
                 </p>
                 {item.aiMatchScore && (
                   <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#087EA4] text-white text-xs font-bold">
@@ -356,14 +419,14 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
               </div>
 
               {/* Analysis grid */}
-              {item.aiMattersAnalysis && (
+              {aiInsight && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
-                    { label: 'Chủ đề (Themes)', value: item.aiMattersAnalysis.themes, color: 'bg-[#EAF8FC] border-[#19A7C7]/20' },
-                    { label: 'Phong cách thị giác', value: item.aiMattersAnalysis.visualStyle, color: 'bg-[#F6F1E7] border-[#087EA4]/10' },
-                    { label: 'Cường độ cảm xúc', value: item.aiMattersAnalysis.emotionalIntensity, color: 'bg-[#EAF8FC] border-[#19A7C7]/20' },
-                    { label: 'Khán giả phù hợp', value: item.aiMattersAnalysis.audienceFit, color: 'bg-[#F6F1E7] border-[#087EA4]/10' },
-                  ].map((card, i) => (
+                    { label: 'Chủ đề (Themes)', value: aiInsight.themes, color: 'bg-[#EAF8FC] border-[#19A7C7]/20' },
+                    { label: 'Phong cách thị giác', value: aiInsight.visualStyle, color: 'bg-[#F6F1E7] border-[#087EA4]/10' },
+                    { label: 'Cường độ cảm xúc', value: aiInsight.emotionalIntensity, color: 'bg-[#EAF8FC] border-[#19A7C7]/20' },
+                    { label: 'Khán giả phù hợp', value: aiInsight.audienceFit, color: 'bg-[#F6F1E7] border-[#087EA4]/10' },
+                  ].filter(card => card.value).map((card, i) => (
                     <div key={i} className={`p-4 rounded-xl border ${card.color}`}>
                       <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-1.5">
                         {card.label}

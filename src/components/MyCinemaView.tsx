@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MediaItem, SavedMediaItem, UserTasteProfile, Creator } from '../types';
 import { CINEMA_ITEMS } from '../data/cinemaData';
 import { CREATORS_DATA, INITIAL_USER_TASTE } from '../data/collectionsData';
+import { progressApi, watchlistApi } from '../lib/api';
 import { Compass, Bookmark, Clock, Star, Play, Sparkles, CheckCircle2, UserCheck, ArrowRight, Trash2, Layers } from 'lucide-react';
 import { MovieCard } from './MovieCard';
 
@@ -25,31 +26,99 @@ export const MyCinemaView: React.FC<MyCinemaViewProps> = ({
   const [activeSubTab, setActiveSubTab] = useState<'continue' | 'list' | 'ratings' | 'creators'>('continue');
   const [tasteProfile] = useState<UserTasteProfile>(INITIAL_USER_TASTE);
   const [followedCreators, setFollowedCreators] = useState<string[]>(['elena-vance', 'baran-bo-odar']);
+  const [liveProgress, setLiveProgress] = useState<any[]>([]);
 
-  // Continue Watching items with progress
-  const continueWatchingItems = [
-    {
-      media: CINEMA_ITEMS.find((c) => c.id === 'frieren-journey'),
-      season: 1,
-      episode: 2,
-      episodeTitle: 'Không phải vì tôi muốn',
-      progress: 85
-    },
-    {
-      media: CINEMA_ITEMS.find((c) => c.id === 'dark'),
-      season: 2,
-      episode: 4,
-      episodeTitle: 'Double Lives',
-      progress: 65
-    },
-    {
-      media: CINEMA_ITEMS.find((c) => c.id === 'severance'),
-      season: 1,
-      episode: 2,
-      episodeTitle: 'Half Loop',
-      progress: 45
-    }
-  ].filter((i): i is { media: MediaItem; season: number; episode: number; episodeTitle: string; progress: number } => Boolean(i.media));
+  useEffect(() => {
+    let isMounted = true;
+    progressApi
+      .getAll()
+      .then((data) => {
+        if (isMounted && data && data.length > 0) {
+          setLiveProgress(data);
+        }
+      })
+      .catch((err) => console.warn('Could not load user progress from API:', err));
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Continue Watching items with progress (from live database or curated fallbacks)
+  const continueWatchingItems = liveProgress.length > 0
+    ? liveProgress.map((p) => {
+        if (p.episode) {
+          const series = p.episode.season?.series;
+          const media = CINEMA_ITEMS.find((c) => c.id === series?.slug || c.id === series?.id) || {
+            id: series?.slug || p.episode.id,
+            title: series?.title || p.episode.title,
+            originalTitle: series?.title,
+            type: 'series' as const,
+            genres: ['Drama', 'Sci-Fi'],
+            moods: ['curious'],
+            rating: 9.0,
+            year: 2026,
+            posterUrl: series?.posterUrl || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23',
+            backdropUrl: series?.backdropUrl || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23',
+            synopsis: p.episode.overview,
+            runtime: `${p.episode.runtimeMinutes} min`,
+            runtimeMinutes: p.episode.runtimeMinutes,
+          };
+          return {
+            media,
+            season: p.episode.season?.seasonNumber || 1,
+            episode: p.episode.episodeNumber || 1,
+            episodeTitle: p.episode.title,
+            progress: p.percentage || 0,
+          };
+        }
+        const movie = p.movie;
+        const media = CINEMA_ITEMS.find((c) => c.id === movie?.slug || c.id === movie?.id) || {
+          id: movie?.slug || p.id,
+          title: movie?.title,
+          originalTitle: movie?.title,
+          type: 'movie' as const,
+          genres: ['Sci-Fi'],
+          moods: ['curious'],
+          rating: 8.8,
+          year: 2026,
+          posterUrl: movie?.posterUrl || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23',
+          backdropUrl: movie?.backdropUrl || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23',
+          synopsis: '',
+          runtime: `${movie?.runtimeMinutes || 100} min`,
+          runtimeMinutes: movie?.runtimeMinutes || 100,
+        };
+        return {
+          media,
+          season: 1,
+          episode: 1,
+          episodeTitle: media.title,
+          progress: p.percentage || 0,
+        };
+      })
+    : [
+        {
+          media: CINEMA_ITEMS.find((c) => c.id === 'frieren-journey'),
+          season: 1,
+          episode: 2,
+          episodeTitle: 'Không phải vì tôi muốn',
+          progress: 85
+        },
+        {
+          media: CINEMA_ITEMS.find((c) => c.id === 'dark'),
+          season: 2,
+          episode: 4,
+          episodeTitle: 'Double Lives',
+          progress: 65
+        },
+        {
+          media: CINEMA_ITEMS.find((c) => c.id === 'severance'),
+          season: 1,
+          episode: 2,
+          episodeTitle: 'Half Loop',
+          progress: 45
+        }
+      ].filter((i): i is { media: MediaItem; season: number; episode: number; episodeTitle: string; progress: number } => Boolean(i.media));
 
   const savedMediaList = (savedItems || [])
     .map((saved) => CINEMA_ITEMS.find((c) => c && c.id === saved.mediaId))

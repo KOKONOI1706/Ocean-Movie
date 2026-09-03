@@ -2,10 +2,13 @@
 
 @theme {
   --font-sans: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-display: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-serif: "Newsreader", "Playfair Display", "Times New Roman", Georgia, serif;
+  --font-mono: "Space Grotesk", "JetBrains Mono", monospace;
+  --font-display: "Newsreader", "Playfair Display", serif;
 
-  /* === BIỂN PHIM OCEAN COLOR SYSTEM === */
-  --color-deep-navy: #062B45;
+  /* === BIỂN PHIM CINEMATIC OCEAN COLOR SYSTEM === */
+  --color-deep-navy: #030A14;
+  --color-ocean-dark: #02060C;
   --color-ocean-blue: #087EA4;
   --color-sea-blue: #19A7C7;
   --color-turquoise: #35C2C8;
@@ -15,7 +18,7 @@
   --color-white: #FFFFFF;
 
   /* Extended palette */
-  --color-ocean-dark: #041E30;
+  --color-ocean-abyss: #010408;
   --color-ocean-mid: #0A5C7F;
   --color-teal-soft: #B2EBF2;
   --color-sand-dark: #E8E0D0;
@@ -437,3 +440,109 @@ button:focus-visible {
   border-radius: 4px;
   transition: width 0.4s ease;
 }
+
+/* =============================
+   THE DEEP OCEAN JOURNEY ANIMATIONS
+   ============================= */
+@keyframes sea-drift {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-16px) rotate(-1.5deg);
+  }
+}
+
+@keyframes manta-glide {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) translateX(12px) rotate(2deg);
+  }
+}
+
+@keyframes fish-drift {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+  }
+  50% {
+    transform: translateY(-12px) translateX(-8px);
+  }
+}
+
+@keyframes jelly-pulse {
+  0%, 100% {
+    transform: translateY(0px) scaleY(1);
+  }
+  50% {
+    transform: translateY(-15px) scaleY(0.92);
+  }
+}
+
+@keyframes squid-drift {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-25px) rotate(1deg);
+  }
+}
+
+@keyframes angler-bob {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
+}
+
+@keyframes snailfish-glide {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0px);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-18px);
+  }
+}
+
+.animate-sea-drift {
+  animation: sea-drift 10s ease-in-out infinite;
+}
+
+.animate-manta-glide {
+  animation: manta-glide 12s ease-in-out infinite;
+}
+
+.animate-fish-drift {
+  animation: fish-drift 8s ease-in-out infinite;
+}
+
+.animate-jelly-pulse {
+  animation: jelly-pulse 6s ease-in-out infinite;
+}
+
+.animate-squid-drift {
+  animation: squid-drift 16s ease-in-out infinite;
+}
+
+.animate-angler-bob {
+  animation: angler-bob 9s ease-in-out infinite;
+}
+
+.animate-snailfish-glide {
+  animation: snailfish-glide 14s ease-in-out infinite;
+}
+
+.ocean-god-rays {
+  background: repeating-linear-gradient(
+    75deg,
+    rgba(53, 194, 200, 0.08) 0%,
+    rgba(53, 194, 200, 0.08) 40px,
+    transparent 60px,
+    transparent 120px
+  );
+  filter: blur(12px);
+}
+

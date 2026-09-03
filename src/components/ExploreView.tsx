@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MediaItem, MediaType } from '../types';
 import { CINEMA_ITEMS } from '../data/cinemaData';
+import { moviesApi, seriesApi } from '../lib/api';
 import {
   Compass, Search, Sparkles, Film, Tv, Clock, Star,
-  X, Waves, SlidersHorizontal, LayoutGrid, List
+  X, Waves, SlidersHorizontal, LayoutGrid, List, Loader2
 } from 'lucide-react';
 import { MovieCard } from './MovieCard';
 
@@ -44,10 +45,39 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
   savedItemIds = [],
   initialType = 'all',
 }) => {
+  const [catalogItems, setCatalogItems] = useState<MediaItem[]>(CINEMA_ITEMS);
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedType, setSelectedType] = useState<'all' | MediaType>(initialType);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [searchFilter, setSearchFilter] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadCatalog() {
+      try {
+        setIsLoading(true);
+        const [moviesRes, seriesRes] = await Promise.all([
+          moviesApi.getAll({ limit: 50 }),
+          seriesApi.getAll({ limit: 50 }),
+        ]);
+        if (isMounted) {
+          const combined = [...(moviesRes.items || []), ...(seriesRes.items || [])];
+          if (combined.length > 0) {
+            setCatalogItems(combined);
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch catalog from API, falling back to local dataset:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+    loadCatalog();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Progressive filters
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -94,7 +124,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
     searchFilter.trim() !== '' ||
     advancedFilterCount > 0;
 
-  const filteredItems = CINEMA_ITEMS.filter((item) => {
+  const filteredItems = catalogItems.filter((item) => {
     if (selectedType !== 'all' && item.type !== selectedType) return false;
     if (selectedGenres.length > 0 && !selectedGenres.some((g) => item.genres.includes(g))) return false;
     if (minRating > 0 && item.rating < minRating) return false;

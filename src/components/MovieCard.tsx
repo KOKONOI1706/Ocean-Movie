@@ -1,6 +1,6 @@
 import React from 'react';
-import { Star, Clock, Plus, Check, Play, MapPin, Sparkles, Tv, Film, Zap, BookOpen } from 'lucide-react';
-import { MediaItem, MediaType } from '../types';
+import { Star, Sparkles, Plus, Check, MapPin, Tv, Film } from 'lucide-react';
+import { MediaItem } from '../types.js';
 
 interface MovieCardProps {
   item: MediaItem;
@@ -8,16 +8,9 @@ interface MovieCardProps {
   onToggleSave?: (id: string) => void;
   onWhereToWatch?: (item: MediaItem) => void;
   isSaved?: boolean;
+  aspectRatio?: 'landscape' | 'poster';
+  showAiBadge?: boolean;
 }
-
-const TYPE_CONFIG: Record<MediaType, { label: string; bgClass: string; icon: React.ReactNode; accentColor: string }> = {
-  movie:       { label: 'Phim lẻ',   bgClass: 'type-badge-movie',   icon: <Film className="w-2.5 h-2.5" />,     accentColor: 'rgba(6,43,69,0.08)' },
-  series:      { label: 'Series',    bgClass: 'type-badge-series',  icon: <Tv className="w-2.5 h-2.5" />,       accentColor: 'rgba(8,126,164,0.10)' },
-  anime:       { label: 'Anime',     bgClass: 'type-badge-anime',   icon: <Sparkles className="w-2.5 h-2.5" />, accentColor: 'rgba(25,167,199,0.10)' },
-  short:       { label: 'Phim ngắn', bgClass: 'type-badge-short',   icon: <Clock className="w-2.5 h-2.5" />,    accentColor: 'rgba(53,194,200,0.10)' },
-  ai_film:     { label: 'AI Film',   bgClass: 'type-badge-ai_film', icon: <Zap className="w-2.5 h-2.5" />,      accentColor: 'rgba(124,58,237,0.08)' },
-  documentary: { label: 'Tài liệu',  bgClass: 'type-badge-doc',     icon: <BookOpen className="w-2.5 h-2.5" />, accentColor: 'rgba(74,101,114,0.08)' },
-};
 
 export const MovieCard: React.FC<MovieCardProps> = ({
   item,
@@ -25,161 +18,114 @@ export const MovieCard: React.FC<MovieCardProps> = ({
   onToggleSave,
   onWhereToWatch,
   isSaved = false,
+  aspectRatio = 'landscape',
+  showAiBadge = false,
 }) => {
-  const config = TYPE_CONFIG[item.type] ?? TYPE_CONFIG.movie;
-  const seriesInfo = item.seasons && item.seasons.length > 0
-    ? `${item.seasons.length} Mùa · ${item.seasons.reduce((acc, s) => acc + s.episodeCount, 0)} Tập`
-    : null;
+  const isSeries = item.type === 'series' || (item.seasons && item.seasons.length > 0);
+  const imageUrl = aspectRatio === 'landscape' ? (item.backdropUrl || item.posterUrl) : item.posterUrl;
 
   return (
     <article
-      className="group relative flex flex-col bg-[#0C1E2E] rounded-2xl overflow-hidden border border-[#19A7C7]/12 hover:border-[#19A7C7]/40 shadow-sm hover:shadow-xl hover:shadow-[#087EA4]/10 transition-all duration-350 text-left card-hover"
-      style={{ borderTopColor: `${config.accentColor.replace('rgba', 'rgb').replace(/,\s*[\d.]+\)/, ')')}` }}
+      className={`group relative flex flex-col rounded-xl overflow-hidden bg-[#051322]/90 border border-cyan-900/30 hover:border-cyan-400/40 shadow-lg hover:shadow-2xl hover:shadow-cyan-950/40 transition-all duration-300 text-left select-none cursor-pointer ${
+        aspectRatio === 'landscape' ? 'w-[230px] sm:w-[270px] shrink-0' : 'w-full'
+      }`}
+      onClick={() => onSelect(item)}
     >
-      {/* === POSTER IMAGE === */}
+      {/* ─── Poster / Backdrop Thumbnail ─── */}
       <div
-        className="relative aspect-[2/3] w-full overflow-hidden bg-[#0A1E30] cursor-pointer"
-        onClick={() => onSelect(item)}
+        className={`relative w-full overflow-hidden bg-[#020A12] ${
+          aspectRatio === 'landscape' ? 'aspect-[16/10]' : 'aspect-[2/3]'
+        }`}
       >
         <img
-          src={item.posterUrl}
+          src={imageUrl}
           alt={item.title}
           loading="lazy"
-          className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+          className="w-full h-full object-cover transition-all duration-500 ease-out group-hover:scale-[1.03] group-hover:brightness-110"
         />
 
-        {/* Top badges */}
+        {/* Ambient Bottom Gradient on Image */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#051322] via-transparent to-transparent opacity-80" />
+
+        {/* Top Badges */}
         <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none z-10">
-          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide shadow-sm flex items-center gap-1 ${config.bgClass}`}>
-            {config.icon}
-            {config.label}
-          </span>
-          <div className="rating-badge">
-            <Star className="w-2.5 h-2.5 fill-current" />
-            <span>{item.rating}</span>
-          </div>
+          {/* Media Type pill */}
+          {isSeries ? (
+            <span className="px-1.5 py-0.5 rounded bg-cyan-950/70 backdrop-blur-md border border-cyan-500/30 text-[9px] font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-1">
+              <Tv className="w-2.5 h-2.5" />
+              Series
+            </span>
+          ) : (
+            <span />
+          )}
+
+          {/* AI Sparkle Badge (Matching reference image) */}
+          {(showAiBadge || (item.aiMatchScore && item.aiMatchScore >= 90)) && (
+            <div
+              className="w-6 h-6 rounded-md bg-[#020C17]/80 backdrop-blur-md border border-cyan-400/40 flex items-center justify-center text-cyan-300 shadow-md pointer-events-auto"
+              title={`Phù hợp AI: ${item.aiMatchScore || 92}%`}
+            >
+              <Sparkles className="w-3 h-3" />
+            </div>
+          )}
         </div>
 
-        {/* AI Match badge — only when present */}
-        {item.aiMatchScore && (
-          <div className="absolute top-10 right-2.5 pointer-events-none z-10">
-            <span className="ai-match-badge">
-              <Sparkles className="w-2.5 h-2.5" />
-              {item.aiMatchScore}% AI
-            </span>
-          </div>
-        )}
+        {/* Quick Action Overlay on Hover */}
+        <div className="absolute bottom-2 right-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+          {onToggleSave && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleSave(item.id);
+              }}
+              className={`w-7 h-7 rounded-lg flex items-center justify-center backdrop-blur-md transition-colors ${
+                isSaved
+                  ? 'bg-cyan-500 text-white'
+                  : 'bg-black/60 hover:bg-cyan-950/80 text-gray-300 hover:text-white border border-white/20'
+              }`}
+              title={isSaved ? 'Đã lưu trong hải trình' : 'Lưu vào hải trình'}
+            >
+              {isSaved ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+            </button>
+          )}
 
-        {/* Hover Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#062B45] via-[#062B45]/75 via-40% to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400 ease-out flex flex-col justify-end p-3.5 z-10">
-          <div className="transform translate-y-2 group-hover:translate-y-0 transition-transform duration-350 ease-out space-y-1.5">
-            {/* Genre + year */}
-            <div className="flex items-center gap-2 text-[10px] text-[#35C2C8] font-bold uppercase tracking-wide">
-              <span className="truncate">{item.genres.slice(0, 2).join(' · ')}</span>
-              <span className="text-white/30">·</span>
-              <span className="text-white/80 shrink-0">{item.year}</span>
-            </div>
-
-            {/* Director */}
-            {item.director && (
-              <p className="text-[11px] text-gray-300 truncate">
-                ĐD: <span className="text-white font-medium">{item.director}</span>
-              </p>
-            )}
-
-            {/* Series info or tagline */}
-            {seriesInfo ? (
-              <p className="text-xs text-[#35C2C8] font-semibold">{seriesInfo}</p>
-            ) : (
-              <p className="text-xs text-white/85 line-clamp-2 leading-snug italic">
-                "{item.tagline || item.synopsis}"
-              </p>
-            )}
-
-            {/* Action buttons */}
-            <div className="flex items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
-              <button
-                onClick={() => onSelect(item)}
-                className="flex-1 py-2 px-3 rounded-xl bg-white text-[#062B45] hover:bg-[#EAF8FC] font-bold text-[11px] transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
-              >
-                <Play className="w-3 h-3 fill-current" />
-                <span>Chi tiết</span>
-              </button>
-
-              {onToggleSave && (
-                <button
-                  onClick={() => onToggleSave(item.id)}
-                  className={`p-2 rounded-xl border transition-all cursor-pointer ${
-                    isSaved
-                      ? 'bg-[#35C2C8] border-[#35C2C8] text-[#062B45]'
-                      : 'bg-black/40 border-white/25 text-white hover:bg-white/20'
-                  }`}
-                  title={isSaved ? 'Đã lưu' : 'Thêm vào Hải trình'}
-                >
-                  {isSaved ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                </button>
-              )}
-
-              {onWhereToWatch && (
-                <button
-                  onClick={() => onWhereToWatch(item)}
-                  className="p-2 rounded-xl bg-black/40 border border-white/25 text-[#35C2C8] hover:bg-white/20 transition-all cursor-pointer"
-                  title="Nơi xem bản quyền"
-                >
-                  <MapPin className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          </div>
+          {onWhereToWatch && item.streamingOptions && item.streamingOptions.length > 0 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onWhereToWatch(item);
+              }}
+              className="w-7 h-7 rounded-lg bg-black/60 hover:bg-cyan-950/80 text-gray-300 hover:text-white border border-white/20 flex items-center justify-center backdrop-blur-md transition-colors"
+              title="Xem ở đâu"
+            >
+              <MapPin className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* === CARD INFO === */}
-      <div className="p-3.5 flex flex-col flex-1 bg-[#0C1E2E]">
-        <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#35C2C8] uppercase tracking-wider mb-1">
-          <span>{item.genres[0] || 'Điện ảnh'}</span>
-          <span className="text-[#8BA7B8]/40">·</span>
-          <span>{item.year}</span>
-        </div>
-
-        <h3
-          className="font-bold text-sm text-[#E8F4F8] group-hover:text-[#35C2C8] transition-colors leading-snug line-clamp-1 cursor-pointer mb-2"
-          onClick={() => onSelect(item)}
-          title={item.title}
-        >
+      {/* ─── Metadata Info ─── */}
+      <div className="p-3 pt-2 bg-[#051322]/90">
+        <h3 className="font-sans font-bold text-xs sm:text-sm text-white tracking-wide truncate group-hover:text-cyan-300 transition-colors">
           {item.title}
         </h3>
 
-        {/* Distinct Series vs Movie metadata */}
-        {item.type === 'series' || (item.seasons && item.seasons.length > 0) ? (
-          <div className="flex items-center gap-1.5 text-xs text-[#35C2C8] font-semibold">
-            <Tv className="w-3.5 h-3.5 text-[#19A7C7]" />
-            <span>{item.seasons?.length || 1} Mùa</span>
-            <span className="text-[#8BA7B8]/40">·</span>
-            <span>{item.seasons?.reduce((acc, s) => acc + s.episodeCount, 0) || 8} Tập</span>
+        <div className="flex items-center gap-2 mt-1 text-[11px] font-mono text-gray-400">
+          <span>{item.year}</span>
+          <span>·</span>
+          <div className="flex items-center gap-1 text-amber-400 font-semibold">
+            <Star className="w-3 h-3 fill-current" />
+            <span>{item.rating?.toFixed(1) || '8.5'}</span>
           </div>
-        ) : (
-          <div className="flex items-center gap-1.5 text-xs text-[#8BA7B8]">
-            <Clock className="w-3.5 h-3.5 text-[#19A7C7]" />
-            <span>{item.runtime}</span>
-          </div>
-        )}
-
-        {/* Streaming availability preview */}
-        {item.streamingOptions?.[0] && (
-          <div className="mt-2.5 pt-2 border-t border-[#19A7C7]/15 flex items-center justify-between text-[10px]">
-            <span className="font-semibold text-[#35C2C8] truncate">
-              {item.streamingOptions[0].provider}
-            </span>
-            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide ${
-              item.streamingOptions[0].type === 'free'
-                ? 'bg-[#35C2C8]/15 text-[#35C2C8]'
-                : 'bg-[#0A1E30] text-[#8BA7B8]'
-            }`}>
-              {item.streamingOptions[0].type === 'free' ? 'Miễn phí' : 'Bản quyền'}
-            </span>
-          </div>
-        )}
+          {item.genres && item.genres.length > 0 && (
+            <>
+              <span>·</span>
+              <span className="truncate max-w-[80px] font-sans text-gray-400 text-[10px]">
+                {item.genres[0]}
+              </span>
+            </>
+          )}
+        </div>
       </div>
     </article>
   );
