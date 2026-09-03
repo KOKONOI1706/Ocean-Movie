@@ -57,7 +57,7 @@ export interface MediaItem {
   monochromePosterUrl: string;
   isCoverFeature?: boolean;
   isTrending?: boolean;
-  
+
   // AI Insights
   aiMatchScore?: number; // e.g. 96
   whyYouMayLike: string;
@@ -69,7 +69,7 @@ export interface MediaItem {
     emotionalIntensity: string; // e.g. "High - Somber & Expansive"
     audienceFit: string;
   };
-  
+
   // AI Film specific
   aiInvolvement?: {
     isAiFilm: boolean;
@@ -143,11 +143,12 @@ export interface UserTasteProfile {
   };
 }
 
+export type SavedCategory = 'wishlist' | 'watching' | 'watched' | 'favorite';
+
 export interface SavedMediaItem {
-  id: string;
-  savedAt: string;
   mediaId: string;
-  status: 'watchlist' | 'watched' | 'favorite';
+  savedAt: string;
+  category: SavedCategory;
   userRating?: number;
   userNote?: string;
   progressSeason?: number;

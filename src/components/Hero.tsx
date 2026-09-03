@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Sparkles, Play, Plus, Compass, Waves, ArrowRight, Star, Clock, Film } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Sparkles, Play, Plus, Compass, Waves, ArrowRight, Star, Clock, Film, ChevronDown } from 'lucide-react';
 import { MediaItem } from '../types';
 
 interface HeroProps {
@@ -12,6 +12,19 @@ interface HeroProps {
   isSaved?: boolean;
 }
 
+const QUICK_PROMPTS = [
+  'Một phim sci-fi cảm động dưới 2 tiếng',
+  'Series bí ẩn, chỉ 1 mùa',
+  'Phim nhẹ nhàng xem trước khi ngủ',
+  'Anime sâu lắng về dòng thời gian',
+];
+
+const OCEAN_STATS = [
+  { value: '2,400+', label: 'Tác phẩm điện ảnh' },
+  { value: '98%', label: 'Độ chính xác AI' },
+  { value: '40+', label: 'Nguồn phát bản quyền' },
+];
+
 export const Hero: React.FC<HeroProps> = ({
   coverItem,
   featuredItem,
@@ -19,113 +32,121 @@ export const Hero: React.FC<HeroProps> = ({
   onSearchSubmit,
   onTriggerAISearch,
   onToggleSave,
-  isSaved = false
+  isSaved = false,
 }) => {
   const activeItem = coverItem || featuredItem;
   const [query, setQuery] = useState('');
-
-  const quickPrompts = [
-    'Một phim sci-fi cảm động dưới 2 tiếng',
-    'Series bí ẩn kịch tính một cuối tuần là xong',
-    'Phim nhẹ nhàng xem trước khi ngủ',
-    'Anime sâu lắng về dòng thời gian',
-    'Phim buồn nhưng có ending tích cực'
-  ];
+  const [activePrompt, setActivePrompt] = useState(-1);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   const handleSearch = (searchQuery: string) => {
-    if (onTriggerAISearch) {
-      onTriggerAISearch(searchQuery);
-    } else if (onSearchSubmit) {
-      onSearchSubmit(searchQuery);
-    }
+    if (onTriggerAISearch) onTriggerAISearch(searchQuery);
+    else if (onSearchSubmit) onSearchSubmit(searchQuery);
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) {
-      handleSearch(query.trim());
-    } else {
-      handleSearch('Những bộ phim hay nhất được đề xuất cho bạn');
-    }
+    handleSearch(query.trim() || 'Những bộ phim hay nhất được đề xuất cho bạn');
   };
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-b from-[#062B45] via-[#087EA4] to-[#19A7C7] text-white">
-      {/* Background ambient lighting and subtle wave backdrop */}
-      <div className="absolute inset-0 opacity-25 mix-blend-overlay pointer-events-none">
+    <div className="relative overflow-hidden bg-[#060F1A]">
+      {/* === BACKGROUND LAYER: Ocean horizon photo with soft overlay === */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Sky/Ocean photo – very light opacity */}
         <img
-          src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2000&q=80"
-          alt="Ocean Horizon"
-          className="w-full h-full object-cover object-center"
+          src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2000&q=75"
+          alt=""
+          aria-hidden="true"
+          className="w-full h-full object-cover object-center opacity-[0.35]"
+          loading="eager"
+          fetchPriority="high"
         />
+        {/* Deep dark overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#060F1A]/95 via-[#071525]/85 to-[#041E30]/90" />
+        {/* Left blue accent glow */}
+        <div className="absolute -left-40 top-0 w-[600px] h-[600px] rounded-full bg-[#087EA4]/8 opacity-60 blur-[120px]" />
+        {/* Right turquoise glow */}
+        <div className="absolute -right-20 top-20 w-[400px] h-[400px] rounded-full bg-[#35C2C8]/10 blur-[100px]" />
       </div>
 
-      {/* Decorative calm water ripples & gradients */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-[#35C2C8]/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-10 left-10 w-96 h-96 bg-[#062B45]/40 rounded-full blur-3xl pointer-events-none" />
+      {/* === MAIN CONTENT === */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-0">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-20 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-          {/* Left Column: Brand Statement & AI Search Bar */}
-          <div className="lg:col-span-7 space-y-6 text-left">
-            {/* Pill Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-xs font-semibold tracking-wide text-[#EAF8FC] shadow-xs">
-              <Waves className="w-3.5 h-3.5 text-[#35C2C8]" />
-              <span>HẢI TRÌNH ĐIỆN ẢNH VÔ TẬN</span>
-              <span className="w-1 h-1 rounded-full bg-[#35C2C8]" />
-              <span className="text-white/80">Phiên bản Biển Phim</span>
+          {/* ─── LEFT COLUMN: Brand + AI Search ─── */}
+          <div className="lg:col-span-7 space-y-7 text-left py-8 lg:py-12">
+            {/* Brand eyebrow pill */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0C1E2E] border border-[#19A7C7]/30 text-xs font-semibold text-[#35C2C8] shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#35C2C8] animate-pulse" />
+              <Waves className="w-3.5 h-3.5" />
+              <span>AI DISCOVERY — BIỂN PHIM</span>
             </div>
 
             {/* Main Headline */}
-            <div className="space-y-2">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.15] text-white drop-shadow-sm">
-                Đại dương điện ảnh. <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#35C2C8] via-[#EAF8FC] to-white">
-                  Tìm câu chuyện của bạn.
-                </span>
+            <div className="space-y-3">
+              <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight leading-[1.1] text-[#E8F4F8]">
+                Nơi mọi câu chuyện{' '}
+                <span className="text-gradient-ocean">cập bến.</span>
               </h1>
-              <p className="text-base sm:text-lg text-[#EAF8FC]/90 max-w-xl font-normal leading-relaxed pt-1">
-                Khám phá hàng ngàn bộ phim, series và phim ngắn được tuyển chọn kỹ lưỡng. Mỗi tác phẩm là một hòn đảo kỳ diệu đang chờ bạn cập bến.
+              <p className="text-base sm:text-lg text-[#8BA7B8] max-w-lg font-normal leading-relaxed">
+                Khám phá phim, series và những câu chuyện phù hợp với bạn —{' '}
+                <span className="font-semibold text-[#35C2C8]">với sức mạnh của AI.</span>
               </p>
             </div>
 
-            {/* AI Natural Language Search Box */}
-            <div className="pt-2">
+            {/* ─── AI SEARCH BOX ─── */}
+            <div className="space-y-3">
               <form
                 onSubmit={handleFormSubmit}
-                className="bg-white/95 backdrop-blur-md p-2 sm:p-2.5 rounded-2xl shadow-xl border border-white/40 flex flex-col sm:flex-row items-center gap-2 transition-all focus-within:ring-4 focus-within:ring-[#35C2C8]/30"
+                className={`relative bg-[#0C1E2E] rounded-2xl shadow-lg border-2 transition-all duration-300 ${
+                  isSearchFocused
+                    ? 'border-[#19A7C7] shadow-[0_0_0_4px_rgba(25,167,199,0.12)]'
+                    : 'border-[#19A7C7]/20 shadow-md'
+                }`}
               >
-                <div className="flex items-center gap-3 w-full px-3 py-1">
-                  <Sparkles className="w-5 h-5 text-[#087EA4] shrink-0" />
+                <div className="flex items-center gap-3 p-3 sm:p-3.5">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#087EA4] to-[#35C2C8] flex items-center justify-center shrink-0 shadow-sm">
+                    <Sparkles className="w-4.5 h-4.5 text-white" />
+                  </div>
                   <input
                     type="text"
                     value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Tôi muốn xem gì hôm nay? (VD: sci-fi buồn nhưng có hy vọng...)"
-                    className="w-full bg-transparent border-none text-[#062B45] text-sm sm:text-base font-medium placeholder-[#062B45]/45 focus:outline-none"
+                    onChange={(e) => { setQuery(e.target.value); setActivePrompt(-1); }}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onBlur={() => setIsSearchFocused(false)}
+                    placeholder="Bạn muốn xem gì hôm nay? (VD: sci-fi buồn nhưng có hy vọng...)"
+                    className="flex-1 bg-transparent border-none text-[#E8F4F8] text-sm sm:text-base font-medium placeholder-[#8BA7B8]/60 focus:outline-none min-w-0"
+                    aria-label="Tìm kiếm phim bằng AI"
                   />
+                  <button
+                    type="submit"
+                    className="shrink-0 px-4 sm:px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#087EA4] to-[#19A7C7] hover:from-[#062B45] hover:to-[#087EA4] text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span className="hidden sm:inline">Khám phá cùng AI</span>
+                    <span className="sm:hidden">Tìm</span>
+                  </button>
                 </div>
-                <button
-                  type="submit"
-                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-[#087EA4] to-[#19A7C7] hover:from-[#062B45] hover:to-[#087EA4] text-white font-semibold text-sm shadow-md transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>Khám phá cùng AI</span>
-                </button>
               </form>
 
               {/* Quick Suggestion Pills */}
-              <div className="flex flex-wrap items-center gap-2 pt-3 text-xs">
-                <span className="text-[#EAF8FC]/70 font-medium">Gợi ý nhanh:</span>
-                {quickPrompts.slice(0, 3).map((prompt, idx) => (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-[#8BA7B8]/70 font-medium">Gợi ý:</span>
+                {QUICK_PROMPTS.map((prompt, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => {
                       setQuery(prompt);
+                      setActivePrompt(idx);
                       handleSearch(prompt);
                     }}
-                    className="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-[#EAF8FC] transition-colors cursor-pointer text-xs"
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 cursor-pointer border ${
+                      activePrompt === idx
+                        ? 'bg-[#087EA4] text-white border-[#087EA4] shadow-sm'
+                        : 'bg-[#0C1E2E] text-[#8BA7B8] border-[#19A7C7]/20 hover:border-[#19A7C7] hover:text-[#E8F4F8]'
+                    }`}
                   >
                     {prompt}
                   </button>
@@ -133,102 +154,99 @@ export const Hero: React.FC<HeroProps> = ({
               </div>
             </div>
 
-            {/* Key Value Props */}
-            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/15 text-xs text-[#EAF8FC]/80">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#35C2C8]" />
-                <span>Không cần nhớ tên phim</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#35C2C8]" />
-                <span>Định vị nơi xem chính xác</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#35C2C8]" />
-                <span>Tóm tắt tập thông minh</span>
-              </div>
+            {/* Stats Strip */}
+            <div className="flex items-center gap-6 sm:gap-8 pt-2 border-t border-[#19A7C7]/10">
+              {OCEAN_STATS.map((stat, idx) => (
+                <div key={idx} className="text-left">
+                  <p className="text-xl font-extrabold text-[#E8F4F8] leading-none">{stat.value}</p>
+                  <p className="text-xs text-[#8BA7B8] mt-0.5">{stat.label}</p>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Right Column: Featured Spotlight Card */}
+          {/* ─── RIGHT COLUMN: Featured Film Spotlight ─── */}
           {activeItem && (
-            <div className="lg:col-span-5">
-              <div className="relative group rounded-2xl overflow-hidden bg-white/10 backdrop-blur-md border border-white/20 p-4 sm:p-5 shadow-2xl transition-all duration-300 hover:border-white/40">
+            <div className="lg:col-span-5 flex justify-center lg:justify-end py-6 lg:py-10">
+              <div
+                className="relative group w-full max-w-sm lg:max-w-none rounded-2xl overflow-hidden bg-[#0C1E2E] shadow-2xl border border-[#19A7C7]/15 cursor-pointer transition-all duration-500 hover:shadow-[0_24px_60px_rgba(25,167,199,0.15)] hover:-translate-y-1"
+                onClick={() => onSelectMedia(activeItem)}
+              >
                 {/* Backdrop image */}
-                <div className="relative aspect-[16/10] sm:aspect-[16/9] rounded-xl overflow-hidden shadow-inner mb-4">
+                <div className="relative aspect-[16/10] overflow-hidden">
                   <img
                     src={activeItem.backdropUrl || activeItem.posterUrl}
                     alt={activeItem.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                    loading="eager"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#062B45]/90 via-[#062B45]/30 to-transparent" />
+                  {/* Cinematic gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#062B45]/95 via-[#062B45]/30 to-transparent" />
 
-                  {/* Top Badges */}
-                  <div className="absolute top-3 left-3 flex items-center gap-2">
-                    <span className="px-2.5 py-1 rounded-md bg-[#087EA4]/90 backdrop-blur-md text-white text-[11px] font-bold uppercase tracking-wider">
+                  {/* Top badges row */}
+                  <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+                    <span className="px-2.5 py-1 rounded-md bg-[#087EA4]/95 backdrop-blur-sm text-white text-[10px] font-bold uppercase tracking-wider shadow-sm">
                       ĐẶC SẮC TUẦN NÀY
                     </span>
-                    <span className="px-2 py-0.5 rounded-md bg-black/50 text-[#35C2C8] text-xs font-semibold flex items-center gap-1">
+                    <div className="rating-badge">
                       <Star className="w-3 h-3 fill-current" />
-                      {activeItem.rating}
-                    </span>
+                      <span>{activeItem.rating}</span>
+                    </div>
                   </div>
 
-                  {/* Floating Play Icon */}
+                  {/* Play button overlay */}
                   <button
-                    onClick={() => onSelectMedia(activeItem)}
-                    className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-white/90 text-[#062B45] flex items-center justify-center shadow-lg transform transition-transform group-hover:scale-110 cursor-pointer hover:bg-white"
-                    aria-label="Xem chi tiết"
+                    onClick={(e) => { e.stopPropagation(); onSelectMedia(activeItem); }}
+                    className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-white/95 text-[#062B45] flex items-center justify-center shadow-xl transform transition-all duration-300 group-hover:scale-110 group-hover:bg-white cursor-pointer z-10"
+                    aria-label={`Xem chi tiết ${activeItem.title}`}
                   >
                     <Play className="w-6 h-6 ml-1 fill-current" />
                   </button>
 
-                  <div className="absolute bottom-3 left-3 right-3 text-left">
-                    <p className="text-xs text-[#35C2C8] font-semibold uppercase tracking-wider">
-                      {activeItem.genres.slice(0, 3).join(' · ')}
+                  {/* Bottom meta on image */}
+                  <div className="absolute bottom-3 left-4 right-4 text-left">
+                    <p className="text-[11px] text-[#35C2C8] font-bold uppercase tracking-wider mb-1">
+                      {activeItem.genres.slice(0, 2).join(' · ')}
                     </p>
-                    <h3 className="text-xl sm:text-2xl font-bold text-white leading-snug">
+                    <h2 className="text-xl font-extrabold text-white leading-snug">
                       {activeItem.title}
-                    </h3>
+                    </h2>
                   </div>
                 </div>
 
-                {/* Info & Action bar */}
-                <div className="space-y-3 text-left">
-                  <p className="text-xs text-[#EAF8FC]/80 line-clamp-2 leading-relaxed">
+                {/* Card info row */}
+                <div className="p-4 bg-[#0C1E2E]">
+                  <p className="text-xs text-[#8BA7B8] line-clamp-2 leading-relaxed mb-3">
                     {activeItem.synopsis}
                   </p>
-
-                  <div className="flex items-center justify-between gap-3 pt-2">
-                    <div className="flex items-center gap-3 text-xs text-[#EAF8FC]/70">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 text-xs text-[#8BA7B8]">
                       <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5" />
+                        <Clock className="w-3.5 h-3.5 text-[#19A7C7]" />
                         {activeItem.runtime}
                       </span>
-                      <span>·</span>
+                      <span className="text-[#19A7C7]/30">·</span>
                       <span>{activeItem.year}</span>
                     </div>
-
                     <div className="flex items-center gap-2">
                       {onToggleSave && (
                         <button
                           type="button"
-                          onClick={() => onToggleSave(activeItem.id)}
-                          className={`p-2.5 rounded-xl border transition-colors cursor-pointer ${
+                          onClick={(e) => { e.stopPropagation(); onToggleSave(activeItem.id); }}
+                          className={`p-2 rounded-xl border transition-all cursor-pointer ${
                             isSaved
                               ? 'bg-[#35C2C8] border-[#35C2C8] text-[#062B45]'
-                              : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+                              : 'bg-[#0A1E30] border-[#19A7C7]/30 text-[#8BA7B8] hover:bg-[#19A7C7]/10'
                           }`}
-                          title={isSaved ? 'Đã lưu trong Hải trình' : 'Thêm vào Hải trình'}
+                          title={isSaved ? 'Đã lưu' : 'Thêm vào Hải trình'}
                         >
-                          <Plus className={`w-4 h-4 ${isSaved ? 'rotate-45' : ''} transition-transform`} />
+                          <Plus className={`w-3.5 h-3.5 ${isSaved ? 'rotate-45' : ''} transition-transform`} />
                         </button>
                       )}
-
                       <button
                         type="button"
-                        onClick={() => onSelectMedia(activeItem)}
-                        className="px-4 py-2.5 rounded-xl bg-white text-[#062B45] hover:bg-[#EAF8FC] font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                        onClick={(e) => { e.stopPropagation(); onSelectMedia(activeItem); }}
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#087EA4] to-[#19A7C7] text-white hover:from-[#062B45] hover:to-[#087EA4] font-semibold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
                       >
                         <span>Xem chi tiết</span>
                         <ArrowRight className="w-3.5 h-3.5" />
@@ -242,16 +260,31 @@ export const Hero: React.FC<HeroProps> = ({
         </div>
       </div>
 
-      {/* Wave bottom transition into page content */}
-      <div className="relative w-full overflow-hidden leading-none text-[#F6F1E7]">
+      {/* === WAVE BOTTOM TRANSITION === */}
+      <div className="relative w-full overflow-hidden leading-none" style={{ height: '60px' }}>
+        {/* Double wave layers for depth */}
         <svg
-          className="relative block w-full h-8 sm:h-12 text-[#F6F1E7]"
-          viewBox="0 0 1200 120"
+          className="absolute bottom-0 w-[200%] h-full text-white/50"
+          viewBox="0 0 1200 60"
           preserveAspectRatio="none"
+          aria-hidden="true"
         >
           <path
-            d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V95.8C59.71,118.08,130.83,121.31,201.2,109.11,241.69,102.13,281.82,83.9,321.39,56.44Z"
-            fill="currentColor"
+            className="animate-wave-fast"
+            d="M0,30 C150,60 350,0 600,30 C850,60 1050,0 1200,30 L1200,60 L0,60 Z"
+            fill="rgba(8, 126, 164, 0.06)"
+          />
+        </svg>
+        <svg
+          className="absolute bottom-0 w-[200%] h-full"
+          viewBox="0 0 1200 60"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <path
+            className="animate-wave-slow"
+            d="M0,20 C200,50 400,0 600,25 C800,50 1000,5 1200,20 L1200,60 L0,60 Z"
+            fill="#071525"
           />
         </svg>
       </div>

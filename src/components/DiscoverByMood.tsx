@@ -131,7 +131,7 @@ export const DiscoverByMood: React.FC<DiscoverByMoodProps> = ({
                 <div>
                   <div className="flex items-center justify-between font-sans text-[10px] text-[#68655E] uppercase tracking-widest mb-1.5 font-medium">
                     <span>DIR. {item.director}</span>
-                    <span className="text-[#9D170C] font-bold">{item.aiMatchScore}% MATCH</span>
+                    <span className="text-[#9D170C] font-bold">{item.aiMatchScore != null ? `${item.aiMatchScore}% MATCH` : '—'}</span>
                   </div>
                   <h3
                     onClick={() => onSelectMedia(item)}

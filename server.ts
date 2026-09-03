@@ -48,19 +48,39 @@ app.post('/api/ai-search', async (req, res) => {
   // Determine heuristic fallback breakdown
   let mood = 'Trầm lắng & Khơi gợi';
   let ending = 'Mở hoặc Tích cực';
-  let genre = 'Drama / Sci-Fi';
-  let pace = 'Chậm rãi, giàu cảm xúc';
+  let genre = 'Khoa học viễn tưởng & Tâm lý';
+  let pace = 'Chậm rãi, lắng đọng';
+  let tone = 'Giàu cảm xúc (Emotional)';
+  let complexity = 'Vừa phải (Moderate)';
+  let similarity = 'Điện ảnh chiêm nghiệm';
+
+  if (lower.includes('interstellar')) {
+    similarity = 'Interstellar';
+    genre = 'Khoa học viễn tưởng (Sci-Fi)';
+    if (lower.includes('less complicated') || lower.includes('ít phức tạp') || lower.includes('dễ hiểu') || lower.includes('đơn giản')) {
+      complexity = 'Thấp / Dễ tiếp nhận (Low)';
+    } else {
+      complexity = 'Cao / Đa tầng (High)';
+    }
+  }
 
   if (lower.includes('buồn') || lower.includes('sad') || lower.includes('khóc') || lower.includes('melanchol')) {
-    mood = 'U uất, giàu cảm xúc (Melancholic)';
+    mood = 'U uất, giàu cảm xúc';
+    tone = 'U buồn & Lắng đọng (Melancholic)';
   } else if (lower.includes('nhẹ nhàng') || lower.includes('ngủ') || lower.includes('thư giãn') || lower.includes('chill')) {
-    mood = 'Thư thái, an tĩnh (Peaceful & Cozy)';
+    mood = 'Thư thái, an tĩnh (Cozy)';
+    tone = 'Êm dịu, vỗ về (Peaceful)';
     pace = 'Êm đềm, nhẹ nhàng';
+    complexity = 'Nhẹ nhàng (Low)';
   } else if (lower.includes('bí ẩn') || lower.includes('mystery') || lower.includes('kinh dị')) {
-    mood = 'Hồi hộp, bí ẩn (Suspense & Mystery)';
+    mood = 'Hồi hộp, bí ẩn (Mystery)';
+    tone = 'Kịch tính, kích thích trí tuệ (Suspense)';
+    complexity = 'Cao (High)';
   } else if (lower.includes('vui') || lower.includes('hài')) {
     mood = 'Tươi sáng, giải trí (Uplifting)';
+    tone = 'Tươi vui (Lighthearted)';
     ending = 'Hạnh phúc (Happy Ending)';
+    complexity = 'Dễ chịu (Low)';
   }
 
   if (lower.includes('tích cực') || lower.includes('hy vọng') || lower.includes('positive') || lower.includes('happy')) {
@@ -69,12 +89,14 @@ app.post('/api/ai-search', async (req, res) => {
     ending = 'Ám ảnh, day dứt (Haunting)';
   }
 
-  if (lower.includes('sci-fi') || lower.includes('khoa học') || lower.includes('vũ trụ') || lower.includes('interstellar')) {
+  if (lower.includes('sci-fi') || lower.includes('khoa học') || lower.includes('vũ trụ')) {
     genre = 'Khoa học viễn tưởng (Sci-Fi)';
   } else if (lower.includes('anime') || lower.includes('hoạt hình') || lower.includes('ghibli')) {
     genre = 'Anime / Hoạt hình đỉnh cao';
+    similarity = similarity === 'Điện ảnh chiêm nghiệm' ? 'Studio Ghibli' : similarity;
   } else if (lower.includes('series') || lower.includes('tập')) {
-    genre = 'Phim bộ kịch tính (Series)';
+    genre = 'Series truyền hình (Series)';
+    similarity = similarity === 'Điện ảnh chiêm nghiệm' ? 'Dark / Severance' : similarity;
   } else if (lower.includes('ngắn') || lower.includes('short') || lower.includes('30 phút') || lower.includes('20 phút')) {
     genre = 'Phim ngắn tuyển chọn (Short Film)';
   }
@@ -84,7 +106,7 @@ app.post('/api/ai-search', async (req, res) => {
   if (gemini) {
     try {
       const prompt = `Bạn là cố vấn AI điện ảnh thông minh cho nền tảng "BIỂN PHIM — Oceans of cinema".
-Người dùng nhập: "${cleanQuery}"
+Người dùng tìm kiếm tự nhiên: "${cleanQuery}"
 Danh mục tác phẩm có sẵn trong Biển Phim:
 - "INTERSTELLAR" (169 min, Sci-Fi Drama, hố đen, tình cha con xuyên không gian)
 - "DARK" (3 Seasons, Series Sci-Fi bí ẩn thời gian, vòng lặp định mệnh)
@@ -100,17 +122,20 @@ Danh mục tác phẩm có sẵn trong Biển Phim:
 - "CHRONICLE OF A METROPOLIS AT DUSK" (24 min, Phim ngắn kiến trúc AI hoàng hôn)
 - "SON OF THE SUN" (12 min, Phim ngắn AI bão mặt trời)
 
-Hãy phân tích và trả về JSON:
+Hãy trích xuất yêu cầu và trả về JSON:
 {
   "aiUnderstanding": {
-    "mood": "Tâm trạng đã hiểu (VD: Melancholic & Deep)",
-    "ending": "Kết thúc mong muốn (VD: Positive / Hopeful)",
-    "genre": "Thể loại (VD: Sci-Fi / Drama)",
-    "pace": "Nhịp phim (VD: Contemplative)"
+    "genre": "Thể loại đã nhận diện (VD: Sci-Fi)",
+    "tone": "Tông cảm xúc (VD: Giàu cảm xúc / Sâu lắng)",
+    "complexity": "Độ phức tạp (VD: Thấp / Vừa phải / Cao)",
+    "similarity": "Tác phẩm tương đồng hoặc cảm hứng (VD: Interstellar)",
+    "mood": "Tâm trạng",
+    "ending": "Kết thúc mong đợi",
+    "pace": "Nhịp phim"
   },
-  "explanation": "Đoạn văn ngắn 2-3 câu giải thích vì sao chọn các phim này để giải tỏa mong muốn của người dùng.",
+  "explanation": "Đoạn văn ngắn 2 câu súc tích giải thích vì sao chọn các phim này cho người dùng.",
   "matchedIds": ["id1", "id2", "id3"],
-  "aiCuratorNote": "Lời bình gợi cảm hứng nhẹ nhàng mang phong vị biển cả và điện ảnh."
+  "aiCuratorNote": "Lời bình nhẹ nhàng mang phong vị biển cả và điện ảnh."
 }
 Chỉ trả về JSON thuần túy, không dùng markdown hay code block.`;
 
@@ -127,7 +152,15 @@ Chỉ trả về JSON thuần túy, không dùng markdown hay code block.`;
         return res.json({
           source: 'gemini',
           query: cleanQuery,
-          aiUnderstanding: parsed.aiUnderstanding || { mood, ending, genre, pace },
+          aiUnderstanding: {
+            genre: parsed.aiUnderstanding?.genre || genre,
+            tone: parsed.aiUnderstanding?.tone || tone,
+            complexity: parsed.aiUnderstanding?.complexity || complexity,
+            similarity: parsed.aiUnderstanding?.similarity || similarity,
+            mood: parsed.aiUnderstanding?.mood || mood,
+            ending: parsed.aiUnderstanding?.ending || ending,
+            pace: parsed.aiUnderstanding?.pace || pace,
+          },
           explanation: parsed.explanation || 'Đề xuất dựa trên tâm trạng, nhịp điệu cảm xúc và thời lượng phù hợp.',
           matchedItemIds: parsed.matchedIds || ['interstellar', 'frieren-journey', 'after-yang'],
           aiCuratorNote: parsed.aiCuratorNote || 'Giữa đại dương câu chuyện, đây là những hòn đảo mang lại cảm giác bình yên nhất cho bạn hôm nay.'
@@ -140,7 +173,9 @@ Chỉ trả về JSON thuần túy, không dùng markdown hay code block.`;
 
   // Fallback heuristic matcher
   let matchedIds: string[] = [];
-  if (lower.includes('interstellar') || (lower.includes('sci-fi') && lower.includes('cảm động'))) {
+  if (lower.includes('interstellar') && (lower.includes('less complicated') || lower.includes('đơn giản') || lower.includes('dễ hiểu'))) {
+    matchedIds = ['after-yang', 'the-last-signal', 'perfect-days'];
+  } else if (lower.includes('interstellar') || (lower.includes('sci-fi') && lower.includes('cảm động'))) {
     matchedIds = ['interstellar', 'after-yang', 'the-last-signal', 'blade-runner-2049'];
   } else if (lower.includes('anime') || lower.includes('hoạt hình') || lower.includes('nhẹ nhàng')) {
     matchedIds = ['frieren-journey', 'spirited-away', 'perfect-days', 'after-yang'];
@@ -160,12 +195,15 @@ Chỉ trả về JSON thuần túy, không dùng markdown hay code block.`;
     source: 'ocean-ai-engine',
     query: cleanQuery,
     aiUnderstanding: {
+      genre,
+      tone,
+      complexity,
+      similarity,
       mood,
       ending,
-      genre,
       pace
     },
-    explanation: `Biển Phim AI đã lọc hàng ngàn câu chuyện và chọn ra những tác phẩm có nhịp cảm xúc ${mood.toLowerCase()}, phù hợp với thời gian và tâm trạng của bạn.`,
+    explanation: `Biển Phim AI đã lọc hàng ngàn câu chuyện và chọn ra những tác phẩm có thể loại ${genre.toLowerCase()} với tông ${tone.toLowerCase()}, đáp ứng mong muốn của bạn.`,
     matchedItemIds: matchedIds,
     aiCuratorNote: 'Mỗi bộ phim là một hòn đảo đang chờ bạn ghé thăm và cảm nhận theo cách riêng.'
   });

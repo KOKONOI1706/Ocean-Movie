@@ -1,5 +1,5 @@
 import React from 'react';
-import { Waves, Compass, ShieldCheck, Heart, Globe, Sparkles } from 'lucide-react';
+import { Waves, Compass, ShieldCheck, Globe, Sparkles, Mail, Film } from 'lucide-react';
 
 interface FooterProps {
   onNavigate?: (tab: string) => void;
@@ -7,115 +7,124 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   return (
-    <footer className="w-full bg-[#062B45] text-white pt-14 pb-10 text-left border-t border-[#087EA4]/20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-        {/* Main Grid */}
+    <footer className="w-full bg-[#062B45] text-white relative overflow-hidden">
+      {/* Wave top separator */}
+      <div className="relative w-full overflow-hidden leading-none" style={{ height: '60px', marginTop: '-1px' }}>
+        <svg
+          className="absolute top-0 w-[200%] h-full"
+          viewBox="0 0 1200 60"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M0,30 C200,60 400,0 600,25 C800,50 1000,5 1200,20 L1200,0 L0,0 Z"
+            fill="#060F1A"
+          />
+        </svg>
+      </div>
+
+      {/* Subtle background glows */}
+      <div className="absolute top-20 right-0 w-96 h-96 rounded-full bg-[#087EA4]/8 blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-[#35C2C8]/5 blur-[80px] pointer-events-none" />
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10 space-y-12">
+        {/* Main grid */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 items-start">
-          {/* Brand Col */}
-          <div className="md:col-span-5 space-y-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#087EA4] to-[#35C2C8] flex items-center justify-center shadow-md">
-                <Waves className="w-5 h-5 text-white" />
+          {/* Brand column */}
+          <div className="md:col-span-5 space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#087EA4] to-[#35C2C8] flex items-center justify-center shadow-lg relative overflow-hidden">
+                <Waves className="absolute bottom-0.5 w-9 h-5 text-white opacity-40" />
+                <Film className="w-5 h-5 text-white relative z-10" />
               </div>
-              <span className="font-extrabold text-xl tracking-tight text-white">
-                BIỂN PHIM
-              </span>
+              <div>
+                <span className="font-extrabold text-xl tracking-tight text-white block leading-none">
+                  BIỂN PHIM
+                </span>
+                <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#35C2C8]/80">
+                  Oceans of Cinema
+                </span>
+              </div>
             </div>
 
-            <p className="text-base text-[#35C2C8] font-medium italic">
-              “Nơi mọi câu chuyện cập bến.”
+            <p className="text-base text-[#35C2C8] font-medium italic leading-snug">
+              "Nơi mọi câu chuyện cập bến."
             </p>
 
-            <p className="text-xs text-gray-300 max-w-md leading-relaxed font-normal">
-              Biển Phim là nền tảng khám phá điện ảnh lấy cảm hứng từ đại dương bao la. Chúng tôi đồng hành cùng bạn tìm kiếm những hòn đảo câu chuyện giàu cảm xúc thông qua hệ thống định vị thông minh và bản đồ cảm xúc AI.
+            <p className="text-xs text-gray-300 max-w-sm leading-relaxed font-normal">
+              Biển Phim là nền tảng khám phá điện ảnh lấy cảm hứng từ đại dương bao la.
+              AI đồng hành cùng bạn tìm kiếm những câu chuyện phù hợp — phim, series, anime hay
+              những tác phẩm AI generative tiên phong.
             </p>
 
-            <div className="flex items-center gap-2 pt-1 text-xs text-gray-400">
-              <ShieldCheck className="w-4 h-4 text-[#35C2C8]" />
+            <div className="flex items-center gap-2 text-xs text-[#35C2C8]">
+              <ShieldCheck className="w-4 h-4" />
               <span>Chỉ liên kết nguồn phát bản quyền chính thức.</span>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs text-gray-400">
+              <Sparkles className="w-4 h-4 text-[#35C2C8]" />
+              <span>Hệ thống AI Discovery sử dụng Gemini.</span>
             </div>
           </div>
 
-          {/* Quick Links */}
+          {/* Navigation links */}
           <div className="md:col-span-3 space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#35C2C8]">
+            <h4 className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#35C2C8]">
               Hải Trình Khám Phá
             </h4>
-            <ul className="space-y-2 text-xs text-gray-300">
-              <li>
-                <button
-                  onClick={() => onNavigate?.('home')}
-                  className="hover:text-white transition-colors cursor-pointer"
-                >
-                  Trang chủ & Sóng nổi
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate?.('explore')}
-                  className="hover:text-white transition-colors cursor-pointer"
-                >
-                  Khám phá toàn bộ phim & Series
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate?.('collections')}
-                  className="hover:text-white transition-colors cursor-pointer"
-                >
-                  Quần đảo tuyển chọn (Collections)
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate?.('my-cinema')}
-                  className="hover:text-white transition-colors cursor-pointer"
-                >
-                  Hải trình của tôi (Đã lưu & Đang xem)
-                </button>
-              </li>
+            <ul className="space-y-2.5 text-xs text-gray-300">
+              {[
+                { tab: 'discover',    label: 'Trang chủ & Sóng nổi' },
+                { tab: 'explore',     label: 'Khám phá tất cả phim' },
+                { tab: 'collections', label: 'Bộ sưu tập tuyển chọn' },
+                { tab: 'my-cinema',   label: 'Hải trình của tôi' },
+              ].map((link) => (
+                <li key={link.tab}>
+                  <button
+                    onClick={() => onNavigate?.(link.tab)}
+                    className="hover:text-white transition-colors cursor-pointer text-left flex items-center gap-1.5 group"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#35C2C8]/40 group-hover:bg-[#35C2C8] transition-colors" />
+                    {link.label}
+                  </button>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Categories */}
+          {/* Ocean zones */}
           <div className="md:col-span-4 space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#35C2C8]">
+            <h4 className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#35C2C8]">
               Vùng Biển Đặc Biệt
             </h4>
-            <ul className="space-y-2 text-xs text-gray-300">
-              <li className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#19A7C7]" />
-                <span>Đảo Ngắn: Phim ngắn 15 - 30 phút cuối tuần</span>
-              </li>
-              <li className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
-                <span>Biển AI: Điện ảnh generative & thử nghiệm</span>
-              </li>
-              <li className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                <span>Vùng Nước Sâu: Phim độc lập & chiêm nghiệm triết học</span>
-              </li>
-              <li className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-300" />
-                <span>Anime Tuyển Chọn: Thế giới kỳ ảo & sâu sắc</span>
-              </li>
+            <ul className="space-y-2.5 text-xs text-gray-300">
+              {[
+                { dot: 'bg-[#35C2C8]',  label: 'Đảo Ngắn: Phim ngắn 15–30 phút' },
+                { dot: 'bg-purple-400', label: 'Biển AI: Điện ảnh generative' },
+                { dot: 'bg-amber-400',  label: 'Vùng Nước Sâu: Phim triết học' },
+                { dot: 'bg-blue-300',   label: 'Anime Tuyển Chọn: Thế giới kỳ ảo' },
+                { dot: 'bg-[#19A7C7]',  label: 'Series Cuốn Hút: Binge-worthy' },
+              ].map((item, i) => (
+                <li key={i} className="flex items-center gap-2">
+                  <span className={`w-1.5 h-1.5 rounded-full ${item.dot} shrink-0`} />
+                  <span>{item.label}</span>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
 
-        {/* Bottom Legal bar */}
-        <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400 gap-4">
-          <p>© 2026 BIỂN PHIM (Ocean Cinema). All rights reserved.</p>
-
-          <div className="flex items-center gap-4 text-xs">
+        {/* Bottom bar */}
+        <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 gap-4">
+          <p>© 2026 BIỂN PHIM — Ocean Cinema. All rights reserved.</p>
+          <div className="flex items-center gap-5 text-xs">
             <span className="flex items-center gap-1">
               <Globe className="w-3.5 h-3.5 text-[#35C2C8]" />
-              Tiếng Việt (Vietnam)
+              Tiếng Việt (Việt Nam)
             </span>
-            <span>·</span>
-            <span>Điều khoản dịch vụ</span>
-            <span>·</span>
-            <span>Chính sách bảo mật</span>
+            <button className="hover:text-white transition-colors cursor-pointer">Điều khoản</button>
+            <button className="hover:text-white transition-colors cursor-pointer">Bảo mật</button>
           </div>
         </div>
       </div>

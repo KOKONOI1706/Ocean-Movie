@@ -4,6 +4,7 @@
   --font-sans: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-display: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
 
+  /* === BIỂN PHIM OCEAN COLOR SYSTEM === */
   --color-deep-navy: #062B45;
   --color-ocean-blue: #087EA4;
   --color-sea-blue: #19A7C7;
@@ -12,46 +13,427 @@
   --color-sand: #F6F1E7;
   --color-sand-light: #FAF8F5;
   --color-white: #FFFFFF;
+
+  /* Extended palette */
+  --color-ocean-dark: #041E30;
+  --color-ocean-mid: #0A5C7F;
+  --color-teal-soft: #B2EBF2;
+  --color-sand-dark: #E8E0D0;
+  --color-slate: #4A6572;
+  --color-amber-warm: #F59E0B;
 }
 
-/* Custom ocean scrollbar */
+/* =============================
+   BASE RESET & BODY
+   ============================= */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: #060F1A;
+  color: #E8F4F8;
+  line-height: 1.6;
+}
+
+/* =============================
+   OCEAN CUSTOM SCROLLBAR
+   ============================= */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #EAF8FC;
+  background: #0A1628;
 }
 ::-webkit-scrollbar-thumb {
   background: #19A7C7;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #087EA4;
+  background: #35C2C8;
 }
 
-/* Smooth subtle water ripple / wave glow */
-@keyframes waveSlow {
-  0% {
-    transform: translateX(0) translateZ(0) scaleY(1);
-  }
-  50% {
-    transform: translateX(-25%) translateZ(0) scaleY(1.04);
-  }
-  100% {
-    transform: translateX(-50%) translateZ(0) scaleY(1);
-  }
-}
-
-.animate-wave-slow {
-  animation: waveSlow 18s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite;
-}
-
-/* Hide scrollbar for clean horizontal rails while maintaining scrollability */
+/* Hide scrollbar for horizontal rails */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* =============================
+   ANIMATIONS & KEYFRAMES
+   ============================= */
+
+/* Gentle wave animation */
+@keyframes waveSlow {
+  0%   { transform: translateX(0) scaleY(1); }
+  50%  { transform: translateX(-25%) scaleY(1.04); }
+  100% { transform: translateX(-50%) scaleY(1); }
+}
+.animate-wave-slow {
+  animation: waveSlow 18s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite;
+}
+
+/* Faster wave */
+@keyframes waveFast {
+  0%   { transform: translateX(0) scaleY(1); }
+  50%  { transform: translateX(-25%) scaleY(0.97); }
+  100% { transform: translateX(-50%) scaleY(1); }
+}
+.animate-wave-fast {
+  animation: waveFast 12s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite;
+}
+
+/* Fade in from below */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* Fade in */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Subtle shimmer for loading skeletons */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, #0C1E2E 25%, #0F2840 50%, #0C1E2E 75%);
+  background-size: 200% auto;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* Subtle pulse glow for AI elements */
+@keyframes pulseOcean {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(8, 126, 164, 0.3); }
+  50%       { box-shadow: 0 0 0 8px rgba(8, 126, 164, 0); }
+}
+.animate-pulse-ocean {
+  animation: pulseOcean 2.4s ease-in-out infinite;
+}
+
+/* Slide in from right */
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in-right {
+  animation: slideInRight 0.4s ease-out forwards;
+}
+
+/* Ocean float for hero elements */
+@keyframes oceanFloat {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+.animate-ocean-float {
+  animation: oceanFloat 5s ease-in-out infinite;
+}
+
+/* =============================
+   DESIGN TOKENS AS UTILITIES
+   ============================= */
+
+/* Gradient utilities */
+.ocean-gradient {
+  background: linear-gradient(135deg, #062B45 0%, #087EA4 50%, #19A7C7 100%);
+}
+
+.ocean-gradient-light {
+  background: linear-gradient(135deg, #EAF8FC 0%, #FFFFFF 50%, #F6F1E7 100%);
+}
+
+.ocean-gradient-card {
+  background: linear-gradient(180deg, rgba(6, 43, 69, 0) 0%, rgba(6, 43, 69, 0.85) 100%);
+}
+
+/* Text gradient */
+.text-gradient-ocean {
+  background: linear-gradient(135deg, #087EA4, #35C2C8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-light {
+  background: linear-gradient(135deg, #35C2C8, #EAF8FC);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* =============================
+   CARD STYLES
+   ============================= */
+.card-base {
+  background: #0C1E2E;
+  border-radius: 16px;
+  border: 1px solid rgba(25, 167, 199, 0.12);
+  transition: all 0.3s ease;
+}
+
+.card-hover {
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(8, 126, 164, 0.12);
+  border-color: rgba(25, 167, 199, 0.4);
+}
+
+/* =============================
+   GLASSMORPHISM (selective use)
+   ============================= */
+.glass-light {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.glass-ocean {
+  background: rgba(6, 43, 69, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(53, 194, 200, 0.2);
+}
+
+.glass-dark {
+  background: rgba(7, 21, 37, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(25, 167, 199, 0.15);
+}
+
+/* =============================
+   FOCUS STATES (Accessibility)
+   ============================= */
+:focus-visible {
+  outline: 2px solid #19A7C7;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+button:focus-visible {
+  outline: 2px solid #19A7C7;
+  outline-offset: 2px;
+}
+
+/* =============================
+   MOBILE BOTTOM NAV SAFE AREA
+   ============================= */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* =============================
+   TYPOGRAPHY UTILITIES
+   ============================= */
+.text-ocean-small {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #087EA4;
+}
+
+.section-title {
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #E8F4F8;
+  line-height: 1.2;
+}
+
+.section-subtitle {
+  font-size: 0.875rem;
+  color: #8BA7B8;
+  line-height: 1.6;
+  font-weight: 400;
+}
+
+/* =============================
+   RATING BADGE
+   ============================= */
+.rating-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(6, 43, 69, 0.65);
+  backdrop-filter: blur(4px);
+  color: #F59E0B;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* =============================
+   AI MATCH BADGE
+   ============================= */
+.ai-match-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: linear-gradient(135deg, #087EA4, #35C2C8);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.03em;
+}
+
+/* =============================
+   TYPE BADGES
+   ============================= */
+.type-badge-movie   { background-color: #062B45; color: white; }
+.type-badge-series  { background-color: #087EA4; color: white; }
+.type-badge-anime   { background-color: #19A7C7; color: white; }
+.type-badge-short   { background-color: #35C2C8; color: #062B45; }
+.type-badge-ai_film { background-color: #7C3AED; color: white; }
+.type-badge-doc     { background-color: #4A6572; color: white; }
+
+/* =============================
+   WAVE SEPARATOR (decorative)
+   ============================= */
+.wave-separator {
+  position: relative;
+  overflow: hidden;
+  line-height: 0;
+}
+
+/* =============================
+   STAGGER DELAYS FOR LISTS
+   ============================= */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.10s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.20s; }
+.stagger-5 { animation-delay: 0.25s; }
+
+/* =============================
+   CTA BUTTON SYSTEM
+   ============================= */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #087EA4, #19A7C7);
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(8, 126, 164, 0.25);
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #062B45, #087EA4);
+  box-shadow: 0 6px 20px rgba(8, 126, 164, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  background: rgba(12, 30, 46, 0.9);
+  color: #E8F4F8;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid rgba(25, 167, 199, 0.25);
+  transition: all 0.25s ease;
+}
+.btn-secondary:hover {
+  background: #0A1E30;
+  border-color: #19A7C7;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: transparent;
+  color: #8BA7B8;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid rgba(25, 167, 199, 0.15);
+  transition: all 0.2s ease;
+}
+.btn-ghost:hover {
+  background: rgba(25, 167, 199, 0.08);
+  border-color: #19A7C7;
+  color: #35C2C8;
+}
+
+/* =============================
+   INPUT FIELDS
+   ============================= */
+.input-ocean {
+  width: 100%;
+  padding: 12px 16px;
+  background: #0C1E2E;
+  border: 1.5px solid rgba(25, 167, 199, 0.2);
+  border-radius: 12px;
+  color: #E8F4F8;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.25s ease;
+  outline: none;
+}
+.input-ocean::placeholder {
+  color: rgba(139, 167, 184, 0.5);
+}
+.input-ocean:focus {
+  border-color: #19A7C7;
+  box-shadow: 0 0 0 3px rgba(25, 167, 199, 0.12);
+}
+
+/* =============================
+   PROGRESS BAR (Wave-style)
+   ============================= */
+.progress-bar {
+  height: 4px;
+  background: #0C1E2E;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #087EA4, #35C2C8);
+  border-radius: 4px;
+  transition: width 0.4s ease;
 }
