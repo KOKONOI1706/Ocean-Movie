@@ -56,7 +56,7 @@ export async function seed() {
     create: {
       email: 'demo@bienphim.vn',
       username: 'duycuong',
-      displayName: INITIAL_USER_TASTE.name || 'Nguyễn Duy Cương',
+      displayName: INITIAL_USER_TASTE.name || 'Nguyễn Duy Công',
       passwordHash,
       avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80',
       role: 'USER',

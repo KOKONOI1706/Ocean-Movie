@@ -137,7 +137,7 @@ export const CREATORS_DATA: Creator[] = [
 ];
 
 export const INITIAL_USER_TASTE: UserTasteProfile = {
-  name: 'Nguyễn Duy Cương',
+  name: 'Nguyễn Duy Công',
   memberSince: 'Thành viên Hải Trình · Tháng 9, 2026',
   editorialSummary: 'Bạn có xu hướng thích sci-fi chậm, giàu cảm xúc, kết hợp với những câu chuyện về con người và công nghệ sâu lắng. Bạn đặc biệt yêu thích những tác phẩm có phong cách hình ảnh đẹp mắt và âm thanh du dương.',
   topGenres: [

@@ -119,21 +119,21 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-[#062B45]/80 backdrop-blur-md flex justify-center p-0 sm:p-4 md:p-8 text-[#062B45] animate-fade-in"
+      className="fixed inset-0 z-50 overflow-y-auto bg-[#030B14]/85 backdrop-blur-xl flex justify-center p-0 sm:p-4 md:p-8 text-[#E8F4F8] animate-fade-in"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       role="dialog"
       aria-modal="true"
       aria-label={`Chi tiết: ${item.title}`}
     >
-      <div className="relative w-full max-w-4xl bg-white rounded-none sm:rounded-3xl shadow-2xl overflow-hidden my-auto flex flex-col min-h-screen sm:min-h-0 border border-[#087EA4]/15">
+      <div className="relative w-full max-w-4xl bg-[#071728]/95 backdrop-blur-2xl rounded-none sm:rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.8),0_0_30px_rgba(8,126,164,0.2)] overflow-hidden my-auto flex flex-col min-h-screen sm:min-h-0 border border-[#35C2C8]/25 text-left">
 
         {/* === STICKY TOP BAR === */}
-        <div className="sticky top-0 z-30 bg-white/97 backdrop-blur-md border-b border-gray-100 px-4 sm:px-6 py-3 flex items-center justify-between">
+        <div className="sticky top-0 z-30 bg-[#061424]/90 backdrop-blur-md border-b border-[#19A7C7]/20 px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 rounded-full bg-[#087EA4]/15 text-[#087EA4] border border-[#19A7C7]/20 text-[10px] font-bold uppercase tracking-wider">
+            <span className="px-2.5 py-1 rounded-full bg-[#087EA4]/20 text-[#35C2C8] border border-[#35C2C8]/30 text-[10px] font-bold uppercase tracking-wider">
               {item.type === 'series' ? 'Series' : item.type === 'anime' ? 'Anime' : item.type === 'ai_film' ? 'AI Film' : item.type === 'short' ? 'Phim Ngắn' : 'Phim Điện Ảnh'}
             </span>
-            <span className="hidden sm:inline text-xs text-gray-400 truncate max-w-xs">
+            <span className="hidden sm:inline text-xs text-[#8BA7B8] truncate max-w-xs">
               {item.title}
             </span>
           </div>
@@ -143,8 +143,8 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
               onClick={() => onToggleSave(item)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                 isSaved
-                  ? 'bg-[#087EA4] text-white'
-                  : 'bg-[#087EA4]/10 hover:bg-[#087EA4]/20 text-[#087EA4] border border-[#19A7C7]/25'
+                  ? 'bg-gradient-to-r from-[#087EA4] to-[#19A7C7] text-white shadow-[0_0_15px_rgba(53,194,200,0.3)]'
+                  : 'bg-white/5 hover:bg-white/10 text-cyan-200 border border-white/10 hover:border-cyan-500/30'
               }`}
             >
               <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-current' : ''}`} />
@@ -153,15 +153,15 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
 
             <button
               onClick={handleShare}
-              className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors cursor-pointer"
+              className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-cyan-200/80 hover:text-white border border-white/10 transition-colors cursor-pointer"
               title="Chia sẻ"
             >
-              {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4" />}
+              {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
             </button>
 
             <button
               onClick={onClose}
-              className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors cursor-pointer"
+              className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-cyan-200/80 hover:text-white border border-white/10 hover:border-cyan-500/30 transition-colors cursor-pointer"
               title="Đóng"
               aria-label="Đóng modal"
             >
@@ -171,7 +171,7 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
         </div>
 
         {/* === HERO BACKDROP === */}
-        <div className="relative bg-[#062B45] text-white">
+        <div className="relative bg-[#061424] text-white">
           <div className="relative w-full overflow-hidden" style={{ maxHeight: '340px' }}>
             <img
               src={item.backdropUrl || item.posterUrl}
@@ -179,14 +179,14 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
               className="w-full h-full object-cover object-center"
               style={{ aspectRatio: '21/9', minHeight: '200px' }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#062B45] via-[#062B45]/50 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#071728] via-[#071728]/60 to-transparent" />
           </div>
 
           {/* Content overlapping bottom of hero */}
           <div className="px-5 sm:px-8 pb-6 pt-0 -mt-20 sm:-mt-28 relative z-10">
             <div className="flex flex-col sm:flex-row gap-5 items-start sm:items-end">
               {/* Poster thumbnail */}
-              <div className="w-24 sm:w-36 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20 shrink-0 bg-black hidden xs:block"
+              <div className="w-24 sm:w-36 rounded-2xl overflow-hidden shadow-[0_0_25px_rgba(0,0,0,0.8)] border-2 border-[#35C2C8]/30 shrink-0 bg-black hidden xs:block"
                 style={{ aspectRatio: '2/3' }}>
                 <img src={item.posterUrl} alt={item.title} className="w-full h-full object-cover" />
               </div>
@@ -209,11 +209,11 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
                 </h1>
 
                 {item.originalTitle && item.originalTitle !== item.title && (
-                  <p className="text-xs text-gray-400 italic">Tên gốc: {item.originalTitle}</p>
+                  <p className="text-xs text-[#8BA7B8] italic">Tên gốc: {item.originalTitle}</p>
                 )}
 
                 <div className="flex flex-wrap items-center gap-3 text-xs text-gray-300">
-                  <div className="flex items-center gap-1 text-amber-400 font-bold bg-black/40 px-2.5 py-1 rounded-lg">
+                  <div className="flex items-center gap-1 text-amber-400 font-bold bg-[#061424]/80 backdrop-blur-md border border-amber-400/30 px-2.5 py-1 rounded-lg">
                     <Star className="w-3.5 h-3.5 fill-current" />
                     <span>{item.rating} / 10</span>
                   </div>
@@ -224,7 +224,7 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
                     </div>
                   )}
                   {item.director && (
-                    <span>
+                    <span className="text-[#8BA7B8]">
                       ĐD: <span className="font-semibold text-white">{item.director}</span>
                     </span>
                   )}
@@ -252,7 +252,7 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
                 )}
                 <button
                   onClick={() => onOpenWhereToWatch(item)}
-                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-xs transition-all cursor-pointer"
+                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0B2035]/80 hover:bg-[#0F2A45] border border-[#35C2C8]/30 text-white font-semibold text-xs transition-all cursor-pointer shadow-xs"
                 >
                   <MapPin className="w-3.5 h-3.5 text-[#35C2C8]" />
                   <span>Nơi xem</span>
@@ -263,53 +263,53 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
         </div>
 
         {/* === TABS === */}
-        <div className="border-b border-gray-100 bg-[#FAF8F5] px-4 sm:px-6 flex gap-1 overflow-x-auto no-scrollbar">
+        <div className="border-b border-[#19A7C7]/20 bg-[#061424]/70 px-4 sm:px-6 flex gap-1 overflow-x-auto no-scrollbar">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-1.5 px-3 sm:px-4 py-3.5 text-xs font-semibold whitespace-nowrap relative transition-colors cursor-pointer ${
                 activeTab === tab.id
-                  ? 'text-[#087EA4]'
-                  : 'text-gray-500 hover:text-[#062B45]'
+                  ? 'text-[#35C2C8]'
+                  : 'text-[#8BA7B8] hover:text-[#E8F4F8]'
               }`}
             >
               {tab.icon}
               {tab.label}
               {activeTab === tab.id && (
-                <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-[#087EA4]" />
+                <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-gradient-to-r from-[#087EA4] to-[#35C2C8] shadow-[0_0_8px_#35C2C8]" />
               )}
             </button>
           ))}
         </div>
 
         {/* === TAB CONTENT === */}
-        <div className="p-5 sm:p-6 flex-1 bg-white text-left space-y-5 overflow-y-auto">
+        <div className="p-5 sm:p-6 flex-1 bg-[#071728]/70 text-left space-y-5 overflow-y-auto">
 
           {/* OVERVIEW TAB */}
           {activeTab === 'overview' && (
             <div className="space-y-5 animate-fade-in">
               {item.tagline && (
-                <p className="text-base text-[#087EA4] font-medium italic border-l-3 border-[#19A7C7] pl-4 bg-[#087EA4]/10 py-2 pr-3 rounded-r-xl">
+                <p className="text-base text-cyan-200 font-medium italic border-l-3 border-[#35C2C8] pl-4 bg-[#087EA4]/15 py-2.5 pr-3 rounded-r-xl">
                   "{item.tagline}"
                 </p>
               )}
 
               <div>
-                <h3 className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2">
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-[#35C2C8]/80 mb-2">
                   Tóm tắt nội dung
                 </h3>
-                <p className="text-sm text-gray-700 leading-relaxed">{item.synopsis}</p>
+                <p className="text-sm text-[#8BA7B8] leading-relaxed">{item.synopsis}</p>
               </div>
 
               {item.cast?.length > 0 && (
                 <div>
-                  <h3 className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2">
+                  <h3 className="text-[11px] font-bold uppercase tracking-wider text-[#35C2C8]/80 mb-2">
                     Diễn viên chính
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {item.cast.map((actor, idx) => (
-                      <span key={idx} className="px-3 py-1 rounded-full bg-[#F6F1E7] text-xs text-[#062B45] font-medium border border-[#087EA4]/10">
+                      <span key={idx} className="px-3 py-1 rounded-full bg-[#0B2035]/80 text-xs text-cyan-100 font-medium border border-[#19A7C7]/25 hover:border-[#35C2C8]/40 transition-colors">
                         {actor}
                       </span>
                     ))}
@@ -319,34 +319,34 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
 
               {/* AI Film tech badge */}
               {item.aiInvolvement?.isAiFilm && (
-                <div className="bg-purple-50 border border-purple-100 rounded-2xl p-4">
+                <div className="bg-purple-950/40 border border-purple-500/30 rounded-2xl p-4 text-purple-200">
                   <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="w-4 h-4 text-purple-600" />
-                    <h4 className="text-xs font-bold text-purple-800 uppercase tracking-wider">
+                    <Sparkles className="w-4 h-4 text-purple-400" />
+                    <h4 className="text-xs font-bold text-purple-300 uppercase tracking-wider">
                       Phim AI — Công cụ sử dụng
                     </h4>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {item.aiInvolvement.toolsUsed.map((tool, i) => (
-                      <span key={i} className="px-2.5 py-1 rounded-lg bg-purple-100 text-xs text-purple-700 font-medium">
+                      <span key={i} className="px-2.5 py-1 rounded-lg bg-purple-900/60 border border-purple-500/30 text-xs text-purple-200 font-medium">
                         {tool}
                       </span>
                     ))}
                   </div>
-                  <p className="text-xs text-purple-600 mt-2 italic">{item.aiInvolvement.workflowNotes}</p>
+                  <p className="text-xs text-purple-300/80 mt-2 italic">{item.aiInvolvement.workflowNotes}</p>
                 </div>
               )}
 
               {/* Series shortcut */}
               {isSeries && (
-                <div className="bg-[#087EA4]/10 p-4 rounded-2xl border border-[#19A7C7]/20 flex items-center justify-between">
+                <div className="bg-[#0B2035]/70 p-4 rounded-2xl border border-[#35C2C8]/25 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Tv className="w-5 h-5 text-[#087EA4]" />
+                    <Tv className="w-5 h-5 text-[#35C2C8]" />
                     <div>
-                      <h4 className="text-xs font-bold text-[#062B45]">
+                      <h4 className="text-xs font-bold text-white">
                         Tác phẩm dạng Series ({item.seasons?.length || 1} Mùa)
                       </h4>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-[#8BA7B8]">
                         Xem danh sách tập, tóm tắt AI và tiến độ xem
                       </p>
                     </div>
@@ -354,7 +354,7 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
                   {onOpenSeriesDetail && (
                     <button
                       onClick={() => onOpenSeriesDetail(item)}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#087EA4] text-white text-xs font-semibold hover:bg-[#062B45] transition-colors cursor-pointer"
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#087EA4] to-[#19A7C7] text-white text-xs font-semibold hover:brightness-110 transition-all cursor-pointer shadow-sm"
                     >
                       Mở Series <ChevronRight className="w-3.5 h-3.5" />
                     </button>
@@ -363,14 +363,14 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
               )}
 
               {/* Interactive Rating Card */}
-              <div className="p-4 rounded-2xl bg-[#F6F1E7]/70 border border-[#087EA4]/15">
+              <div className="p-4 rounded-2xl bg-[#0B2035]/50 border border-[#19A7C7]/20">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-[#062B45] flex items-center gap-1.5">
-                    <Star className="w-3.5 h-3.5 text-amber-500 fill-current" />
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Star className="w-3.5 h-3.5 text-amber-400 fill-current" />
                     Chấm điểm tác phẩm này (Lưu vào hồ sơ)
                   </span>
                   {ratingMessage && (
-                    <span className="text-xs font-semibold text-emerald-600 animate-fade-in">
+                    <span className="text-xs font-semibold text-emerald-400 animate-fade-in">
                       {ratingMessage}
                     </span>
                   )}
@@ -382,8 +382,8 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
                       onClick={() => handleRate(score)}
                       className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                         userScore === score
-                          ? 'bg-[#087EA4] text-white shadow-md'
-                          : 'bg-white hover:bg-[#087EA4]/15 text-gray-700 border border-gray-200 hover:border-[#19A7C7]'
+                          ? 'bg-gradient-to-br from-[#087EA4] to-[#35C2C8] text-white shadow-[0_0_12px_rgba(53,194,200,0.4)]'
+                          : 'bg-[#061424] hover:bg-[#0E2740] text-[#8BA7B8] hover:text-white border border-[#19A7C7]/20 hover:border-[#35C2C8]/50'
                       }`}
                     >
                       {score}
@@ -398,20 +398,20 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
           {activeTab === 'ai' && (
             <div className="space-y-5 animate-fade-in">
               {/* Why you may like this */}
-              <div className="bg-gradient-to-br from-[#087EA4]/10 to-[#062B45]/5 p-5 rounded-2xl border border-[#19A7C7]/20">
+              <div className="bg-gradient-to-br from-[#087EA4]/20 via-[#0B2035]/60 to-[#071728]/80 p-5 rounded-2xl border border-[#35C2C8]/30 shadow-[0_0_30px_rgba(8,126,164,0.15)]">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="w-8 h-8 rounded-xl bg-[#087EA4]/15 flex items-center justify-center">
-                    <Brain className="w-4 h-4 text-[#087EA4]" />
+                  <div className="w-8 h-8 rounded-xl bg-[#087EA4]/25 border border-[#35C2C8]/30 flex items-center justify-center">
+                    <Brain className="w-4 h-4 text-[#35C2C8]" />
                   </div>
-                  <h3 className="text-sm font-bold text-[#062B45]">
+                  <h3 className="text-sm font-bold text-white">
                     Vì sao bạn có thể thích bộ phim này?
                   </h3>
                 </div>
-                <p className="text-sm text-gray-700 leading-relaxed">
+                <p className="text-sm text-cyan-100/90 leading-relaxed">
                   {aiInsight?.whyYouMayLike || item.whyYouMayLike || 'Tác phẩm sở hữu ngôn ngữ điện ảnh sâu sắc, phù hợp cho những ai tìm kiếm sự chiêm nghiệm và xúc cảm lắng đọng.'}
                 </p>
                 {item.aiMatchScore && (
-                  <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#087EA4] text-white text-xs font-bold">
+                  <div className="mt-3 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#087EA4] to-[#19A7C7] text-white text-xs font-bold shadow-[0_0_15px_rgba(53,194,200,0.3)]">
                     <Sparkles className="w-3.5 h-3.5" />
                     {item.aiMatchScore}% phù hợp với khẩu vị của bạn
                   </div>
@@ -422,16 +422,16 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
               {aiInsight && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
-                    { label: 'Chủ đề (Themes)', value: aiInsight.themes, color: 'bg-[#087EA4]/10 border-[#19A7C7]/20' },
-                    { label: 'Phong cách thị giác', value: aiInsight.visualStyle, color: 'bg-[#F6F1E7] border-[#087EA4]/10' },
-                    { label: 'Cường độ cảm xúc', value: aiInsight.emotionalIntensity, color: 'bg-[#087EA4]/10 border-[#19A7C7]/20' },
-                    { label: 'Khán giả phù hợp', value: aiInsight.audienceFit, color: 'bg-[#F6F1E7] border-[#087EA4]/10' },
+                    { label: 'Chủ đề (Themes)', value: aiInsight.themes, color: 'bg-[#0B2035]/60 border-[#19A7C7]/25' },
+                    { label: 'Phong cách thị giác', value: aiInsight.visualStyle, color: 'bg-[#0B2035]/60 border-[#19A7C7]/25' },
+                    { label: 'Cường độ cảm xúc', value: aiInsight.emotionalIntensity, color: 'bg-[#0B2035]/60 border-[#19A7C7]/25' },
+                    { label: 'Khán giả phù hợp', value: aiInsight.audienceFit, color: 'bg-[#0B2035]/60 border-[#19A7C7]/25' },
                   ].filter(card => card.value).map((card, i) => (
                     <div key={i} className={`p-4 rounded-xl border ${card.color}`}>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#35C2C8] block mb-1.5">
                         {card.label}
                       </span>
-                      <p className="text-xs text-gray-700 leading-relaxed">{card.value}</p>
+                      <p className="text-xs text-[#8BA7B8] leading-relaxed">{card.value}</p>
                     </div>
                   ))}
                 </div>
@@ -442,7 +442,7 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
           {/* STREAMING TAB */}
           {activeTab === 'streaming' && (
             <div className="space-y-4 animate-fade-in">
-              <h3 className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-[#35C2C8]/80">
                 Nền tảng phát hành bản quyền
               </h3>
               {item.streamingOptions?.length > 0 ? (
@@ -450,17 +450,17 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
                   {item.streamingOptions.map((opt, idx) => (
                     <div
                       key={idx}
-                      className="p-4 rounded-2xl border border-gray-200 hover:border-[#087EA4]/40 transition-all flex items-center gap-4"
+                      className="p-4 rounded-2xl border border-[#19A7C7]/20 bg-[#0B2035]/50 hover:bg-[#0F2A45]/70 hover:border-[#35C2C8]/40 transition-all flex items-center gap-4"
                     >
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-bold shrink-0 ${getProviderColor(opt.provider)}`}>
                         {opt.provider.slice(0, 2).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-bold text-[#062B45] truncate">{opt.provider}</h4>
-                        <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                        <h4 className="text-sm font-bold text-white truncate">{opt.provider}</h4>
+                        <div className="flex items-center gap-2 text-xs text-[#8BA7B8] mt-0.5">
                           <span>{opt.region}</span>
-                          <span className="text-gray-200">·</span>
-                          <span className={`font-semibold ${opt.type === 'free' ? 'text-emerald-600' : 'text-[#087EA4]'}`}>
+                          <span className="text-white/20">·</span>
+                          <span className={`font-semibold ${opt.type === 'free' ? 'text-emerald-400' : 'text-[#35C2C8]'}`}>
                             {opt.type === 'subscription' ? 'Gói thuê bao' : opt.type === 'rent' ? `Thuê: ${opt.price || '$3.99'}` : 'Miễn phí'}
                           </span>
                         </div>
@@ -469,7 +469,7 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
                         href={opt.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-center gap-1 px-3 py-2 rounded-xl bg-[#087EA4] text-white text-xs font-semibold hover:bg-[#062B45] transition-colors shrink-0"
+                        className="flex items-center gap-1 px-3 py-2 rounded-xl bg-gradient-to-r from-[#087EA4] to-[#19A7C7] text-white text-xs font-semibold hover:brightness-110 transition-all shrink-0"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
@@ -479,7 +479,7 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center text-sm text-gray-500 bg-[#F6F1E7] rounded-2xl">
+                <div className="py-8 text-center text-sm text-[#8BA7B8] bg-[#0B2035]/40 border border-[#19A7C7]/20 rounded-2xl">
                   Đang cập nhật nguồn phát bản quyền.
                 </div>
               )}
@@ -489,7 +489,7 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
           {/* SUBTITLES TAB */}
           {activeTab === 'subtitles' && (
             <div className="space-y-4 animate-fade-in">
-              <h3 className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-[#35C2C8]/80">
                 Phụ đề có sẵn
               </h3>
               <div className="flex flex-wrap gap-2">
@@ -499,8 +499,8 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
                     onClick={() => setSelectedSub(sub.language)}
                     className={`px-3.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all ${
                         selectedSub === sub.language
-                          ? 'bg-[#087EA4] text-white shadow-sm'
-                          : 'bg-[#F6F1E7] text-gray-700 hover:bg-[#087EA4]/15 border border-gray-200'
+                          ? 'bg-gradient-to-r from-[#087EA4] to-[#35C2C8] text-white shadow-[0_0_12px_rgba(53,194,200,0.3)]'
+                          : 'bg-[#0B2035]/60 text-cyan-200/80 hover:bg-[#0F2A45] border border-[#19A7C7]/20 hover:border-[#35C2C8]/40'
                       }`}
                   >
                     {sub.language} {sub.isAiAssisted && '✦ AI'}
@@ -509,12 +509,12 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
               </div>
 
               {item.subtitlesAvailable?.find((s) => s.language === selectedSub)?.sampleDialogue && (
-                <div className="bg-[#FAF8F5] p-4 rounded-xl border border-gray-200 text-xs space-y-2">
-                  <span className="font-bold text-[#087EA4] block">Trích đoạn dịch mẫu:</span>
-                  <p className="italic text-gray-600">
+                <div className="bg-[#0B2035]/60 p-4 rounded-xl border border-[#19A7C7]/20 text-xs space-y-2">
+                  <span className="font-bold text-[#35C2C8] block">Trích đoạn dịch mẫu:</span>
+                  <p className="italic text-[#8BA7B8]">
                     Gốc: {item.subtitlesAvailable?.find((s) => s.language === selectedSub)?.sampleDialogue?.original}
                   </p>
-                  <p className="font-semibold text-[#062B45]">
+                  <p className="font-semibold text-cyan-100">
                     Dịch: {item.subtitlesAvailable?.find((s) => s.language === selectedSub)?.sampleDialogue?.translated}
                   </p>
                 </div>
@@ -524,8 +524,8 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
 
           {/* Similar Films */}
           {similarFilms.length > 0 && (
-            <div className="pt-5 border-t border-gray-100">
-              <h3 className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-3">
+            <div className="pt-5 border-t border-[#19A7C7]/15">
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-[#35C2C8]/80 mb-3">
                 Cùng hải trình khám phá
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -533,9 +533,9 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
                   <div
                     key={other.id}
                     onClick={() => onSelectMedia(other)}
-                    className="flex flex-col gap-2 cursor-pointer group"
+                    className="flex flex-col gap-2 cursor-pointer group text-left"
                   >
-                    <div className="rounded-xl overflow-hidden aspect-[2/3] bg-[#062B45]/10">
+                    <div className="rounded-xl overflow-hidden aspect-[2/3] bg-[#061424] border border-[#19A7C7]/20 group-hover:border-[#35C2C8]/50 transition-all">
                       <img
                         src={other.posterUrl}
                         alt={other.title}
@@ -544,10 +544,10 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
                       />
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-[#062B45] group-hover:text-[#087EA4] transition-colors truncate">
+                      <h4 className="text-xs font-bold text-white group-hover:text-[#35C2C8] transition-colors truncate">
                         {other.title}
                       </h4>
-                      <span className="text-[10px] text-gray-400">
+                      <span className="text-[10px] text-[#8BA7B8]">
                         {other.year} · ★ {other.rating}
                       </span>
                     </div>

@@ -163,18 +163,18 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
   return (
     <div className="min-h-screen text-[#E8F4F8]">
       {/* ─── Page Header ─── */}
-      <div className="bg-[#071525] border-b border-[#19A7C7]/15 shadow-sm">
+      <div className="bg-[#071728]/80 backdrop-blur-xl border-b border-[#35C2C8]/20 shadow-[0_4px_30px_rgba(0,0,0,0.4)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0C1E2E] text-[#35C2C8] text-xs font-bold uppercase tracking-wider mb-3 border border-[#19A7C7]/20">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#087EA4]/20 text-[#35C2C8] text-xs font-bold uppercase tracking-wider mb-3 border border-[#35C2C8]/30 shadow-xs">
                 <Compass className="w-3.5 h-3.5" />
                 KHÁM PHÁ BIỂN PHIM
               </div>
-              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#E8F4F8] mb-2">
+              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2">
                 Toàn bộ tác phẩm
               </h1>
-              <p className="text-sm text-[#8BA7B8] max-w-lg">
+              <p className="text-sm text-[#8BA7B8] max-w-lg leading-relaxed">
                 Lọc theo thể loại, định dạng, hoặc tìm tên phim. Mọi hòn đảo điện ảnh đều nằm ở đây.
               </p>
             </div>
@@ -187,7 +187,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                 value={searchFilter}
                 onChange={(e) => setSearchFilter(e.target.value)}
                 placeholder="Tìm tên phim, đạo diễn, thể loại..."
-                className="w-full pl-10 pr-10 py-3 bg-[#0C1E2E] border border-[#19A7C7]/20 rounded-2xl text-sm font-medium text-[#E8F4F8] placeholder-[#8BA7B8]/50 focus:outline-none focus:border-[#19A7C7] focus:ring-2 focus:ring-[#19A7C7]/15 transition-all"
+                className="w-full pl-10 pr-10 py-3 bg-[#0B2035]/60 border border-[#19A7C7]/25 hover:border-[#35C2C8]/50 rounded-2xl text-sm font-medium text-[#E8F4F8] placeholder-[#8BA7B8]/50 focus:outline-none focus:border-[#35C2C8] focus:ring-2 focus:ring-[#35C2C8]/20 transition-all shadow-inner"
                 aria-label="Tìm kiếm phim"
               />
               {searchFilter && (
@@ -206,13 +206,13 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* ─── Filter Panel ─── */}
-        <div className="bg-[#071525] rounded-2xl border border-[#19A7C7]/15 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#19A7C7]/10 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-bold text-[#E8F4F8]">
+        <div className="bg-[#071728]/70 backdrop-blur-2xl rounded-3xl border border-[#35C2C8]/20 shadow-[0_0_40px_rgba(0,0,0,0.5)] overflow-hidden">
+          <div className="px-5 py-4 border-b border-[#19A7C7]/15 flex items-center justify-between bg-[#061424]/40">
+            <div className="flex items-center gap-2 text-sm font-bold text-white">
               <SlidersHorizontal className="w-4 h-4 text-[#35C2C8]" />
               Bộ lọc
               {hasFilters && (
-                <span className="px-2 py-0.5 rounded-full bg-[#19A7C7] text-white text-[10px] font-bold">
+                <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-[#087EA4] to-[#35C2C8] text-white text-[10px] font-bold shadow-[0_0_10px_rgba(53,194,200,0.4)]">
                   Đang lọc
                 </span>
               )}
@@ -220,7 +220,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
             {hasFilters && (
               <button
                 onClick={clearFilters}
-                className="flex items-center gap-1.5 text-xs font-semibold text-[#35C2C8] hover:text-[#E8F4F8] transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 text-xs font-semibold text-[#35C2C8] hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
                 Xóa tất cả
@@ -229,8 +229,8 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
           </div>
 
           {/* Type filter */}
-          <div className="px-5 py-4 border-b border-[#19A7C7]/8">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#8BA7B8] mb-3">Định dạng</p>
+          <div className="px-5 py-4 border-b border-[#19A7C7]/15">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#35C2C8]/80 mb-3">Định dạng</p>
             <div className="flex flex-wrap gap-2">
               {TYPE_FILTERS.map((t) => (
                 <button
@@ -238,8 +238,8 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                   onClick={() => setSelectedType(t.id as any)}
                   className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                     selectedType === t.id
-                      ? 'bg-[#19A7C7] text-white shadow-sm'
-                      : 'bg-[#0C1E2E] text-[#8BA7B8] hover:bg-[#0A1E30] hover:text-[#E8F4F8] border border-[#19A7C7]/15 hover:border-[#19A7C7]/40'
+                      ? 'bg-gradient-to-r from-[#087EA4] to-[#35C2C8] text-white shadow-[0_0_12px_rgba(53,194,200,0.3)]'
+                      : 'bg-[#0B2035]/50 text-[#8BA7B8] hover:bg-[#0F2A45] hover:text-white border border-[#19A7C7]/20 hover:border-[#35C2C8]/40'
                   }`}
                 >
                   {t.icon}
@@ -250,8 +250,8 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
           </div>
 
           {/* Genre filter */}
-          <div className="px-5 py-4 border-b border-[#19A7C7]/8">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#8BA7B8] mb-3">Thể loại</p>
+          <div className="px-5 py-4 border-b border-[#19A7C7]/15">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#35C2C8]/80 mb-3">Thể loại</p>
             <div className="flex flex-wrap gap-2">
               {GENRES.map((g) => (
                 <button
@@ -259,8 +259,8 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                   onClick={() => toggleGenre(g)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                     selectedGenres.includes(g)
-                      ? 'bg-[#062B45] text-[#35C2C8] border border-[#19A7C7]/40 shadow-sm'
-                      : 'bg-[#0C1E2E] text-[#8BA7B8] hover:bg-[#0A1E30] hover:text-[#E8F4F8] border border-[#19A7C7]/15 hover:border-[#19A7C7]/30'
+                      ? 'bg-gradient-to-r from-[#087EA4]/40 to-[#19A7C7]/30 text-[#35C2C8] border border-[#35C2C8]/50 shadow-[0_0_10px_rgba(53,194,200,0.2)] font-semibold'
+                      : 'bg-[#0B2035]/40 text-[#8BA7B8] hover:bg-[#0F2A45] hover:text-white border border-[#19A7C7]/15 hover:border-[#35C2C8]/30'
                   }`}
                 >
                   {g}
@@ -270,7 +270,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
           </div>
 
           {/* Progressive Filters Toggle */}
-          <div className="px-5 py-3 bg-[#0C1E2E]/60 flex items-center justify-between">
+          <div className="px-5 py-3 bg-[#061424]/70 border-t border-[#19A7C7]/15 flex items-center justify-between">
             <button
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
               className="flex items-center gap-2 text-xs font-semibold text-[#35C2C8] hover:text-white transition-colors cursor-pointer"
@@ -278,7 +278,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
               <SlidersHorizontal className="w-3.5 h-3.5" />
               <span>{showAdvancedFilters ? 'Thu gọn bộ lọc nâng cao' : 'Mở rộng bộ lọc nâng cao (Rating, Năm, Thời lượng, Mood, AI)'}</span>
               {advancedFilterCount > 0 && (
-                <span className="px-2 py-0.5 rounded-full bg-[#19A7C7] text-white text-[10px] font-bold">
+                <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-[#087EA4] to-[#35C2C8] text-white text-[10px] font-bold shadow-xs">
                   {advancedFilterCount}
                 </span>
               )}
@@ -291,11 +291,11 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
 
           {/* Progressive Filters Content */}
           {showAdvancedFilters && (
-            <div className="p-5 bg-[#050E18]/70 border-t border-[#19A7C7]/15 space-y-4 animate-fade-in text-left">
+            <div className="p-5 bg-[#050E18]/80 border-t border-[#19A7C7]/20 space-y-4 animate-fade-in text-left">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Rating filter */}
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#8BA7B8] mb-2 flex items-center gap-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#35C2C8]/80 mb-2 flex items-center gap-1">
                     <Star className="w-3 h-3 text-amber-400" /> Đánh giá tối thiểu
                   </p>
                   <div className="flex flex-wrap gap-1.5">
@@ -310,8 +310,8 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                         onClick={() => setMinRating(r.val)}
                         className={`px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all ${
                           minRating === r.val
-                            ? 'bg-[#19A7C7] text-white font-bold'
-                            : 'bg-[#0C1E2E] text-[#8BA7B8] hover:text-[#E8F4F8] border border-[#19A7C7]/15'
+                            ? 'bg-gradient-to-r from-[#087EA4] to-[#35C2C8] text-white font-bold shadow-[0_0_10px_rgba(53,194,200,0.3)]'
+                            : 'bg-[#0B2035]/60 text-[#8BA7B8] hover:text-white hover:bg-[#0F2A45] border border-[#19A7C7]/20 hover:border-[#35C2C8]/40'
                         }`}
                       >
                         {r.label}
@@ -322,8 +322,8 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
 
                 {/* Runtime filter */}
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#8BA7B8] mb-2 flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-[#19A7C7]" /> Thời lượng
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#35C2C8]/80 mb-2 flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-[#35C2C8]" /> Thời lượng
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {[
@@ -337,8 +337,8 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                         onClick={() => setRuntimeFilter(rt.id as any)}
                         className={`px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all ${
                           runtimeFilter === rt.id
-                            ? 'bg-[#19A7C7] text-white font-bold'
-                            : 'bg-[#0C1E2E] text-[#8BA7B8] hover:text-[#E8F4F8] border border-[#19A7C7]/15'
+                            ? 'bg-gradient-to-r from-[#087EA4] to-[#35C2C8] text-white font-bold shadow-[0_0_10px_rgba(53,194,200,0.3)]'
+                            : 'bg-[#0B2035]/60 text-[#8BA7B8] hover:text-white hover:bg-[#0F2A45] border border-[#19A7C7]/20 hover:border-[#35C2C8]/40'
                         }`}
                       >
                         {rt.label}
@@ -349,7 +349,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
 
                 {/* Year filter */}
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#8BA7B8] mb-2">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#35C2C8]/80 mb-2">
                     Năm phát hành
                   </p>
                   <div className="flex flex-wrap gap-1.5">
@@ -364,8 +364,8 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                         onClick={() => setYearFilter(yf.id as any)}
                         className={`px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all ${
                           yearFilter === yf.id
-                            ? 'bg-[#19A7C7] text-white font-bold'
-                            : 'bg-[#0C1E2E] text-[#8BA7B8] hover:text-[#E8F4F8] border border-[#19A7C7]/15'
+                            ? 'bg-gradient-to-r from-[#087EA4] to-[#35C2C8] text-white font-bold shadow-[0_0_10px_rgba(53,194,200,0.3)]'
+                            : 'bg-[#0B2035]/60 text-[#8BA7B8] hover:text-white hover:bg-[#0F2A45] border border-[#19A7C7]/20 hover:border-[#35C2C8]/40'
                         }`}
                       >
                         {yf.label}
@@ -376,7 +376,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
 
                 {/* AI involvement */}
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#8BA7B8] mb-2 flex items-center gap-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#35C2C8]/80 mb-2 flex items-center gap-1">
                     <Sparkles className="w-3 h-3 text-purple-400" /> Nguồn gốc AI
                   </p>
                   <div className="flex flex-wrap gap-1.5">
@@ -390,8 +390,8 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                         onClick={() => setAiFilter(af.id as any)}
                         className={`px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all ${
                           aiFilter === af.id
-                            ? 'bg-purple-600 text-white font-bold'
-                            : 'bg-[#0C1E2E] text-[#8BA7B8] hover:text-[#E8F4F8] border border-[#19A7C7]/15'
+                            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold shadow-[0_0_10px_rgba(168,85,247,0.4)]'
+                            : 'bg-[#0B2035]/60 text-[#8BA7B8] hover:text-white hover:bg-[#0F2A45] border border-[#19A7C7]/20 hover:border-[#35C2C8]/40'
                         }`}
                       >
                         {af.label}
@@ -403,7 +403,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
 
               {/* Mood Filter */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#8BA7B8] mb-2">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#35C2C8]/80 mb-2">
                   Tâm trạng & Cảm xúc (Mood)
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -413,8 +413,8 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                       onClick={() => setSelectedMood(m.id)}
                       className={`px-3 py-1 rounded-xl text-xs font-medium cursor-pointer transition-all ${
                         selectedMood === m.id
-                          ? 'bg-[#35C2C8] text-[#062B45] font-bold shadow-xs'
-                          : 'bg-[#0C1E2E] text-[#8BA7B8] hover:text-[#E8F4F8] border border-[#19A7C7]/15'
+                          ? 'bg-[#35C2C8] text-[#061424] font-bold shadow-[0_0_10px_rgba(53,194,200,0.4)]'
+                          : 'bg-[#0B2035]/60 text-[#8BA7B8] hover:text-white hover:bg-[#0F2A45] border border-[#19A7C7]/20 hover:border-[#35C2C8]/40'
                       }`}
                     >
                       {m.label}
@@ -440,11 +440,11 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
           </p>
 
           {/* View mode toggle */}
-          <div className="flex items-center gap-1 p-1 bg-[#071525] rounded-xl border border-[#19A7C7]/15">
+          <div className="flex items-center gap-1 p-1 bg-[#071728]/80 rounded-xl border border-[#35C2C8]/20">
             <button
               onClick={() => setViewMode('grid')}
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                viewMode === 'grid' ? 'bg-[#19A7C7]/20 text-[#35C2C8]' : 'text-[#8BA7B8] hover:text-[#E8F4F8]'
+                viewMode === 'grid' ? 'bg-[#087EA4]/30 text-[#35C2C8] border border-[#35C2C8]/30 shadow-xs' : 'text-[#8BA7B8] hover:text-[#E8F4F8]'
               }`}
               aria-label="Dạng lưới"
             >
@@ -453,7 +453,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
             <button
               onClick={() => setViewMode('list')}
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                viewMode === 'list' ? 'bg-[#19A7C7]/20 text-[#35C2C8]' : 'text-[#8BA7B8] hover:text-[#E8F4F8]'
+                viewMode === 'list' ? 'bg-[#087EA4]/30 text-[#35C2C8] border border-[#35C2C8]/30 shadow-xs' : 'text-[#8BA7B8] hover:text-[#E8F4F8]'
               }`}
               aria-label="Dạng danh sách"
             >
@@ -483,27 +483,27 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                 /* List view row */
                 <div
                   key={item.id}
-                  className="flex items-center gap-4 p-4 bg-[#0C1E2E] rounded-2xl border border-[#19A7C7]/15 hover:border-[#19A7C7]/40 cursor-pointer transition-all group shadow-sm"
+                  className="flex items-center gap-4 p-4 bg-[#071728]/70 backdrop-blur-md rounded-2xl border border-[#19A7C7]/20 hover:border-[#35C2C8]/50 hover:bg-[#0B2035]/80 cursor-pointer transition-all group shadow-sm hover:shadow-[0_0_25px_rgba(8,126,164,0.15)] text-left"
                   onClick={() => onSelectMedia(item)}
                 >
                   <img
                     src={item.posterUrl}
                     alt={item.title}
                     loading="lazy"
-                    className="w-14 h-20 rounded-xl object-cover shrink-0"
+                    className="w-14 h-20 rounded-xl object-cover shrink-0 border border-[#19A7C7]/20"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[10px] font-bold text-[#35C2C8] uppercase">{item.type}</span>
                       <span className="text-[10px] text-[#8BA7B8]">{item.year}</span>
                     </div>
-                    <h3 className="font-bold text-sm text-[#E8F4F8] group-hover:text-[#35C2C8] transition-colors truncate">
+                    <h3 className="font-bold text-sm text-white group-hover:text-[#35C2C8] transition-colors truncate">
                       {item.title}
                     </h3>
                     <p className="text-xs text-[#8BA7B8] line-clamp-2 mt-0.5">{item.synopsis}</p>
                   </div>
                   <div className="flex flex-col items-end gap-2 shrink-0">
-                    <div className="flex items-center gap-1 text-xs font-bold text-amber-500">
+                    <div className="flex items-center gap-1 text-xs font-bold text-amber-400">
                       <Star className="w-3.5 h-3.5 fill-current" />
                       {item.rating}
                     </div>
@@ -515,11 +515,11 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
           </div>
         ) : (
           /* Empty State */
-          <div className="bg-[#0C1E2E] rounded-3xl py-16 text-center border border-[#19A7C7]/15 shadow-sm">
-            <div className="w-16 h-16 rounded-2xl bg-[#0A1E30] flex items-center justify-center mx-auto mb-4">
-              <Waves className="w-7 h-7 text-[#19A7C7]" />
+          <div className="bg-[#071728]/70 backdrop-blur-xl rounded-3xl py-16 text-center border border-[#35C2C8]/20 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+            <div className="w-16 h-16 rounded-2xl bg-[#087EA4]/20 border border-[#35C2C8]/30 flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_rgba(53,194,200,0.2)]">
+              <Waves className="w-7 h-7 text-[#35C2C8]" />
             </div>
-            <h3 className="font-bold text-lg text-[#E8F4F8] mb-2">
+            <h3 className="font-bold text-lg text-white mb-2">
               Biển Phim chưa tìm thấy câu chuyện phù hợp
             </h3>
             <p className="text-sm text-[#8BA7B8] mb-5 max-w-xs mx-auto">
@@ -527,7 +527,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
             </p>
             <button
               onClick={clearFilters}
-              className="px-5 py-2.5 rounded-xl bg-[#19A7C7] text-white font-semibold text-sm hover:bg-[#087EA4] transition-colors cursor-pointer"
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#087EA4] to-[#19A7C7] hover:brightness-110 text-white font-semibold text-sm transition-all cursor-pointer shadow-[0_0_20px_rgba(53,194,200,0.3)]"
             >
               Xóa bộ lọc & thử lại
             </button>
