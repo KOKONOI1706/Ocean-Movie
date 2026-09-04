@@ -1,5 +1,5 @@
-import React from 'react';
-import { Star, Sparkles, Plus, Check, MapPin, Tv, Film } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { Star, Plus, Check, MapPin, Tv, Sparkles } from 'lucide-react';
 import { MediaItem } from '../types.js';
 
 interface MovieCardProps {
@@ -23,15 +23,38 @@ export const MovieCard: React.FC<MovieCardProps> = ({
 }) => {
   const isSeries = item.type === 'series' || (item.seasons && item.seasons.length > 0);
   const imageUrl = aspectRatio === 'landscape' ? (item.backdropUrl || item.posterUrl) : item.posterUrl;
+  const cardRef = useRef<HTMLElement>(null);
+  const [isRevealed, setIsRevealed] = useState(false);
+
+  // Scroll-reveal with IntersectionObserver
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsRevealed(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1, rootMargin: '0px 50px 0px 50px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const showAiScore = showAiBadge && item.aiMatchScore && item.aiMatchScore >= 80;
 
   return (
     <article
-      className={`group relative flex flex-col rounded-xl overflow-hidden bg-[#051322]/90 border border-cyan-900/30 hover:border-cyan-400/40 shadow-lg hover:shadow-2xl hover:shadow-cyan-950/40 transition-all duration-300 text-left select-none cursor-pointer ${
-        aspectRatio === 'landscape' ? 'w-[230px] sm:w-[270px] shrink-0' : 'w-full'
-      }`}
+      ref={cardRef}
+      className={`group relative flex flex-col rounded-lg overflow-hidden bg-[#050E1C]/95 border border-cyan-900/25 hover:border-cyan-400/35 shadow-lg hover:shadow-[0_12px_40px_rgba(8,126,164,0.15)] transition-all duration-350 ease-out text-left select-none cursor-pointer ${
+        aspectRatio === 'landscape' ? 'w-[240px] sm:w-[280px] shrink-0' : 'w-full'
+      } ${isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}
+      style={{ transition: 'opacity 0.45s ease-out, transform 0.45s ease-out, box-shadow 0.3s ease, border-color 0.3s ease' }}
       onClick={() => onSelect(item)}
     >
-      {/* ─── Poster / Backdrop Thumbnail ─── */}
+      {/* ─── Image ─── */}
       <div
         className={`relative w-full overflow-hidden bg-[#020A12] ${
           aspectRatio === 'landscape' ? 'aspect-[16/10]' : 'aspect-[2/3]'
@@ -41,36 +64,38 @@ export const MovieCard: React.FC<MovieCardProps> = ({
           src={imageUrl}
           alt={item.title}
           loading="lazy"
-          className="w-full h-full object-cover transition-all duration-500 ease-out group-hover:scale-[1.03] group-hover:brightness-110"
+          decoding="async"
+          className="w-full h-full object-cover transition-all duration-500 ease-out group-hover:scale-[1.025] group-hover:brightness-105"
         />
 
-        {/* Ambient Bottom Gradient on Image */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#051322] via-transparent to-transparent opacity-80" />
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050E1C] via-[#050E1C]/15 to-transparent" />
 
-        {/* Top Badges */}
-        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none z-10">
-          {/* Media Type pill */}
+        {/* Top badges row */}
+        <div className="absolute top-2 left-2 right-2 flex items-center justify-between pointer-events-none z-10">
+          {/* Type pill */}
           {isSeries ? (
-            <span className="px-1.5 py-0.5 rounded bg-cyan-950/70 backdrop-blur-md border border-cyan-500/30 text-[9px] font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-1">
-              <Tv className="w-2.5 h-2.5" />
+            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-cyan-950/75 backdrop-blur-sm border border-cyan-500/25 text-[9px] font-bold uppercase tracking-wider text-cyan-300">
+              <Tv className="w-2 h-2" />
               Series
             </span>
           ) : (
             <span />
           )}
 
-          {/* AI Sparkle Badge (Matching reference image) */}
-          {(showAiBadge || (item.aiMatchScore && item.aiMatchScore >= 90)) && (
+          {/* AI Match badge */}
+          {showAiScore ? (
             <div
-              className="w-6 h-6 rounded-md bg-[#020C17]/80 backdrop-blur-md border border-cyan-400/40 flex items-center justify-center text-cyan-300 shadow-md pointer-events-auto"
-              title={`Phù hợp AI: ${item.aiMatchScore || 92}%`}
+              className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#020C17]/85 backdrop-blur-sm border border-cyan-400/35 text-cyan-200 shadow-sm pointer-events-none"
+              title={`Phù hợp AI: ${item.aiMatchScore}%`}
             >
-              <Sparkles className="w-3 h-3" />
+              <Sparkles className="w-2.5 h-2.5 text-cyan-300" />
+              <span className="text-[9px] font-bold font-mono">{item.aiMatchScore}%</span>
             </div>
-          )}
+          ) : null}
         </div>
 
-        {/* Quick Action Overlay on Hover */}
+        {/* Quick actions on hover */}
         <div className="absolute bottom-2 right-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
           {onToggleSave && (
             <button
@@ -78,12 +103,13 @@ export const MovieCard: React.FC<MovieCardProps> = ({
                 e.stopPropagation();
                 onToggleSave(item.id);
               }}
-              className={`w-7 h-7 rounded-lg flex items-center justify-center backdrop-blur-md transition-colors ${
+              className={`w-7 h-7 rounded-lg flex items-center justify-center backdrop-blur-sm transition-colors cursor-pointer ${
                 isSaved
                   ? 'bg-cyan-500 text-white'
-                  : 'bg-black/60 hover:bg-cyan-950/80 text-gray-300 hover:text-white border border-white/20'
+                  : 'bg-black/65 hover:bg-cyan-950/85 text-gray-300 hover:text-white border border-white/20'
               }`}
               title={isSaved ? 'Đã lưu trong hải trình' : 'Lưu vào hải trình'}
+              aria-label={isSaved ? 'Bỏ lưu' : 'Lưu'}
             >
               {isSaved ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
             </button>
@@ -95,8 +121,9 @@ export const MovieCard: React.FC<MovieCardProps> = ({
                 e.stopPropagation();
                 onWhereToWatch(item);
               }}
-              className="w-7 h-7 rounded-lg bg-black/60 hover:bg-cyan-950/80 text-gray-300 hover:text-white border border-white/20 flex items-center justify-center backdrop-blur-md transition-colors"
+              className="w-7 h-7 rounded-lg bg-black/65 hover:bg-cyan-950/85 text-gray-300 hover:text-white border border-white/20 flex items-center justify-center backdrop-blur-sm transition-colors cursor-pointer"
               title="Xem ở đâu"
+              aria-label="Xem ở đâu"
             >
               <MapPin className="w-3.5 h-3.5" />
             </button>
@@ -104,28 +131,35 @@ export const MovieCard: React.FC<MovieCardProps> = ({
         </div>
       </div>
 
-      {/* ─── Metadata Info ─── */}
-      <div className="p-3 pt-2 bg-[#051322]/90">
-        <h3 className="font-sans font-bold text-xs sm:text-sm text-white tracking-wide truncate group-hover:text-cyan-300 transition-colors">
+      {/* ─── Metadata ─── */}
+      <div className="px-3 py-2.5 bg-[#050E1C]/95 flex-1">
+        <h3 className="font-sans font-semibold text-[13px] text-white/95 tracking-tight truncate group-hover:text-cyan-200 transition-colors leading-tight">
           {item.title}
         </h3>
 
-        <div className="flex items-center gap-2 mt-1 text-[11px] font-mono text-gray-400">
+        <div className="flex items-center gap-2 mt-1.5 text-[11px] font-mono text-gray-500">
           <span>{item.year}</span>
-          <span>·</span>
-          <div className="flex items-center gap-1 text-amber-400 font-semibold">
-            <Star className="w-3 h-3 fill-current" />
-            <span>{item.rating?.toFixed(1) || '8.5'}</span>
+          <span className="text-gray-600">·</span>
+          <div className="flex items-center gap-0.5 text-amber-400">
+            <Star className="w-2.5 h-2.5 fill-current" />
+            <span className="font-semibold text-[11px]">{item.rating?.toFixed(1) || '—'}</span>
           </div>
-          {item.genres && item.genres.length > 0 && (
+          {item.genres?.[0] && (
             <>
-              <span>·</span>
-              <span className="truncate max-w-[80px] font-sans text-gray-400 text-[10px]">
+              <span className="text-gray-600">·</span>
+              <span className="truncate max-w-[72px] font-sans text-gray-500 text-[10px]">
                 {item.genres[0]}
               </span>
             </>
           )}
         </div>
+
+        {/* AI reason text — only on ai recommendation cards */}
+        {showAiBadge && item.whyYouMayLike && (
+          <p className="mt-1.5 text-[10px] text-cyan-400/60 leading-relaxed font-sans line-clamp-2">
+            {item.whyYouMayLike}
+          </p>
+        )}
       </div>
     </article>
   );

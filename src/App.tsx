@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
-import { AIFeatureSection } from './components/AIFeatureSection';
 import { MovieRail } from './components/MovieRail';
+import { MovieRailSkeleton } from './components/MovieRailSkeleton';
+import { AIRecommendationRail } from './components/AIRecommendationRail';
+import { HomeCollectionStrip } from './components/HomeCollectionStrip';
 import { ExploreView } from './components/ExploreView';
 import { CollectionsView } from './components/CollectionsView';
 import { MyCinemaView } from './components/MyCinemaView';
@@ -13,7 +15,6 @@ import { WhereToWatchModal } from './components/WhereToWatchModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { CreatorDetailModal } from './components/CreatorDetailModal';
 import { BottomNav } from './components/BottomNav';
-import { Footer } from './components/Footer';
 
 import { CINEMA_ITEMS } from './data/cinemaData';
 import { INITIAL_USER_TASTE } from './data/collectionsData';
@@ -24,16 +25,6 @@ import {
   moviesApi,
   seriesApi,
 } from './lib/api';
-import {
-  Sparkles,
-  Compass,
-  Tv,
-  Film,
-  Moon,
-  Zap,
-  TrendingUp,
-  Waves,
-} from 'lucide-react';
 
 import { OceanDepthProvider } from './context/OceanDepthContext';
 import { OceanBackground } from './components/ocean/OceanBackground';
@@ -42,139 +33,147 @@ import { DepthHUD } from './components/ocean/DepthHUD';
 import { AIDiscoveryConsole } from './components/ocean/AIDiscoveryConsole';
 import { OceanFooter } from './components/ocean/OceanFooter';
 
+// ─── Fallback datasets from local cinemaData ─────────────────────────────────
+const FALLBACK_TRENDING   = CINEMA_ITEMS.filter((i) => i.isTrending || i.rating >= 8.5).slice(0, 12);
+const FALLBACK_NEW        = CINEMA_ITEMS.filter((i) => i.year >= 2024).slice(0, 10);
+const FALLBACK_SERIES     = CINEMA_ITEMS.filter((i) => i.type === 'series');
+const FALLBACK_FOR_YOU    = CINEMA_ITEMS.filter((i) => i.aiMatchScore && i.aiMatchScore >= 88).slice(0, 8);
+const FALLBACK_DEEP_WATER = CINEMA_ITEMS.filter((i) => i.moods.includes('philosophical') || i.genres.includes('Mystery')).slice(0, 10);
+
 function AppContent() {
   const [currentTab, setCurrentTab] = useState<string>('discover');
-  const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
+
+  // ─── Modals ────────────────────────────────────────────────────────────────
+  const [selectedMedia,   setSelectedMedia]   = useState<MediaItem | null>(null);
   const [seriesModalMedia, setSeriesModalMedia] = useState<MediaItem | null>(null);
   const [watchModalMedia, setWatchModalMedia] = useState<MediaItem | null>(null);
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
-  const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
-  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
+  const [isProfileOpen,   setIsProfileOpen]   = useState<boolean>(false);
+  const [isSearchOpen,    setIsSearchOpen]    = useState<boolean>(false);
   const [searchInitialQuery, setSearchInitialQuery] = useState<string>('');
 
-  // API State for Rails
-  const [trendingList, setTrendingList] = useState<MediaItem[]>(() =>
-    CINEMA_ITEMS.filter((i) => i.isTrending || i.rating >= 8.6)
-  );
-  const [newArrivalsList, setNewArrivalsList] = useState<MediaItem[]>(() =>
-    CINEMA_ITEMS.filter((i) => i.year >= 2025).slice(0, 8)
-  );
-  const [seriesList, setSeriesList] = useState<MediaItem[]>(() =>
-    CINEMA_ITEMS.filter((i) => i.type === 'series')
-  );
-  const [shortFilmsList, setShortFilmsList] = useState<MediaItem[]>(() =>
-    CINEMA_ITEMS.filter((i) => i.type === 'short' || (i.runtimeMinutes > 0 && i.runtimeMinutes <= 40))
-  );
-  const [aiFilmsList, setAiFilmsList] = useState<MediaItem[]>(() =>
-    CINEMA_ITEMS.filter((i) => i.type === 'ai_film' || i.aiInvolvement?.isAiFilm)
-  );
-  const [forYouList, setForYouList] = useState<MediaItem[]>(() =>
-    CINEMA_ITEMS.filter((i) => i.aiMatchScore && i.aiMatchScore >= 90).slice(0, 8)
-  );
+  // ─── Content Rails (null = not yet loaded, shows skeleton) ─────────────────
+  const [trendingList,    setTrendingList]    = useState<MediaItem[] | null>(null);
+  const [newArrivalsList, setNewArrivalsList] = useState<MediaItem[] | null>(null);
+  const [seriesList,      setSeriesList]      = useState<MediaItem[] | null>(null);
+  const [forYouList,      setForYouList]      = useState<MediaItem[] | null>(null);
+  const [deepWaterList,   setDeepWaterList]   = useState<MediaItem[] | null>(null);
+  const [isLoadingRails,  setIsLoadingRails]  = useState(true);
 
-  // Watchlist state synced with backend API
+  // ─── Watchlist & User State ────────────────────────────────────────────────
   const [savedItems, setSavedItems] = useState<SavedMediaItem[]>([
-    { mediaId: 'frieren-journey',  savedAt: '2026-03-12', category: 'wishlist' },
+    { mediaId: 'frieren-journey',   savedAt: '2026-03-12', category: 'wishlist' },
     { mediaId: 'blade-runner-2049', savedAt: '2026-03-14', category: 'wishlist' },
-    { mediaId: 'the-last-signal',  savedAt: '2026-03-15', category: 'wishlist' },
+    { mediaId: 'the-last-signal',   savedAt: '2026-03-15', category: 'wishlist' },
   ]);
-
   const [userRatings, setUserRatings] = useState<Record<string, number>>({
-    interstellar:        9,
-    dark:                10,
-    'spirited-away':     10,
-    'the-last-signal':   9,
+    interstellar:      9,
+    dark:              10,
+    'spirited-away':   10,
+    'the-last-signal': 9,
   });
 
-  // Load content rails from backend API on mount
+  // ─── Load backend data on mount ────────────────────────────────────────────
   useEffect(() => {
     let isMounted = true;
 
     async function loadBackendData() {
       try {
-        const [trendingRes, newRes, shortsRes, aiRes, forYouRes, seriesRes] = await Promise.allSettled([
+        const [trendingRes, newRes, forYouRes, seriesRes, hiddenRes] = await Promise.allSettled([
           discoverApi.getTrending(),
           discoverApi.getNewArrivals(),
-          discoverApi.getShortFilms(),
-          discoverApi.getAiFilms(),
           discoverApi.getRecommended(),
           seriesApi.getAll(),
+          discoverApi.getHiddenGems(),
         ]);
 
         if (!isMounted) return;
 
-        if (trendingRes.status === 'fulfilled' && trendingRes.value.movies.length > 0) {
-          setTrendingList([...trendingRes.value.movies, ...trendingRes.value.series]);
+        if (trendingRes.status === 'fulfilled') {
+          const combined = [...trendingRes.value.movies, ...trendingRes.value.series];
+          setTrendingList(combined.length > 0 ? combined : FALLBACK_TRENDING);
+        } else {
+          setTrendingList(FALLBACK_TRENDING);
         }
+
         if (newRes.status === 'fulfilled' && newRes.value.length > 0) {
           setNewArrivalsList(newRes.value);
+        } else {
+          setNewArrivalsList(FALLBACK_NEW);
         }
-        if (shortsRes.status === 'fulfilled' && shortsRes.value.length > 0) {
-          setShortFilmsList(shortsRes.value);
-        }
-        if (aiRes.status === 'fulfilled' && aiRes.value.length > 0) {
-          setAiFilmsList(aiRes.value);
-        }
+
         if (forYouRes.status === 'fulfilled' && forYouRes.value.length > 0) {
           setForYouList(forYouRes.value);
+        } else {
+          setForYouList(FALLBACK_FOR_YOU);
         }
+
         if (seriesRes.status === 'fulfilled' && seriesRes.value.items.length > 0) {
           setSeriesList(seriesRes.value.items);
+        } else {
+          setSeriesList(FALLBACK_SERIES);
+        }
+
+        if (hiddenRes.status === 'fulfilled' && hiddenRes.value.length > 0) {
+          setDeepWaterList(hiddenRes.value);
+        } else {
+          setDeepWaterList(FALLBACK_DEEP_WATER);
         }
       } catch (err) {
-        console.warn('Backend discovery load error, using initial mock:', err);
-      }
-
-      // Load user watchlist from DB if authenticated or demo token available
-      try {
-        const dbWatchlist = await watchlistApi.getWatchlist();
-        if (isMounted && dbWatchlist && dbWatchlist.length > 0) {
-          setSavedItems(dbWatchlist);
-        }
-      } catch (_err) {
-        // Fallback to local state
+        console.warn('Backend discovery load error, falling back to local dataset:', err);
+        setTrendingList(FALLBACK_TRENDING);
+        setNewArrivalsList(FALLBACK_NEW);
+        setForYouList(FALLBACK_FOR_YOU);
+        setSeriesList(FALLBACK_SERIES);
+        setDeepWaterList(FALLBACK_DEEP_WATER);
+      } finally {
+        if (isMounted) setIsLoadingRails(false);
       }
     }
 
     loadBackendData();
 
-    // Check URL parameters for direct link routing (?movie=..., ?series=..., ?tab=...)
-    const params = new URLSearchParams(window.location.search);
-    const movieSlug = params.get('movie');
-    const seriesSlug = params.get('series');
-    const tabParam = params.get('tab');
-
-    if (tabParam) {
-      setCurrentTab(tabParam);
+    // Load user watchlist from backend if authenticated
+    async function loadWatchlist() {
+      try {
+        const dbWatchlist = await watchlistApi.getWatchlist();
+        if (isMounted && dbWatchlist && dbWatchlist.length > 0) {
+          setSavedItems(dbWatchlist);
+        }
+      } catch {
+        // Fallback to local state — normal when not authenticated
+      }
     }
+    loadWatchlist();
+
+    // Handle direct URL navigation (?movie=..., ?series=..., ?tab=...)
+    const params = new URLSearchParams(window.location.search);
+    const movieSlug  = params.get('movie');
+    const seriesSlug = params.get('series');
+    const tabParam   = params.get('tab');
+
+    if (tabParam) setCurrentTab(tabParam);
 
     if (movieSlug) {
-      moviesApi
-        .getById(movieSlug)
-        .then((m) => {
-          if (isMounted && m) setSelectedMedia(m);
-        })
+      moviesApi.getById(movieSlug)
+        .then((m) => { if (isMounted && m) setSelectedMedia(m); })
         .catch(() => {
           const fallback = CINEMA_ITEMS.find((c) => c.id === movieSlug);
           if (isMounted && fallback) setSelectedMedia(fallback);
         });
     } else if (seriesSlug) {
-      seriesApi
-        .getById(seriesSlug)
-        .then((s) => {
-          if (isMounted && s) setSeriesModalMedia(s);
-        })
+      seriesApi.getById(seriesSlug)
+        .then((s) => { if (isMounted && s) setSeriesModalMedia(s); })
         .catch(() => {
           const fallback = CINEMA_ITEMS.find((c) => c.id === seriesSlug);
           if (isMounted && fallback) setSeriesModalMedia(fallback);
         });
     }
 
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, []);
 
+  // ─── Event Handlers ────────────────────────────────────────────────────────
   const handleOpenSearch = (initialPrompt?: string) => {
     setSearchInitialQuery(initialPrompt || '');
     setIsSearchOpen(true);
@@ -183,17 +182,10 @@ function AppContent() {
   const handleToggleSave = async (item: MediaItem) => {
     const isSaved = savedItems.some((s) => s.mediaId === item.id);
     const isSeries = item.type === 'series' || (item.seasons && item.seasons.length > 0);
-
-    // Optimistic UI update
     setSavedItems((prev) => {
       if (isSaved) return prev.filter((s) => s.mediaId !== item.id);
-      return [
-        ...prev,
-        { mediaId: item.id, savedAt: new Date().toISOString(), category: 'wishlist' },
-      ];
+      return [...prev, { mediaId: item.id, savedAt: new Date().toISOString(), category: 'wishlist' }];
     });
-
-    // Backend database persistence
     try {
       if (isSaved) {
         await watchlistApi.remove(item.id);
@@ -206,19 +198,14 @@ function AppContent() {
   };
 
   const handleToggleSaveById = (itemId: string) => {
-    const item =
-      trendingList.find((c) => c.id === itemId) ||
-      CINEMA_ITEMS.find((c) => c.id === itemId);
+    const item = (trendingList || FALLBACK_TRENDING).find((c) => c.id === itemId)
+      || CINEMA_ITEMS.find((c) => c.id === itemId);
     if (item) handleToggleSave(item);
   };
 
   const handleRemoveSaved = async (mediaId: string) => {
     setSavedItems((prev) => prev.filter((s) => s.mediaId !== mediaId));
-    try {
-      await watchlistApi.remove(mediaId);
-    } catch (err) {
-      console.warn('Failed to remove from database watchlist:', err);
-    }
+    try { await watchlistApi.remove(mediaId); } catch {}
   };
 
   const handleUpdateEpisodeProgress = (episodeId: string, percentage: number) => {
@@ -263,27 +250,28 @@ function AppContent() {
 
   const savedItemIds = savedItems.map((s) => s.mediaId);
 
-  // ─── Categorized content rails mapped to Ocean Depth Descent ───
-  const trendingItems    = trendingList;
-  const newArrivals      = newArrivalsList;
-  const seriesItems      = seriesList;
-  const animeItems       = CINEMA_ITEMS.filter((i) => i.type === 'anime' || i.genres.includes('Animation'));
-  const shortFilms       = shortFilmsList;
-  const aiFilms          = aiFilmsList;
-  const deepWaterItems   = CINEMA_ITEMS.filter((i) => i.moods.includes('philosophical') || i.genres.includes('Mystery'));
-  const forYouItems      = forYouList;
+  // Resolved (loaded or fallback) lists for rendering
+  const trendingItems  = trendingList  ?? [];
+  const newArrivals    = newArrivalsList ?? [];
+  const seriesItems    = seriesList    ?? [];
+  const forYouItems    = forYouList    ?? [];
+  const deepWaterItems = deepWaterList ?? [];
 
-  const featuredFilm = trendingList[0] || CINEMA_ITEMS.find((c) => c.id === 'the-last-signal') || CINEMA_ITEMS[0];
+  // Featured film for the hero — first trending, or first in fallback
+  const featuredFilm = trendingItems[0]
+    ?? CINEMA_ITEMS.find((c) => c.id === 'the-last-signal')
+    ?? CINEMA_ITEMS[0];
 
   return (
     <div className="min-h-screen text-[#E8F4F8] font-sans flex flex-col antialiased relative selection:bg-[#19A7C7]/30 selection:text-white bg-[#030A14]">
-      {/* Dynamic Ocean Atmosphere & Vintage Marine Life Engine */}
+
+      {/* ─── Dynamic Ocean Atmosphere ─── */}
       <OceanBackground />
 
-      {/* Left Scientific Vertical Depth Indicator (Matching Reference Image) */}
+      {/* ─── Left Scientific Vertical Depth Indicator (desktop only) ─── */}
       <VerticalDepthIndicator />
 
-      {/* Bathysphere Depth Gauge HUD (Bottom right, collapsible) */}
+      {/* ─── Bathysphere Depth Gauge HUD (bottom-right, collapsible) ─── */}
       <DepthHUD />
 
       {/* ─── Minimal Cinematic Header ─── */}
@@ -295,13 +283,17 @@ function AppContent() {
         savedCount={savedItems.length}
       />
 
-      {/* ─── Main Content Container (Padded left for depth indicator) ─── */}
-      <main className="flex-1 pb-20 lg:pb-0 relative z-10 lg:pl-16 xl:pl-20" id="main-content">
+      {/* ─── Main Content ─── */}
+      <main
+        className="flex-1 pb-20 lg:pb-0 relative z-10 lg:pl-16 xl:pl-20"
+        id="main-content"
+      >
 
         {/* ======= DISCOVER / HOME TAB ======= */}
         {currentTab === 'discover' && (
           <div>
-            {/* 1. Cinematic Hero with Whale & Telemetry */}
+
+            {/* 1. Cinematic Full-Bleed Hero */}
             <div id="hero-section">
               <Hero
                 featuredItem={featuredFilm}
@@ -310,93 +302,116 @@ function AppContent() {
               />
             </div>
 
-            {/* 2. ĐANG THỊNH HÀNH (Trending) */}
+            {/* 2. ĐANG THỊNH HÀNH — Surface level */}
             <div id="trending-section">
-              <MovieRail
-                title="ĐANG THỊNH HÀNH"
-                subtitle="Những tác phẩm được khám phá nhiều nhất trên toàn cầu"
-                items={trendingItems}
-                onSelectMedia={handleSelectMedia}
-                onToggleSave={handleToggleSaveById}
-                onWhereToWatch={(item) => setWatchModalMedia(item)}
-                onViewAll={() => handleNavigate('explore')}
-                savedItemIds={savedItemIds}
-                aspectRatio="landscape"
-              />
+              {isLoadingRails ? (
+                <MovieRailSkeleton count={5} />
+              ) : (
+                <MovieRail
+                  title="ĐANG THỊNH HÀNH"
+                  subtitle="Những tác phẩm được khám phá nhiều nhất trên toàn cầu"
+                  items={trendingItems}
+                  onSelectMedia={handleSelectMedia}
+                  onToggleSave={handleToggleSaveById}
+                  onWhereToWatch={(item) => setWatchModalMedia(item)}
+                  onViewAll={() => handleNavigate('explore')}
+                  savedItemIds={savedItemIds}
+                  depthAccent="surface"
+                />
+              )}
             </div>
 
-            {/* 3. ĐỀ XUẤT TỪ AI (Dành riêng cho bạn) */}
+            {/* 3. ĐỀ XUẤT TỪ AI — Distinctive section */}
             <div id="ai-recommendations-section">
-              <MovieRail
-                title="ĐỀ XUẤT TỪ AI"
-                subtitle="Dành riêng cho bạn"
-                items={forYouItems}
-                onSelectMedia={handleSelectMedia}
-                onToggleSave={handleToggleSaveById}
-                onWhereToWatch={(item) => setWatchModalMedia(item)}
-                onViewAll={() => handleNavigate('explore')}
-                savedItemIds={savedItemIds}
-                aspectRatio="landscape"
-                showAiBadge={true}
-              />
+              {isLoadingRails ? (
+                <MovieRailSkeleton count={5} />
+              ) : (
+                <AIRecommendationRail
+                  items={forYouItems}
+                  onSelectMedia={handleSelectMedia}
+                  onToggleSave={handleToggleSaveById}
+                  onWhereToWatch={(item) => setWatchModalMedia(item)}
+                  onViewAll={() => handleNavigate('explore')}
+                  savedItemIds={savedItemIds}
+                />
+              )}
             </div>
 
-            {/* 4. MỚI CẬP NHẬT (Những gì vừa xuất hiện trong đại dương) */}
+            {/* 4. MỚI CẬP NHẬT — Shallow depth */}
             <div id="new-arrivals-section">
-              <MovieRail
-                title="MỚI CẬP NHẬT"
-                subtitle="Những gì vừa xuất hiện trong đại dương"
-                items={newArrivals}
-                onSelectMedia={handleSelectMedia}
-                onToggleSave={handleToggleSaveById}
-                onWhereToWatch={(item) => setWatchModalMedia(item)}
-                onViewAll={() => handleNavigate('explore')}
-                savedItemIds={savedItemIds}
-                aspectRatio="landscape"
-              />
+              {isLoadingRails ? (
+                <MovieRailSkeleton count={5} />
+              ) : (
+                <MovieRail
+                  title="MỚI CẬP NHẬT"
+                  subtitle="Những gì vừa xuất hiện trong đại dương"
+                  items={newArrivals}
+                  onSelectMedia={handleSelectMedia}
+                  onToggleSave={handleToggleSaveById}
+                  onWhereToWatch={(item) => setWatchModalMedia(item)}
+                  onViewAll={() => handleNavigate('explore')}
+                  savedItemIds={savedItemIds}
+                  depthAccent="shallow"
+                />
+              )}
             </div>
 
-            {/* 5. SERIES (Những hành trình dài hơn) */}
+            {/* 5. SERIES — Twilight depth */}
             <div id="series-section">
-              <MovieRail
-                title="SERIES"
-                subtitle="Những hành trình dài hơn"
-                items={seriesItems}
-                onSelectMedia={handleSelectMedia}
-                onToggleSave={handleToggleSaveById}
-                onWhereToWatch={(item) => setWatchModalMedia(item)}
-                onViewAll={() => handleNavigate('series')}
-                savedItemIds={savedItemIds}
-                aspectRatio="landscape"
+              {isLoadingRails ? (
+                <MovieRailSkeleton count={5} />
+              ) : (
+                <MovieRail
+                  title="SERIES"
+                  subtitle="Những hành trình dài hơn"
+                  items={seriesItems}
+                  onSelectMedia={handleSelectMedia}
+                  onToggleSave={handleToggleSaveById}
+                  onWhereToWatch={(item) => setWatchModalMedia(item)}
+                  onViewAll={() => handleNavigate('series')}
+                  savedItemIds={savedItemIds}
+                  depthAccent="twilight"
+                />
+              )}
+            </div>
+
+            {/* 6. BỘ SƯU TẬP — Editorial collection tiles */}
+            <div id="collections-strip-section">
+              <HomeCollectionStrip
+                onNavigateCollections={() => handleNavigate('collections')}
               />
             </div>
 
-            {/* 6. NHỮNG GÌ NẰM BÊN DƯỚI (Deep Ocean / Hidden Gems) */}
+            {/* 7. NHỮNG GÌ NẰM BÊN DƯỚI — Deep ocean / Hidden Gems */}
             <div id="hidden-gems-section">
-              <MovieRail
-                title="NHỮNG GÌ NẰM BÊN DƯỚI"
-                subtitle="Không phải câu chuyện nào cũng nằm trên mặt nước."
-                items={deepWaterItems}
-                onSelectMedia={handleSelectMedia}
-                onToggleSave={handleToggleSaveById}
-                onWhereToWatch={(item) => setWatchModalMedia(item)}
-                onViewAll={() => handleNavigate('explore')}
-                savedItemIds={savedItemIds}
-                aspectRatio="landscape"
-              />
+              {isLoadingRails ? (
+                <MovieRailSkeleton count={5} />
+              ) : (
+                <MovieRail
+                  title="NHỮNG GÌ NẰM BÊN DƯỚI"
+                  subtitle="Không phải câu chuyện nào cũng nằm trên mặt nước."
+                  items={deepWaterItems}
+                  onSelectMedia={handleSelectMedia}
+                  onToggleSave={handleToggleSaveById}
+                  onWhereToWatch={(item) => setWatchModalMedia(item)}
+                  onViewAll={() => handleNavigate('explore')}
+                  savedItemIds={savedItemIds}
+                  depthAccent="deep"
+                />
+              )}
             </div>
 
-            {/* 7. ĐỂ AI DẪN ĐƯỜNG (Interactive AI Console) */}
+            {/* 8. ĐỂ AI DẪN ĐƯỜNG — Interactive AI console */}
             <div id="ai-discovery-section">
               <AIDiscoveryConsole onSearch={handleOpenSearch} />
             </div>
 
-            {/* 8. Deep Abyssal Footer */}
+            {/* 9. Deep Abyssal Footer — only in discover tab */}
             <OceanFooter onNavigate={handleNavigate} />
           </div>
         )}
 
-        {/* ======= EXPLORE TAB (All) ======= */}
+        {/* ======= EXPLORE TAB ======= */}
         {currentTab === 'explore' && (
           <ExploreView
             initialType="all"
@@ -407,7 +422,7 @@ function AppContent() {
           />
         )}
 
-        {/* ======= PHIM (Movies Only) ======= */}
+        {/* ======= PHIM TAB ======= */}
         {currentTab === 'movies' && (
           <ExploreView
             initialType="movie"
@@ -418,7 +433,7 @@ function AppContent() {
           />
         )}
 
-        {/* ======= SERIES (Series Only) ======= */}
+        {/* ======= SERIES TAB ======= */}
         {currentTab === 'series' && (
           <ExploreView
             initialType="series"
@@ -429,7 +444,7 @@ function AppContent() {
           />
         )}
 
-        {/* ======= PHIM NGẮN (Shorts Only) ======= */}
+        {/* ======= PHIM NGẮN TAB ======= */}
         {currentTab === 'shorts' && (
           <ExploreView
             initialType="short"
@@ -440,7 +455,7 @@ function AppContent() {
           />
         )}
 
-        {/* ======= AI FILMS (AI Films Only) ======= */}
+        {/* ======= AI FILMS TAB ======= */}
         {currentTab === 'ai-films' && (
           <ExploreView
             initialType="ai_film"
@@ -479,10 +494,12 @@ function AppContent() {
             <AIDiscoveryConsole onSearch={handleOpenSearch} />
           </div>
         )}
-      </main>
 
-      {/* ─── Deep Ocean Editorial Footer ─── */}
-      <OceanFooter onNavigate={handleNavigate} />
+        {/* ======= Footer for non-discover tabs ======= */}
+        {currentTab !== 'discover' && (
+          <OceanFooter onNavigate={handleNavigate} />
+        )}
+      </main>
 
       {/* ─── Mobile Bottom Navigation ─── */}
       <BottomNav
@@ -495,7 +512,6 @@ function AppContent() {
 
       {/* ================= MODALS ================= */}
 
-      {/* Movie Detail Modal */}
       {selectedMedia && (
         <MovieDetailModal
           item={selectedMedia}
@@ -511,7 +527,6 @@ function AppContent() {
         />
       )}
 
-      {/* Series Detail Modal */}
       {seriesModalMedia && (
         <SeriesDetailModal
           item={seriesModalMedia}
@@ -523,7 +538,6 @@ function AppContent() {
         />
       )}
 
-      {/* AI Search Modal */}
       <AISearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
@@ -538,20 +552,17 @@ function AppContent() {
         initialQuery={searchInitialQuery}
       />
 
-      {/* Where to Watch Modal */}
       <WhereToWatchModal
         item={watchModalMedia}
         onClose={() => setWatchModalMedia(null)}
       />
 
-      {/* User Taste Profile Modal */}
       <UserProfileModal
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         tasteProfile={INITIAL_USER_TASTE}
       />
 
-      {/* Creator Detail Modal */}
       <CreatorDetailModal
         creator={selectedCreator}
         onClose={() => setSelectedCreator(null)}

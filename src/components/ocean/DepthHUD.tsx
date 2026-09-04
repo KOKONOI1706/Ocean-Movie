@@ -85,7 +85,7 @@ export const DepthHUD: React.FC = () => {
 
           {/* Atmospheric description */}
           <p className="text-[11px] text-gray-300 italic bg-[#082A40]/60 p-2 rounded-xl border border-[#19A7C7]/15 mb-3 leading-relaxed">
-            "{zoneInfo.lightDescription}"
+            {zoneInfo.lightDescription}
           </p>
 
           {/* Quick-Dive Navigation Track */}

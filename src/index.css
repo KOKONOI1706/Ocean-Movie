@@ -546,3 +546,136 @@ button:focus-visible {
   filter: blur(12px);
 }
 
+/* =============================
+   HERO LIGHT RAYS (Volumetric Underwater)
+   ============================= */
+@keyframes lightRayDrift {
+  0%   { transform: translateX(0) skewX(-5deg) scaleY(1); opacity: 0.06; }
+  50%  { transform: translateX(12px) skewX(-6deg) scaleY(1.03); opacity: 0.10; }
+  100% { transform: translateX(0) skewX(-5deg) scaleY(1); opacity: 0.06; }
+}
+@keyframes lightRayDrift2 {
+  0%   { transform: translateX(0) skewX(4deg) scaleY(1); opacity: 0.04; }
+  50%  { transform: translateX(-10px) skewX(5deg) scaleY(0.98); opacity: 0.08; }
+  100% { transform: translateX(0) skewX(4deg) scaleY(1); opacity: 0.04; }
+}
+.animate-light-ray-1 { animation: lightRayDrift 12s ease-in-out infinite; }
+.animate-light-ray-2 { animation: lightRayDrift2 16s ease-in-out infinite; }
+.animate-light-ray-3 { animation: lightRayDrift 20s ease-in-out infinite reverse; }
+
+/* =============================
+   HERO BACKGROUND SLOW PAN
+   ============================= */
+@keyframes heroBgPan {
+  0%   { transform: scale(1.08) translateX(0px); }
+  50%  { transform: scale(1.10) translateX(-12px); }
+  100% { transform: scale(1.08) translateX(0px); }
+}
+.animate-hero-bg { animation: heroBgPan 40s ease-in-out infinite; }
+
+/* =============================
+   SCROLL-REVEAL
+   ============================= */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.65s ease-out, transform 0.65s ease-out;
+}
+.reveal-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* =============================
+   TYPEWRITER CURSOR
+   ============================= */
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+.animate-cursor-blink { animation: cursorBlink 0.9s ease-in-out infinite; }
+
+/* =============================
+   SECTION HEADER ACCENT
+   ============================= */
+.section-header-line {
+  position: relative;
+  padding-left: 12px;
+}
+.section-header-line::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, #19A7C7 0%, #087EA4 100%);
+  border-radius: 2px;
+}
+
+/* =============================
+   AI RECOMMENDATION PANEL
+   ============================= */
+.ai-recommendation-panel {
+  background: linear-gradient(135deg, rgba(8, 126, 164, 0.08) 0%, rgba(3, 12, 25, 0.95) 100%);
+  border-top: 1px solid rgba(25, 167, 199, 0.12);
+  border-bottom: 1px solid rgba(25, 167, 199, 0.12);
+}
+.ai-match-percentage {
+  font-family: 'Space Grotesk', monospace;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  background: linear-gradient(135deg, #35C2C8, #EAF8FC);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* =============================
+   COLLECTION EDITORIAL TILES
+   ============================= */
+.collection-tile {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.collection-tile:hover { transform: scale(1.015); }
+.collection-tile img { transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+.collection-tile:hover img { transform: scale(1.04); }
+
+/* =============================
+   SKELETON LOADING
+   ============================= */
+.skeleton-card {
+  background: linear-gradient(90deg, #0A1628 25%, #0D1F38 50%, #0A1628 75%);
+  background-size: 200% auto;
+  animation: shimmer 1.8s linear infinite;
+  border-radius: 8px;
+}
+
+/* =============================
+   REDUCED MOTION
+   ============================= */
+@media (prefers-reduced-motion: reduce) {
+  .animate-wave-slow,
+  .animate-wave-fast,
+  .animate-hero-bg,
+  .animate-sea-drift,
+  .animate-manta-glide,
+  .animate-fish-drift,
+  .animate-jelly-pulse,
+  .animate-squid-drift,
+  .animate-angler-bob,
+  .animate-snailfish-glide,
+  .animate-ocean-float,
+  .animate-light-ray-1,
+  .animate-light-ray-2,
+  .animate-light-ray-3,
+  .animate-cursor-blink {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+  .collection-tile:hover { transform: none; }
+  .collection-tile img, .collection-tile:hover img { transform: none; }
+  .reveal-on-scroll { opacity: 1; transform: none; transition: none; }
+}

@@ -151,6 +151,23 @@ export const OceanBackground: React.FC = () => {
       }}
       aria-hidden="true"
     >
+      {/* Cinematic Ocean Background Image Underlay */}
+      <div
+        className="absolute inset-0 transition-opacity duration-1000 ease-out pointer-events-none"
+        style={{
+          opacity: depth <= 100 ? 0.38 : Math.max(0.06, 0.38 - ((depth - 100) / 3500) * 0.32),
+        }}
+      >
+        <img
+          src="/ocean-bg.jpg"
+          alt=""
+          className="w-full h-full object-cover object-center"
+          style={{
+            filter: `brightness(${Math.max(0.3, 0.7 - (depth / 4000) * 0.4)}) saturate(1.15)`,
+          }}
+        />
+      </div>
+
       {/* Particle Canvas Layer */}
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-0 opacity-80" />
 
