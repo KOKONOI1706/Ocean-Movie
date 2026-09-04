@@ -68,7 +68,7 @@ export const Hero: React.FC<HeroProps> = ({
           ================================================================ */}
       <div className="absolute inset-0 pointer-events-none z-0" aria-hidden="true">
         {/* Underwater photograph — slow cinematic pan */}
-        <img
+        {/* <img
           src="/ocean-bg.jpg"
           alt="Biển Phim — Đại dương điện ảnh"
           className="absolute inset-0 w-full h-full object-cover object-center animate-hero-bg"
@@ -79,16 +79,16 @@ export const Hero: React.FC<HeroProps> = ({
           }}
           loading="eager"
           decoding="async"
-        />
+        /> */}
 
         {/* Volumetric light rays from top — CSS animated overlay */}
-        <div className="absolute inset-0 overflow-hidden">
+        {/* <div className="absolute inset-0 overflow-hidden">
           <div
             className="animate-light-ray-1 absolute top-0 left-[20%] w-[240px] h-full"
-            style={{
-              background: 'linear-gradient(180deg, rgba(53,194,200,0.16) 0%, rgba(8,126,164,0.06) 45%, transparent 75%)',
-              transformOrigin: 'top center',
-            }}
+            // style={{
+            //   background: 'linear-gradient(180deg, rgba(53,194,200,0.16) 0%, rgba(8,126,164,0.06) 45%, transparent 75%)',
+            //   transformOrigin: 'top center',
+            // }}
           />
           <div
             className="animate-light-ray-2 absolute top-0 left-[45%] w-[180px] h-full"
@@ -104,19 +104,19 @@ export const Hero: React.FC<HeroProps> = ({
               transformOrigin: 'top center',
             }}
           />
-        </div>
+        </div> */}
 
         {/* Caustic illumination at top surface */}
-        <div
+        {/* <div
           className="absolute top-0 left-0 right-0 h-[30%] pointer-events-none"
           style={{
             background: 'radial-gradient(ellipse at 50% -5%, rgba(53,194,200,0.2) 0%, transparent 70%)',
           }}
-        />
+        /> */}
 
         {/* Gradient vignette: protects text legibility on the left, fades seamlessly at bottom */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#030A14] via-[#030A14]/20 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#030A14]/90 via-[#030A14]/45 to-transparent sm:w-[68%]" />
+        {/* <div className="absolute inset-0 bg-gradient-to-t from-[#030A14] via-[#030A14]/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#030A14]/90 via-[#030A14]/45 to-transparent sm:w-[68%]" /> */}
       </div>
 
       {/* ================================================================
@@ -262,9 +262,9 @@ export const Hero: React.FC<HeroProps> = ({
           ================================================================ */}
       <div
         className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none z-5"
-        style={{
-          background: 'linear-gradient(to top, #030A14 0%, transparent 100%)',
-        }}
+        // style={{
+        //   background: 'linear-gradient(to top, #030A14 0%, transparent 100%)',
+        // }}
         aria-hidden="true"
       />
     </section>
