@@ -8,7 +8,7 @@ import {
   GiantSquidIllustration,
   AnglerfishIllustration,
   HadalSnailfishIllustration,
-} from './MarineLifeIllustrations.js';
+} from './MarineLifeIllustrations.tsx';
 
 interface Particle {
   x: number;
