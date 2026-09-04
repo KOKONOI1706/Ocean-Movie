@@ -33,7 +33,7 @@ export const EpisodeDetailModal: React.FC<EpisodeDetailModalProps> = ({
         {/* Top bar */}
         <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-gray-100 px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-[#EAF8FC] text-[#087EA4] text-xs font-bold uppercase tracking-wider">
+            <span className="px-2.5 py-0.5 rounded-full bg-[#087EA4]/15 text-[#087EA4] border border-[#19A7C7]/20 text-xs font-bold uppercase tracking-wider">
               {series.title}
             </span>
             <span className="text-xs text-gray-400">·</span>
@@ -143,7 +143,7 @@ export const EpisodeDetailModal: React.FC<EpisodeDetailModalProps> = ({
 
           {/* AI RECAP (Tóm tắt thông minh) */}
           {episode.aiRecap && (
-            <div className="bg-[#EAF8FC] p-4 sm:p-5 rounded-2xl border border-[#19A7C7]/30">
+            <div className="bg-[#087EA4]/10 p-4 sm:p-5 rounded-2xl border border-[#19A7C7]/30">
               <div className="flex items-center gap-2 mb-2">
                 <Sparkles className="w-4 h-4 text-[#087EA4]" />
                 <h4 className="text-xs sm:text-sm font-bold text-[#062B45]">
@@ -198,7 +198,7 @@ export const EpisodeDetailModal: React.FC<EpisodeDetailModalProps> = ({
                   {episode.majorThemes.map((theme, idx) => (
                     <span
                       key={idx}
-                      className="px-2.5 py-1 rounded-md bg-[#EAF8FC] border border-[#19A7C7]/20 text-xs font-medium text-[#087EA4]"
+                      className="px-2.5 py-1 rounded-md bg-[#087EA4]/15 border border-[#19A7C7]/20 text-xs font-medium text-[#087EA4]"
                     >
                       {theme}
                     </span>

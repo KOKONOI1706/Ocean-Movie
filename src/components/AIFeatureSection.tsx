@@ -98,7 +98,7 @@ export const AIFeatureSection: React.FC<AIFeatureSectionProps> = ({
             className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-3"
           >
             Tìm phim bằng{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#35C2C8] to-[#EAF8FC]">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#35C2C8] to-[#87CEDB]">
               ngôn ngữ tự nhiên
             </span>
           </h2>

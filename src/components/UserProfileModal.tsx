@@ -31,7 +31,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 <h2 className="text-xl font-bold text-[#062B45]">
                   {tasteProfile.name}
                 </h2>
-                <span className="px-2 py-0.5 rounded-full bg-[#EAF8FC] text-[#087EA4] text-[10px] font-extrabold uppercase">
+                <span className="px-2 py-0.5 rounded-full bg-[#087EA4]/15 text-[#087EA4] border border-[#19A7C7]/20 text-[10px] font-extrabold uppercase">
                   Thủy thủ đoàn
                 </span>
               </div>
@@ -93,7 +93,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         </div>
 
         {/* AI Taste Profile Analysis */}
-        <div className="bg-[#EAF8FC] p-4 sm:p-5 rounded-2xl border border-[#19A7C7]/30 space-y-2">
+        <div className="bg-[#087EA4]/10 p-4 sm:p-5 rounded-2xl border border-[#19A7C7]/30 space-y-2">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-[#087EA4]" />
             <h3 className="text-xs font-bold text-[#062B45] uppercase tracking-wider">

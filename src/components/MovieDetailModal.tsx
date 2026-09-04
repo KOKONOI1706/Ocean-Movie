@@ -130,7 +130,7 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
         {/* === STICKY TOP BAR === */}
         <div className="sticky top-0 z-30 bg-white/97 backdrop-blur-md border-b border-gray-100 px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 rounded-full bg-[#EAF8FC] text-[#087EA4] text-[10px] font-bold uppercase tracking-wider">
+            <span className="px-2.5 py-1 rounded-full bg-[#087EA4]/15 text-[#087EA4] border border-[#19A7C7]/20 text-[10px] font-bold uppercase tracking-wider">
               {item.type === 'series' ? 'Series' : item.type === 'anime' ? 'Anime' : item.type === 'ai_film' ? 'AI Film' : item.type === 'short' ? 'Phim Ngắn' : 'Phim Điện Ảnh'}
             </span>
             <span className="hidden sm:inline text-xs text-gray-400 truncate max-w-xs">
@@ -144,7 +144,7 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                 isSaved
                   ? 'bg-[#087EA4] text-white'
-                  : 'bg-[#EAF8FC] hover:bg-[#19A7C7]/20 text-[#062B45] border border-[#19A7C7]/25'
+                  : 'bg-[#087EA4]/10 hover:bg-[#087EA4]/20 text-[#087EA4] border border-[#19A7C7]/25'
               }`}
             >
               <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-current' : ''}`} />
@@ -290,7 +290,7 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
           {activeTab === 'overview' && (
             <div className="space-y-5 animate-fade-in">
               {item.tagline && (
-                <p className="text-base text-[#087EA4] font-medium italic border-l-3 border-[#19A7C7] pl-4 bg-[#EAF8FC]/50 py-2 pr-3 rounded-r-xl">
+                <p className="text-base text-[#087EA4] font-medium italic border-l-3 border-[#19A7C7] pl-4 bg-[#087EA4]/10 py-2 pr-3 rounded-r-xl">
                   "{item.tagline}"
                 </p>
               )}
@@ -339,7 +339,7 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
 
               {/* Series shortcut */}
               {isSeries && (
-                <div className="bg-[#EAF8FC] p-4 rounded-2xl border border-[#19A7C7]/20 flex items-center justify-between">
+                <div className="bg-[#087EA4]/10 p-4 rounded-2xl border border-[#19A7C7]/20 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Tv className="w-5 h-5 text-[#087EA4]" />
                     <div>
@@ -383,7 +383,7 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
                       className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                         userScore === score
                           ? 'bg-[#087EA4] text-white shadow-md'
-                          : 'bg-white hover:bg-[#EAF8FC] text-gray-700 border border-gray-200 hover:border-[#19A7C7]'
+                          : 'bg-white hover:bg-[#087EA4]/15 text-gray-700 border border-gray-200 hover:border-[#19A7C7]'
                       }`}
                     >
                       {score}
@@ -398,7 +398,7 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
           {activeTab === 'ai' && (
             <div className="space-y-5 animate-fade-in">
               {/* Why you may like this */}
-              <div className="bg-gradient-to-br from-[#EAF8FC] to-white p-5 rounded-2xl border border-[#19A7C7]/20">
+              <div className="bg-gradient-to-br from-[#087EA4]/10 to-[#062B45]/5 p-5 rounded-2xl border border-[#19A7C7]/20">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-8 h-8 rounded-xl bg-[#087EA4]/15 flex items-center justify-center">
                     <Brain className="w-4 h-4 text-[#087EA4]" />
@@ -422,9 +422,9 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
               {aiInsight && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
-                    { label: 'Chủ đề (Themes)', value: aiInsight.themes, color: 'bg-[#EAF8FC] border-[#19A7C7]/20' },
+                    { label: 'Chủ đề (Themes)', value: aiInsight.themes, color: 'bg-[#087EA4]/10 border-[#19A7C7]/20' },
                     { label: 'Phong cách thị giác', value: aiInsight.visualStyle, color: 'bg-[#F6F1E7] border-[#087EA4]/10' },
-                    { label: 'Cường độ cảm xúc', value: aiInsight.emotionalIntensity, color: 'bg-[#EAF8FC] border-[#19A7C7]/20' },
+                    { label: 'Cường độ cảm xúc', value: aiInsight.emotionalIntensity, color: 'bg-[#087EA4]/10 border-[#19A7C7]/20' },
                     { label: 'Khán giả phù hợp', value: aiInsight.audienceFit, color: 'bg-[#F6F1E7] border-[#087EA4]/10' },
                   ].filter(card => card.value).map((card, i) => (
                     <div key={i} className={`p-4 rounded-xl border ${card.color}`}>
@@ -498,10 +498,10 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
                     key={idx}
                     onClick={() => setSelectedSub(sub.language)}
                     className={`px-3.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all ${
-                      selectedSub === sub.language
-                        ? 'bg-[#087EA4] text-white shadow-sm'
-                        : 'bg-[#F6F1E7] text-gray-700 hover:bg-[#EAF8FC] border border-gray-200'
-                    }`}
+                        selectedSub === sub.language
+                          ? 'bg-[#087EA4] text-white shadow-sm'
+                          : 'bg-[#F6F1E7] text-gray-700 hover:bg-[#087EA4]/15 border border-gray-200'
+                      }`}
                   >
                     {sub.language} {sub.isAiAssisted && '✦ AI'}
                   </button>
@@ -535,7 +535,7 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
                     onClick={() => onSelectMedia(other)}
                     className="flex flex-col gap-2 cursor-pointer group"
                   >
-                    <div className="rounded-xl overflow-hidden aspect-[2/3] bg-[#EAF8FC]">
+                    <div className="rounded-xl overflow-hidden aspect-[2/3] bg-[#062B45]/10">
                       <img
                         src={other.posterUrl}
                         alt={other.title}

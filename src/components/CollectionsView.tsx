@@ -27,10 +27,10 @@ export const CollectionsView: React.FC<CollectionsViewProps> = ({
     .filter(Boolean) as MediaItem[];
 
   return (
-    <div className="w-full  text-[#062B45] py-10 sm:py-14 text-left">
+    <div className="w-full  text-[#E8F4F8] py-10 sm:py-14 text-left">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
         {/* Header */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#087EA4]/15 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="rounded-3xl p-6 sm:p-8 border border-[#087EA4]/15 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EAF8FC] text-[#087EA4] text-xs font-semibold">
               <Compass className="w-3.5 h-3.5" />
@@ -54,8 +54,8 @@ export const CollectionsView: React.FC<CollectionsViewProps> = ({
                 key={col.id}
                 onClick={() => setSelectedCollection(col)}
                 className={`p-5 rounded-2xl text-left transition-all cursor-pointer border ${isSelected
-                    ? 'bg-[#062B45] text-white border-[#062B45] shadow-lg -translate-y-1'
-                    : 'bg-white text-[#062B45] border-gray-200 hover:border-[#087EA4] hover:bg-[#EAF8FC]/50'
+                  ? 'bg-[#062B45] text-white border-[#062B45] shadow-lg -translate-y-1'
+                  : 'bg-white text-[#062B45] border-gray-200 hover:border-[#087EA4] hover:bg-[#EAF8FC]/50'
                   }`}
               >
                 <span

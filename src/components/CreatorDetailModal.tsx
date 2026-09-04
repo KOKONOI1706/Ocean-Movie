@@ -26,7 +26,7 @@ export const CreatorDetailModal: React.FC<CreatorDetailModalProps> = ({
         {/* Top bar */}
         <div className="flex items-start justify-between pb-4 border-b border-gray-100">
           <div>
-            <span className="px-2.5 py-0.5 rounded-full bg-[#EAF8FC] text-[#087EA4] text-[11px] font-bold uppercase tracking-wider block w-fit mb-1.5">
+            <span className="px-2.5 py-0.5 rounded-full bg-[#087EA4]/15 text-[#087EA4] border border-[#19A7C7]/20 text-[11px] font-bold uppercase tracking-wider block w-fit mb-1.5">
               HỒ SƠ TÁC GIẢ & ĐẠO DIỄN
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-[#062B45] leading-tight">
@@ -94,7 +94,7 @@ export const CreatorDetailModal: React.FC<CreatorDetailModalProps> = ({
                   onClose();
                   onSelectMedia(item);
                 }}
-                className="flex items-center gap-3 p-3 rounded-2xl border border-gray-200 hover:border-[#087EA4] hover:bg-[#EAF8FC]/40 transition-all cursor-pointer group"
+                className="flex items-center gap-3 p-3 rounded-2xl border border-gray-200 hover:border-[#087EA4] hover:bg-[#087EA4]/10 transition-all cursor-pointer group"
               >
                 <img
                   src={item.posterUrl}

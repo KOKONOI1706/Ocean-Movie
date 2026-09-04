@@ -161,7 +161,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
   });
 
   return (
-    <div className="min-h-screen bg-[#060F1A] text-[#E8F4F8]">
+    <div className="min-h-screen text-[#E8F4F8]">
       {/* ─── Page Header ─── */}
       <div className="bg-[#071525] border-b border-[#19A7C7]/15 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
