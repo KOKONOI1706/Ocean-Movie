@@ -7,7 +7,7 @@ interface OceanFooterProps {
 
 export const OceanFooter: React.FC<OceanFooterProps> = ({ onNavigate }) => {
   return (
-    <footer className="bg-[#010408] border-t border-cyan-950/40 text-gray-400 py-16 px-4 sm:px-6 lg:px-8 relative select-none">
+    <footer className="border-t border-cyan-950/40 text-gray-400 py-16 px-4 sm:px-6 lg:px-8 relative select-none">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
         {/* Brand & Editorial Statement */}
         <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-2">

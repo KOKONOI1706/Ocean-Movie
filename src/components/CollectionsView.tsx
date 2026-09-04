@@ -27,7 +27,7 @@ export const CollectionsView: React.FC<CollectionsViewProps> = ({
     .filter(Boolean) as MediaItem[];
 
   return (
-    <div className="w-full bg-[#F6F1E7] text-[#062B45] py-10 sm:py-14 text-left">
+    <div className="w-full  text-[#062B45] py-10 sm:py-14 text-left">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
         {/* Header */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#087EA4]/15 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -53,16 +53,14 @@ export const CollectionsView: React.FC<CollectionsViewProps> = ({
               <button
                 key={col.id}
                 onClick={() => setSelectedCollection(col)}
-                className={`p-5 rounded-2xl text-left transition-all cursor-pointer border ${
-                  isSelected
+                className={`p-5 rounded-2xl text-left transition-all cursor-pointer border ${isSelected
                     ? 'bg-[#062B45] text-white border-[#062B45] shadow-lg -translate-y-1'
                     : 'bg-white text-[#062B45] border-gray-200 hover:border-[#087EA4] hover:bg-[#EAF8FC]/50'
-                }`}
+                  }`}
               >
                 <span
-                  className={`text-[11px] font-bold uppercase tracking-wider block mb-1 ${
-                    isSelected ? 'text-[#35C2C8]' : 'text-[#087EA4]'
-                  }`}
+                  className={`text-[11px] font-bold uppercase tracking-wider block mb-1 ${isSelected ? 'text-[#35C2C8]' : 'text-[#087EA4]'
+                    }`}
                 >
                   {col.issue}
                 </span>
@@ -70,9 +68,8 @@ export const CollectionsView: React.FC<CollectionsViewProps> = ({
                   {col.title}
                 </h3>
                 <span
-                  className={`text-xs mt-2 block ${
-                    isSelected ? 'text-gray-300' : 'text-gray-400'
-                  }`}
+                  className={`text-xs mt-2 block ${isSelected ? 'text-gray-300' : 'text-gray-400'
+                    }`}
                 >
                   {col.itemIds.length} tác phẩm tuyển chọn
                 </span>
