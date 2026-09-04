@@ -1,0 +1,122 @@
+name: CI/CD
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-cd-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Lint, Test, Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: ocean_movie_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d ocean_movie_test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      NODE_ENV: test
+      JWT_SECRET: ci-jwt-secret
+      JWT_REFRESH_SECRET: ci-refresh-secret
+      CORS_ORIGIN: http://localhost:3000
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      POSTGRES_DB: ocean_movie_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Detect available scripts
+        id: scripts
+        run: |
+          node -e "const s=require('./package.json').scripts||{}; const fs=require('fs'); fs.appendFileSync(process.env.GITHUB_OUTPUT, 'has_lint=' + Boolean(s.lint) + '\n'); fs.appendFileSync(process.env.GITHUB_OUTPUT, 'has_test=' + Boolean(s.test) + '\n'); fs.appendFileSync(process.env.GITHUB_OUTPUT, 'has_build=' + Boolean(s.build) + '\n');"
+
+      - name: Compose DATABASE_URL for tests
+        if: steps.scripts.outputs.has_test == 'true'
+        run: |
+          proto='postgresql'
+          proto="${proto}://"
+          creds="${POSTGRES_USER}:${POSTGRES_PASSWORD}@"
+          host="${POSTGRES_HOST}:${POSTGRES_PORT}"
+          printf 'DATABASE_URL=%s\n' "${proto}${creds}${host}/${POSTGRES_DB}?schema=public" >> "$GITHUB_ENV"
+
+      - name: Prepare database for tests
+        if: steps.scripts.outputs.has_test == 'true'
+        run: |
+          pnpm db:push
+          pnpm db:seed
+
+      - name: Run lint
+        if: steps.scripts.outputs.has_lint == 'true'
+        run: pnpm lint
+
+      - name: Run tests
+        if: steps.scripts.outputs.has_test == 'true'
+        run: pnpm test
+
+      - name: Run build
+        if: steps.scripts.outputs.has_build == 'true'
+        run: pnpm build
+
+  deploy:
+    name: Deploy (default branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: ci
+    if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch && github.ref_protected == true
+
+    permissions:
+      contents: read
+
+    concurrency:
+      group: deploy-${{ github.ref }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Validate deployment secret
+        env:
+          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+        run: |
+          if [ -z "$DEPLOY_WEBHOOK_URL" ]; then
+            echo "::error::Missing DEPLOY_WEBHOOK_URL secret. Configure it in repository settings before deploying."
+            exit 1
+          fi
+
+      - name: Trigger production deploy webhook
+        env:
+          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+        run: curl --fail --show-error --silent -X POST "$DEPLOY_WEBHOOK_URL"
