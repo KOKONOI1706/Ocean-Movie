@@ -27,6 +27,8 @@ import {
 } from './lib/api';
 
 import { OceanDepthProvider } from './context/OceanDepthContext';
+import { AuthProvider } from './context/AuthContext';
+import { LoginPage } from './components/LoginPage';
 import { OceanBackground } from './components/ocean/OceanBackground';
 import { VerticalDepthIndicator } from './components/ocean/VerticalDepthIndicator';
 import { DepthHUD } from './components/ocean/DepthHUD';
@@ -261,6 +263,15 @@ function AppContent() {
   const featuredFilm = trendingItems[0]
     ?? CINEMA_ITEMS.find((c) => c.id === 'the-last-signal')
     ?? CINEMA_ITEMS[0];
+
+  if (currentTab === 'auth' || currentTab === 'login') {
+    return (
+      <LoginPage
+        onBack={() => handleNavigate('discover')}
+        onSuccess={() => handleNavigate('discover')}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen text-[#E8F4F8] font-sans flex flex-col antialiased relative selection:bg-[#19A7C7]/30 selection:text-white bg-[#030A14]">
@@ -577,9 +588,11 @@ function AppContent() {
 
 export function App() {
   return (
-    <OceanDepthProvider>
-      <AppContent />
-    </OceanDepthProvider>
+    <AuthProvider>
+      <OceanDepthProvider>
+        <AppContent />
+      </OceanDepthProvider>
+    </AuthProvider>
   );
 }
 
