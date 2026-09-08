@@ -11,12 +11,12 @@ interface HeaderProps {
 }
 
 const NAV_ITEMS = [
-  { id: 'discover',     label: 'KHÁM PHÁ' },
-  { id: 'movies',       label: 'PHIM' },
-  { id: 'series',       label: 'SERIES' },
-  { id: 'collections',  label: 'BỘ SƯU TẬP' },
-  { id: 'ai-discovery', label: 'AI GỢI Ý' },
-  { id: 'my-cinema',    label: 'HẢI TRÌNH CỦA TÔI' },
+  { id: 'discover',     label: 'Khám phá', badge: '' },
+  { id: 'movies',       label: 'Phim', badge: '' },
+  { id: 'series',       label: 'Series', badge: '' },
+  { id: 'collections',  label: 'Bộ sưu tập', badge: '' },
+  { id: 'ai-discovery', label: 'AI', badge: 'Mới' },
+  { id: 'my-cinema',    label: 'Hải trình', badge: '' },
 ];
 
 export const Header: React.FC<HeaderProps> = ({
@@ -75,7 +75,7 @@ export const Header: React.FC<HeaderProps> = ({
             <Waves className="w-5 h-5" />
           </div>
           <div className="flex flex-col">
-            <span className="font-sans font-extrabold text-base sm:text-lg tracking-wider text-white group-hover:text-cyan-300 transition-colors uppercase leading-none">
+            <span className="font-serif font-medium text-lg sm:text-xl tracking-wide text-white group-hover:text-cyan-100 transition-colors leading-none">
               BIỂN PHIM
             </span>
             <span className="text-[10px] text-cyan-400/80 font-medium tracking-widest uppercase mt-0.5">
@@ -96,14 +96,19 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 key={item.id}
                 onClick={() => handleNav(item.id)}
-                className={`relative py-1.5 text-xs tracking-wider uppercase font-sans font-medium transition-all duration-200 cursor-pointer ${
+                className={`relative py-1.5 text-[11px] tracking-[0.16em] uppercase font-sans font-medium transition-all duration-200 cursor-pointer inline-flex items-center gap-1.5 ${
                   isActive
-                    ? 'text-cyan-300 font-bold'
-                    : 'text-slate-300/80 hover:text-white'
+                    ? 'text-white'
+                    : 'text-slate-300/75 hover:text-white'
                 }`}
                 aria-current={isActive ? 'page' : undefined}
               >
                 {item.label}
+                {item.badge && (
+                  <span className="rounded-sm bg-cyan-400/15 px-1 py-px text-[8px] tracking-[0.12em] text-cyan-300">
+                    {item.badge}
+                  </span>
+                )}
                 {isActive && (
                   <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-cyan-400 to-blue-400 rounded-full shadow-[0_0_8px_rgba(6,182,212,0.6)]" />
                 )}

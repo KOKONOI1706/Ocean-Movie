@@ -36,42 +36,42 @@ import { AIDiscoveryConsole } from './components/ocean/AIDiscoveryConsole';
 import { OceanFooter } from './components/ocean/OceanFooter';
 
 // ─── Fallback datasets from local cinemaData ─────────────────────────────────
-const FALLBACK_TRENDING   = CINEMA_ITEMS.filter((i) => i.isTrending || i.rating >= 8.5).slice(0, 12);
-const FALLBACK_NEW        = CINEMA_ITEMS.filter((i) => i.year >= 2024).slice(0, 10);
-const FALLBACK_SERIES     = CINEMA_ITEMS.filter((i) => i.type === 'series');
-const FALLBACK_FOR_YOU    = CINEMA_ITEMS.filter((i) => i.aiMatchScore && i.aiMatchScore >= 88).slice(0, 8);
+const FALLBACK_TRENDING = CINEMA_ITEMS.filter((i) => i.isTrending || i.rating >= 8.5).slice(0, 12);
+const FALLBACK_NEW = CINEMA_ITEMS.filter((i) => i.year >= 2024).slice(0, 10);
+const FALLBACK_SERIES = CINEMA_ITEMS.filter((i) => i.type === 'series');
+const FALLBACK_FOR_YOU = CINEMA_ITEMS.filter((i) => i.aiMatchScore && i.aiMatchScore >= 88).slice(0, 8);
 const FALLBACK_DEEP_WATER = CINEMA_ITEMS.filter((i) => i.moods.includes('philosophical') || i.genres.includes('Mystery')).slice(0, 10);
 
 function AppContent() {
   const [currentTab, setCurrentTab] = useState<string>('discover');
 
   // ─── Modals ────────────────────────────────────────────────────────────────
-  const [selectedMedia,   setSelectedMedia]   = useState<MediaItem | null>(null);
+  const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
   const [seriesModalMedia, setSeriesModalMedia] = useState<MediaItem | null>(null);
   const [watchModalMedia, setWatchModalMedia] = useState<MediaItem | null>(null);
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
-  const [isProfileOpen,   setIsProfileOpen]   = useState<boolean>(false);
-  const [isSearchOpen,    setIsSearchOpen]    = useState<boolean>(false);
+  const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
+  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [searchInitialQuery, setSearchInitialQuery] = useState<string>('');
 
   // ─── Content Rails (null = not yet loaded, shows skeleton) ─────────────────
-  const [trendingList,    setTrendingList]    = useState<MediaItem[] | null>(null);
+  const [trendingList, setTrendingList] = useState<MediaItem[] | null>(null);
   const [newArrivalsList, setNewArrivalsList] = useState<MediaItem[] | null>(null);
-  const [seriesList,      setSeriesList]      = useState<MediaItem[] | null>(null);
-  const [forYouList,      setForYouList]      = useState<MediaItem[] | null>(null);
-  const [deepWaterList,   setDeepWaterList]   = useState<MediaItem[] | null>(null);
-  const [isLoadingRails,  setIsLoadingRails]  = useState(true);
+  const [seriesList, setSeriesList] = useState<MediaItem[] | null>(null);
+  const [forYouList, setForYouList] = useState<MediaItem[] | null>(null);
+  const [deepWaterList, setDeepWaterList] = useState<MediaItem[] | null>(null);
+  const [isLoadingRails, setIsLoadingRails] = useState(true);
 
   // ─── Watchlist & User State ────────────────────────────────────────────────
   const [savedItems, setSavedItems] = useState<SavedMediaItem[]>([
-    { mediaId: 'frieren-journey',   savedAt: '2026-03-12', category: 'wishlist' },
+    { mediaId: 'frieren-journey', savedAt: '2026-03-12', category: 'wishlist' },
     { mediaId: 'blade-runner-2049', savedAt: '2026-03-14', category: 'wishlist' },
-    { mediaId: 'the-last-signal',   savedAt: '2026-03-15', category: 'wishlist' },
+    { mediaId: 'the-last-signal', savedAt: '2026-03-15', category: 'wishlist' },
   ]);
   const [userRatings, setUserRatings] = useState<Record<string, number>>({
-    interstellar:      9,
-    dark:              10,
-    'spirited-away':   10,
+    interstellar: 9,
+    dark: 10,
+    'spirited-away': 10,
     'the-last-signal': 9,
   });
 
@@ -150,9 +150,9 @@ function AppContent() {
 
     // Handle direct URL navigation (?movie=..., ?series=..., ?tab=...)
     const params = new URLSearchParams(window.location.search);
-    const movieSlug  = params.get('movie');
+    const movieSlug = params.get('movie');
     const seriesSlug = params.get('series');
-    const tabParam   = params.get('tab');
+    const tabParam = params.get('tab');
 
     if (tabParam) setCurrentTab(tabParam);
 
@@ -207,7 +207,7 @@ function AppContent() {
 
   const handleRemoveSaved = async (mediaId: string) => {
     setSavedItems((prev) => prev.filter((s) => s.mediaId !== mediaId));
-    try { await watchlistApi.remove(mediaId); } catch {}
+    try { await watchlistApi.remove(mediaId); } catch { }
   };
 
   const handleUpdateEpisodeProgress = (episodeId: string, percentage: number) => {
@@ -253,10 +253,10 @@ function AppContent() {
   const savedItemIds = savedItems.map((s) => s.mediaId);
 
   // Resolved (loaded or fallback) lists for rendering
-  const trendingItems  = trendingList  ?? [];
-  const newArrivals    = newArrivalsList ?? [];
-  const seriesItems    = seriesList    ?? [];
-  const forYouItems    = forYouList    ?? [];
+  const trendingItems = trendingList ?? [];
+  const newArrivals = newArrivalsList ?? [];
+  const seriesItems = seriesList ?? [];
+  const forYouItems = forYouList ?? [];
   const deepWaterItems = deepWaterList ?? [];
 
   // Featured film for the hero — first trending, or first in fallback
@@ -296,7 +296,7 @@ function AppContent() {
 
       {/* ─── Main Content ─── */}
       <main
-        className="flex-1 pb-20 lg:pb-0 relative z-10 lg:pl-16 xl:pl-20"
+        className="flex-1 pb-20 relative z-10"
         id="main-content"
       >
 
@@ -308,8 +308,11 @@ function AppContent() {
             <div id="hero-section">
               <Hero
                 featuredItem={featuredFilm}
+                featuredItems={trendingItems.length > 0 ? trendingItems : FALLBACK_TRENDING}
                 onSelectMedia={handleSelectMedia}
                 onTriggerAISearch={handleOpenSearch}
+                onToggleSave={handleToggleSave}
+                savedItemIds={savedItemIds}
               />
             </div>
 

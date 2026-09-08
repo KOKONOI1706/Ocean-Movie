@@ -65,9 +65,15 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
   const [userScore, setUserScore] = useState<number | null>(null);
   const [ratingMessage, setRatingMessage] = useState<string>('');
   const [aiInsight, setAiInsight] = useState<any>(item.aiMattersAnalysis);
+  const [similarFilms, setSimilarFilms] = useState<MediaItem[]>(
+    CINEMA_ITEMS.filter(
+      (other) =>
+        other.id !== item.id &&
+        (other.genres.some((g) => item.genres.includes(g)) || other.type === item.type)
+    ).slice(0, 4)
+  );
 
   useEffect(() => {
-    // Load cached AI insight from PostgreSQL
     let isMounted = true;
     aiApi
       .getFilmInsight(item.id)
@@ -77,6 +83,21 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
         }
       })
       .catch((err) => console.warn('Could not fetch AI insight:', err));
+
+    moviesApi
+      .getAll({ limit: 24 })
+      .then((res) => {
+        if (!isMounted) return;
+        const related = (res.items || []).filter(
+          (other) =>
+            other.id !== item.id &&
+            (other.genres?.some((g) => item.genres?.includes(g)) || other.type === item.type)
+        );
+        if (related.length > 0) setSimilarFilms(related.slice(0, 6));
+      })
+      .catch(() => {
+        /* keep local similar */
+      });
 
     return () => {
       isMounted = false;
@@ -93,12 +114,6 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
       console.warn('Failed to save rating:', err);
     }
   };
-
-  const similarFilms = CINEMA_ITEMS.filter(
-    (other) =>
-      other.id !== item.id &&
-      (other.genres.some((g) => item.genres.includes(g)) || other.type === item.type)
-  ).slice(0, 4);
 
   const handleShare = () => {
     if (navigator.clipboard) {

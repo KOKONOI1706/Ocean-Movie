@@ -33,8 +33,10 @@ interface Particle {
 }
 
 export const OceanBackground: React.FC = () => {
-  const { depth, zone, zoneProgress } = useOceanDepth();
+  const { depth, zone, zoneProgress, progress } = useOceanDepth();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const depthRef = useRef(depth);
+  depthRef.current = depth;
 
   // Background gradient color interpolation based on depth
   const getGradientStyle = () => {
@@ -94,6 +96,7 @@ export const OceanBackground: React.FC = () => {
       });
     }
 
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let time = 0;
 
     const render = () => {
@@ -101,21 +104,22 @@ export const OceanBackground: React.FC = () => {
       ctx.clearRect(0, 0, width, height);
 
       particles.forEach((p) => {
-        // Particles behavior shifts as we go deeper
-        if (depth <= 200) {
-          // Surface/Shallow: bubbles float upwards gently
-          p.y -= Math.abs(p.speedY) * 0.8 + 0.2;
-          p.x += Math.sin(time + p.pulseOffset) * 0.3;
-          if (p.y < 0) p.y = height;
-        } else {
-          // Twilight & Deep Ocean: marine snow drifts slowly downward
-          p.y += Math.abs(p.speedY) * 0.5 + 0.15;
-          p.x += Math.cos(time * 0.5 + p.pulseOffset) * 0.2;
-          if (p.y > height) p.y = 0;
-        }
+        const currentDepth = depthRef.current;
 
-        if (p.x < 0) p.x = width;
-        if (p.x > width) p.x = 0;
+        if (!reducedMotion) {
+          if (currentDepth <= 200) {
+            p.y -= Math.abs(p.speedY) * 0.8 + 0.2;
+            p.x += Math.sin(time + p.pulseOffset) * 0.3;
+            if (p.y < 0) p.y = height;
+          } else {
+            p.y += Math.abs(p.speedY) * 0.5 + 0.15;
+            p.x += Math.cos(time * 0.5 + p.pulseOffset) * 0.2;
+            if (p.y > height) p.y = 0;
+          }
+
+          if (p.x < 0) p.x = width;
+          if (p.x > width) p.x = 0;
+        }
 
         const currentOpacity =
           p.opacity * (0.6 + 0.4 * Math.sin(time * p.pulseSpeed * 60 + p.pulseOffset));
@@ -123,10 +127,10 @@ export const OceanBackground: React.FC = () => {
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
 
-        if (depth <= 200) {
+        if (currentDepth <= 200) {
           // Sunlit bubbles / plankton
           ctx.fillStyle = `rgba(53, 194, 200, ${currentOpacity * 0.7})`;
-        } else if (depth <= 1000) {
+        } else if (currentDepth <= 1000) {
           // Twilight: Soft marine snow and violet-cyan photophore specks
           const isBio = p.type === 'bioluminescent';
           ctx.fillStyle = isBio
@@ -151,7 +155,7 @@ export const OceanBackground: React.FC = () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
     };
-  }, [depth]);
+  }, []);
 
   return (
     <div
@@ -173,7 +177,8 @@ export const OceanBackground: React.FC = () => {
           alt=""
           className="w-full h-full object-cover object-center"
           style={{
-            filter: `brightness(${Math.max(0.3, 0.7 - (depth / 4000) * 0.4)}) saturate(1.15)`,
+            transform: `scale(${1.05 + progress * 0.07}) translateY(${progress * 2.5}%)`,
+            filter: `brightness(${Math.max(0.28, 0.7 - progress * 0.38)}) saturate(${1.12 - progress * 0.18})`,
           }}
         />
       </div>
