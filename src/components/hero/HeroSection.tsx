@@ -52,7 +52,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       aria-label="Phim nổi bật — Biển Phim"
     >
       {/* Full-bleed background — covers entire section width */}
-      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
+      <div className="pointer-events-none absolute inset-0 z-[-1] overflow-hidden" aria-hidden="true">
         <AnimatePresence mode="sync">
           <motion.img
             key={active.id}
@@ -68,7 +68,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         </AnimatePresence>
       </div>
 
-      <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
+      <div className="pointer-events-none absolute inset-0 z-[1]" aria-hidden="true">
         <div className="animate-light-ray-1 absolute top-0 left-[18%] h-full w-[220px] bg-gradient-to-b from-cyan-200/10 via-cyan-400/5 to-transparent" />
         <div className="animate-light-ray-2 absolute top-0 left-[48%] h-full w-[160px] bg-gradient-to-b from-cyan-100/8 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#030A14]/90 via-[#030A14]/35 to-transparent lg:w-[58%]" />

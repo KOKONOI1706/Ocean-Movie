@@ -296,7 +296,7 @@ function AppContent() {
 
       {/* ─── Main Content ─── */}
       <main
-        className="flex-1 pb-20 relative z-10"
+        className="flex-1 pb-20 relative"
         id="main-content"
       >
 
