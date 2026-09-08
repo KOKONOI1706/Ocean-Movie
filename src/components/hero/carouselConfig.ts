@@ -1,4 +1,4 @@
 export const AUTO_PLAY_INTERVAL_MS = 6200;
 export const MOUSE_SENSITIVITY = 0.0042;
-export const WHEEL_SENSITIVITY = 0.0016;
+export const WHEEL_SENSITIVITY = 0.01;
 export const DRAG_SENSITIVITY = 0.0075;
