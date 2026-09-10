@@ -90,7 +90,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           <div className="relative lg:col-span-7 xl:col-span-8">
             <div className="relative mx-auto w-full max-w-3xl lg:mr-0 lg:ml-8">
               <MovieArtwork item={active} quote={active.editorialQuote} />
-              <div className="relative -mt-10 sm:-mt-16 lg:absolute lg:bottom-[-150px] lg:-right-80 lg:mt-0 lg:w-[148%] xl:w-[112%]">
+              <div className="relative -mt-10 sm:-mt-16 lg:absolute lg:bottom-[-150px] lg:-right-80 lg:mt-0 lg:w-[140%] xl:w-[112%]">
                 <FloatingMovieCarousel
                   items={catalog}
                   activeIndex={activeIndex}

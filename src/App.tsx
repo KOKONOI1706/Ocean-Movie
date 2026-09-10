@@ -8,7 +8,7 @@ import { HomeCollectionStrip } from './components/HomeCollectionStrip';
 import { ExploreView } from './components/ExploreView';
 import { CollectionsView } from './components/CollectionsView';
 import { MyCinemaView } from './components/MyCinemaView';
-import { MovieDetailModal } from './components/MovieDetailModal';
+import { MovieDetailPage } from './components/MovieDetailPage';
 import { SeriesDetailModal } from './components/SeriesDetailModal';
 import { AISearchModal } from './components/AISearchModal';
 import { WhereToWatchModal } from './components/WhereToWatchModal';
@@ -47,6 +47,7 @@ function AppContent() {
 
   // ─── Modals ────────────────────────────────────────────────────────────────
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
+  const [currentDetailItem, setCurrentDetailItem] = useState<MediaItem | null>(null);
   const [seriesModalMedia, setSeriesModalMedia] = useState<MediaItem | null>(null);
   const [watchModalMedia, setWatchModalMedia] = useState<MediaItem | null>(null);
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
@@ -158,10 +159,10 @@ function AppContent() {
 
     if (movieSlug) {
       moviesApi.getById(movieSlug)
-        .then((m) => { if (isMounted && m) setSelectedMedia(m); })
+        .then((m) => { if (isMounted && m) { setCurrentDetailItem(m); setCurrentTab('movie-detail'); } })
         .catch(() => {
           const fallback = CINEMA_ITEMS.find((c) => c.id === movieSlug);
-          if (isMounted && fallback) setSelectedMedia(fallback);
+          if (isMounted && fallback) { setCurrentDetailItem(fallback); setCurrentTab('movie-detail'); }
         });
     } else if (seriesSlug) {
       seriesApi.getById(seriesSlug)
@@ -221,21 +222,33 @@ function AppContent() {
       setSeriesModalMedia(item);
       url.searchParams.set('series', item.id);
       url.searchParams.delete('movie');
+      window.history.pushState({}, '', url.toString());
     } else {
-      setSelectedMedia(item);
+      setCurrentDetailItem(item);
+      setCurrentTab('movie-detail');
       url.searchParams.set('movie', item.id);
       url.searchParams.delete('series');
+      window.history.pushState({}, '', url.toString());
     }
-    window.history.pushState({}, '', url.toString());
   };
 
   const handleCloseModals = () => {
     setSelectedMedia(null);
     setSeriesModalMedia(null);
+    setCurrentDetailItem(null);
     const url = new URL(window.location.href);
     url.searchParams.delete('movie');
     url.searchParams.delete('series');
     window.history.pushState({}, '', url.toString());
+  };
+
+  const handleBackFromDetail = () => {
+    setCurrentDetailItem(null);
+    setCurrentTab('discover');
+    const url = new URL(window.location.href);
+    url.searchParams.delete('movie');
+    window.history.pushState({}, '', url.toString());
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleNavigate = (tab: string) => {
@@ -425,6 +438,23 @@ function AppContent() {
           </div>
         )}
 
+        {/* ======= MOVIE DETAIL PAGE ======= */}
+        {currentTab === 'movie-detail' && currentDetailItem && (
+          <MovieDetailPage
+            item={currentDetailItem}
+            onBack={handleBackFromDetail}
+            onSelectMedia={handleSelectMedia}
+            onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
+            onOpenSeriesDetail={(item) => {
+              setCurrentDetailItem(null);
+              setCurrentTab('discover');
+              setSeriesModalMedia(item);
+            }}
+            isSaved={savedItemIds.includes(currentDetailItem.id)}
+            onToggleSave={handleToggleSave}
+          />
+        )}
+
         {/* ======= EXPLORE TAB ======= */}
         {currentTab === 'explore' && (
           <ExploreView
@@ -526,20 +556,7 @@ function AppContent() {
 
       {/* ================= MODALS ================= */}
 
-      {selectedMedia && (
-        <MovieDetailModal
-          item={selectedMedia}
-          onClose={handleCloseModals}
-          onSelectMedia={handleSelectMedia}
-          onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
-          onOpenSeriesDetail={(item) => {
-            setSelectedMedia(null);
-            setSeriesModalMedia(item);
-          }}
-          isSaved={savedItemIds.includes(selectedMedia.id)}
-          onToggleSave={handleToggleSave}
-        />
-      )}
+      {/* MovieDetailModal removed — replaced by MovieDetailPage full-page view */}
 
       {seriesModalMedia && (
         <SeriesDetailModal
