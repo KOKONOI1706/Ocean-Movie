@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MediaItem } from '../types';
-import { X, ExternalLink, Globe, ShieldCheck, Play, CheckCircle2, AlertCircle, Info } from 'lucide-react';
+import { X, ExternalLink, Globe, ShieldCheck, Info } from 'lucide-react';
 
 interface WhereToWatchModalProps {
   item: MediaItem | null;
@@ -19,7 +19,7 @@ export const WhereToWatchModal: React.FC<WhereToWatchModalProps> = ({ item, onCl
     { id: 'JP', name: 'Nhật Bản' }
   ];
 
-  const streamingList = item.streamingOptions || [
+  const allStreamingOptions = item.streamingOptions || [
     {
       provider: 'Netflix',
       type: 'subscription',
@@ -28,6 +28,11 @@ export const WhereToWatchModal: React.FC<WhereToWatchModalProps> = ({ item, onCl
       badge: 'Gói xem phim Netflix'
     }
   ];
+
+  const streamingList = allStreamingOptions.filter((opt) => {
+    const region = opt.region || 'Global';
+    return selectedRegion === 'Global' || region.includes(selectedRegion) || region.toLowerCase().includes('global');
+  });
 
   return (
     <div className="fixed inset-0 z-60 overflow-y-auto bg-[#030B14]/85 backdrop-blur-xl flex justify-center p-4 text-[#E8F4F8] animate-in fade-in duration-200">
@@ -87,7 +92,7 @@ export const WhereToWatchModal: React.FC<WhereToWatchModalProps> = ({ item, onCl
           </h3>
 
           <div className="space-y-2.5">
-            {streamingList.map((opt, idx) => (
+            {streamingList.length > 0 ? streamingList.map((opt, idx) => (
               <div
                 key={idx}
                 className="flex items-center justify-between p-4 rounded-2xl bg-[#0B2035]/50 border border-[#19A7C7]/20 hover:border-[#35C2C8]/40 hover:bg-[#0F2A45]/70 shadow-xs transition-all"
@@ -120,7 +125,12 @@ export const WhereToWatchModal: React.FC<WhereToWatchModalProps> = ({ item, onCl
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               </div>
-            ))}
+            )) : (
+              <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#0B2035]/40 border border-dashed border-[#19A7C7]/25 text-xs text-[#8BA7B8]">
+                <Info className="w-4 h-4 text-[#35C2C8] shrink-0" />
+                <span>Chưa có nguồn phát chính thức cho khu vực này. Hãy thử chọn khu vực khác.</span>
+              </div>
+            )}
           </div>
         </div>
 

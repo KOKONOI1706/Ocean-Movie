@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { MediaItem, MediaType } from '../types';
-import { Sparkles, Search, X, Star, Clock, Play, MapPin, SlidersHorizontal, Loader2, ArrowRight } from 'lucide-react';
+import { Sparkles, Search, X, Star, Clock, Play, MapPin, SlidersHorizontal, Loader2, ArrowRight, Film, Tv } from 'lucide-react';
 import { CINEMA_ITEMS } from '../data/cinemaData';
 import { aiApi } from '../lib/api';
+
+const RESULT_FILTERS: { id: 'all' | MediaType; label: string; icon: React.ReactNode }[] = [
+  { id: 'all', label: 'Tất cả', icon: <Sparkles className="w-3 h-3" /> },
+  { id: 'movie', label: 'Phim', icon: <Film className="w-3 h-3" /> },
+  { id: 'series', label: 'Series', icon: <Tv className="w-3 h-3" /> },
+  { id: 'short', label: 'Phim ngắn', icon: <Clock className="w-3 h-3" /> },
+];
 
 interface AISearchModalProps {
   isOpen: boolean;
@@ -56,6 +63,7 @@ export const AISearchModal: React.FC<AISearchModalProps> = ({
     if (!searchQueryText.trim()) return;
     setLoading(true);
     setHasSearched(true);
+    setActiveFilter('all');
 
     try {
       const result = await aiApi.search(searchQueryText);
@@ -105,6 +113,10 @@ export const AISearchModal: React.FC<AISearchModalProps> = ({
     e.preventDefault();
     performSearch(query);
   };
+
+  const visibleResults = activeFilter === 'all'
+    ? matchedResults
+    : matchedResults.filter((r) => r.type === activeFilter);
 
   if (!isOpen) return null;
 
@@ -267,12 +279,36 @@ export const AISearchModal: React.FC<AISearchModalProps> = ({
         {/* Results */}
         {hasSearched && (
           <div className="space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-[#8BA7B8]">
-              Kết quả đề xuất ({matchedResults.length} tác phẩm)
-            </h3>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#8BA7B8]">
+                Kết quả đề xuất ({visibleResults.length} tác phẩm)
+              </h3>
+              <div className="flex flex-wrap gap-1.5">
+                {RESULT_FILTERS.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setActiveFilter(f.id)}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
+                      activeFilter === f.id
+                        ? 'bg-gradient-to-r from-[#087EA4] to-[#35C2C8] text-white shadow-[0_0_10px_rgba(53,194,200,0.3)]'
+                        : 'bg-[#0C1E2E] text-[#8BA7B8] hover:text-white border border-[#19A7C7]/20 hover:border-[#35C2C8]/40'
+                    }`}
+                  >
+                    {f.icon}
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1">
-              {matchedResults.map((item, idx) => (
+              {visibleResults.length === 0 && (
+                <div className="sm:col-span-2 flex items-center justify-center py-10 text-xs text-[#8BA7B8]">
+                  Không có tác phẩm nào khớp với bộ lọc này.
+                </div>
+              )}
+              {visibleResults.map((item, idx) => (
                 <div
                   key={item.id}
                   className="flex gap-3 p-3 rounded-2xl bg-[#0C1E2E] border border-[#19A7C7]/15 hover:border-[#19A7C7]/40 shadow-sm transition-all text-left group"

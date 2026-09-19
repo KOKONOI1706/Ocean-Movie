@@ -9,19 +9,39 @@ import { env } from './config/env.js';
 
 export function createApp(): Express {
   const app = express();
+  const isProduction = env.NODE_ENV === 'production';
 
-  // Security Headers (configured to allow Vite dev scripts / images)
+  // Security Headers
   app.use(
     helmet({
-      contentSecurityPolicy: false, // Disabled for local development with Vite
+      // CSP is disabled in development because Vite's dev server relies on
+      // inline/eval'd scripts for HMR that a real policy would block.
+      contentSecurityPolicy: isProduction
+        ? {
+            directives: {
+              defaultSrc: ["'self'"],
+              scriptSrc: ["'self'"],
+              styleSrc: ["'self'", "'unsafe-inline'"], // app uses inline style={} extensively
+              imgSrc: ["'self'", 'data:', 'https:'],
+              fontSrc: ["'self'", 'https:', 'data:'],
+              connectSrc: ["'self'"],
+              objectSrc: ["'none'"],
+              baseUri: ["'self'"],
+              frameAncestors: ["'self'"],
+            },
+          }
+        : false,
       crossOriginEmbedderPolicy: false,
     })
   );
 
-  // CORS
+  // CORS — only the configured production origin is trusted once deployed;
+  // localhost fallbacks are for local development only.
   app.use(
     cors({
-      origin: [env.CORS_ORIGIN, 'http://localhost:3000', 'http://127.0.0.1:3000'],
+      origin: isProduction
+        ? [env.CORS_ORIGIN]
+        : [env.CORS_ORIGIN, 'http://localhost:3000', 'http://127.0.0.1:3000'],
       credentials: true,
     })
   );

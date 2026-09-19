@@ -428,7 +428,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
 
         {/* ─── Results Header ─── */}
         <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-[#8BA7B8]">
+          <p className="text-sm font-semibold text-[#8BA7B8] flex items-center gap-2">
             {filteredItems.length > 0 ? (
               <>
                 <span className="text-[#35C2C8] font-extrabold">{filteredItems.length}</span>
@@ -436,6 +436,12 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
               </>
             ) : (
               'Không tìm thấy tác phẩm phù hợp'
+            )}
+            {isLoading && (
+              <span className="flex items-center gap-1 text-[11px] text-[#35C2C8]/70 font-medium">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Đang đồng bộ...
+              </span>
             )}
           </p>
 

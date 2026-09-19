@@ -141,7 +141,7 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
   /* ────────────────────────────────────────────────────────────────── */
   return (
     <div
-      className="min-h-screen bg-[#1a1510] text-[#f0ede8]"
+      className="min-h-screen bg-[#030A14] text-[#E8F4F8]"
       style={{ fontFamily: '"Plus Jakarta Sans", "Inter", sans-serif' }}
       role="main"
     >
@@ -160,10 +160,10 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
           style={{ transform: 'scale(1.06)', transformOrigin: 'center top', transition: 'transform 0.05s linear' }}
         />
 
-        {/* Dim overlay — same warmth as reference */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-[#1a1510]" />
+        {/* Dim overlay — ocean depth vignette */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-[#030A14]" />
         <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-[#1a1510] via-[#1a1510]/80 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-[#030A14] via-[#030A14]/80 to-transparent" />
 
         {/* Floating top bar */}
         <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-5 sm:px-10 pt-5">
@@ -180,7 +180,7 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
               onClick={() => onToggleSave(item)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold border transition-all cursor-pointer backdrop-blur-md ${
                 isSaved
-                  ? 'bg-amber-500/90 text-black border-amber-400'
+                  ? 'bg-[#19A7C7] text-white border-[#19A7C7]'
                   : 'bg-black/40 text-white/90 border-white/20 hover:border-white/40'
               }`}
             >
@@ -295,7 +295,7 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
                 </span>
               </div>
               {item.aiMatchScore && (
-                <span className="text-[10px] font-bold text-amber-400/70 tracking-widest uppercase">
+                <span className="text-[10px] font-bold text-[#35C2C8] tracking-widest uppercase">
                   {item.aiMatchScore}% Match
                 </span>
               )}
@@ -307,7 +307,7 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
             {isSeries && onOpenSeriesDetail ? (
               <button
                 onClick={() => onOpenSeriesDetail(item)}
-                className="flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm bg-amber-500 hover:bg-amber-400 text-black transition-all cursor-pointer shadow-[0_0_20px_rgba(245,158,11,0.4)]"
+                className="flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm bg-gradient-to-r from-[#087EA4] to-[#19A7C7] hover:brightness-110 text-white transition-all cursor-pointer shadow-[0_0_20px_rgba(53,194,200,0.35)]"
                 id="detail-watch-series-btn"
               >
                 <Tv className="w-4 h-4" />
@@ -316,7 +316,7 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
             ) : (
               <button
                 onClick={() => onOpenWhereToWatch(item)}
-                className="flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm bg-white text-black hover:bg-white/90 transition-all cursor-pointer"
+                className="flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm bg-gradient-to-r from-[#087EA4] to-[#19A7C7] hover:brightness-110 text-white transition-all cursor-pointer shadow-[0_0_20px_rgba(53,194,200,0.35)]"
                 id="detail-watch-now-btn"
               >
                 <Play className="w-4 h-4 fill-current" />
@@ -325,8 +325,8 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
             )}
             <button
               onClick={() => onOpenWhereToWatch(item)}
-              className="flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm border border-white/30 text-white/90 hover:border-white/60 hover:text-white transition-all cursor-pointer"
-              style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)' }}
+              className="flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm border border-[#35C2C8]/30 text-white/90 hover:border-[#35C2C8]/60 hover:text-white transition-all cursor-pointer"
+              style={{ background: 'rgba(11,32,53,0.6)', backdropFilter: 'blur(10px)' }}
               id="detail-where-to-watch-btn"
             >
               <MapPin className="w-4 h-4" />
@@ -339,7 +339,7 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
       {/* ═══════════════════════════════════════════════════════════
           GALLERY SECTION
           ═══════════════════════════════════════════════════════════ */}
-      <div className="px-5 sm:px-10 py-12" style={{ background: '#1a1510' }}>
+      <div className="px-5 sm:px-10 py-12" style={{ background: '#030A14' }}>
         <h2
           className="text-xs font-bold tracking-[0.35em] text-white/40 uppercase text-center mb-6"
         >
@@ -379,9 +379,9 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
       {/* ═══════════════════════════════════════════════════════════
           CONTENT TABS — Overview / Streaming / AI
           ═══════════════════════════════════════════════════════════ */}
-      <div style={{ background: '#141009', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+      <div style={{ background: '#071728', borderTop: '1px solid rgba(25,167,199,0.12)' }}>
         {/* Tab selector */}
-        <div className="flex border-b border-white/10 px-5 sm:px-10">
+        <div className="flex border-b border-[#19A7C7]/15 px-5 sm:px-10">
           {(['overview', 'streaming', 'ai'] as const).map((s) => (
             <button
               key={s}
@@ -393,7 +393,7 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
             >
               {s === 'overview' ? 'Overview' : s === 'streaming' ? 'Where to Watch' : 'AI Insight'}
               {activeSection === s && (
-                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-amber-400" />
+                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#19A7C7] to-[#35C2C8] shadow-[0_0_8px_rgba(53,194,200,0.6)]" />
               )}
             </button>
           ))}
@@ -436,7 +436,7 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
                 <div>
                   <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/35 mb-3 flex items-center justify-between">
                     <span>Your Rating</span>
-                    {ratingMsg && <span className="text-amber-400 normal-case tracking-normal">{ratingMsg}</span>}
+                    {ratingMsg && <span className="text-[#35C2C8] normal-case tracking-normal">{ratingMsg}</span>}
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {[1,2,3,4,5,6,7,8,9,10].map((score) => (
@@ -446,7 +446,7 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
                         id={`detail-rate-${score}`}
                         className={`w-9 h-9 rounded-lg text-sm font-bold transition-all cursor-pointer border ${
                           userScore === score
-                            ? 'bg-amber-500 text-black border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.5)]'
+                            ? 'bg-[#19A7C7] text-white border-[#19A7C7] shadow-[0_0_12px_rgba(25,167,199,0.5)]'
                             : 'text-white/50 hover:text-white border-white/15 hover:border-white/35'
                         }`}
                         style={{ background: userScore === score ? undefined : 'rgba(255,255,255,0.04)' }}
@@ -477,7 +477,7 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
                 {isSeries && (
                   <div className="rounded-2xl p-5 flex items-center justify-between border border-white/10" style={{ background: 'rgba(255,255,255,0.04)' }}>
                     <div className="flex items-center gap-3">
-                      <Tv className="w-5 h-5 text-amber-400" />
+                      <Tv className="w-5 h-5 text-[#35C2C8]" />
                       <div>
                         <p className="text-sm font-bold text-white">Series — {item.seasons?.length || 1} Season{(item.seasons?.length || 1) > 1 ? 's' : ''}</p>
                         <p className="text-xs text-white/45 mt-0.5">View episodes, AI recaps & watch progress</p>
@@ -486,7 +486,7 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
                     {onOpenSeriesDetail && (
                       <button
                         onClick={() => onOpenSeriesDetail(item)}
-                        className="flex items-center gap-1 px-4 py-2 rounded-full text-xs font-bold bg-amber-500 text-black hover:bg-amber-400 transition-all cursor-pointer"
+                        className="flex items-center gap-1 px-4 py-2 rounded-full text-xs font-bold bg-gradient-to-r from-[#087EA4] to-[#19A7C7] text-white hover:brightness-110 transition-all cursor-pointer"
                       >
                         Open <ChevronRight className="w-3.5 h-3.5" />
                       </button>
@@ -567,7 +567,7 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
                       <p className="text-sm font-bold text-white">{opt.provider}</p>
                       <p className="text-xs text-white/45 mt-0.5">
                         {opt.region} ·{' '}
-                        <span className={opt.type === 'free' ? 'text-green-400' : 'text-amber-400'}>
+                        <span className={opt.type === 'free' ? 'text-green-400' : 'text-[#35C2C8]'}>
                           {opt.type === 'subscription' ? 'Subscription' : opt.type === 'rent' ? `Rent ${opt.price || ''}` : 'Free'}
                         </span>
                       </p>
@@ -576,7 +576,7 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
                       href={opt.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-white text-black hover:bg-white/90 transition-all shrink-0"
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-gradient-to-r from-[#087EA4] to-[#19A7C7] text-white hover:brightness-110 transition-all shrink-0"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
@@ -606,7 +606,7 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
                   {aiInsight?.whyYouMayLike || item.whyYouMayLike || 'A deeply cinematic work for audiences who prize visual restraint and emotional resonance.'}
                 </p>
                 {item.aiMatchScore && (
-                  <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-300 text-xs font-bold">
+                  <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#087EA4] to-[#35C2C8] text-white text-xs font-bold shadow-[0_0_14px_rgba(53,194,200,0.3)]">
                     <Sparkles className="w-3.5 h-3.5" />
                     {item.aiMatchScore}% match for your taste
                   </div>
@@ -637,7 +637,7 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
           FOOTER STRIP — similar films, reference-style
           ═══════════════════════════════════════════════════════════ */}
       {similarFilms.length > 0 && (
-        <div style={{ background: '#0f0c08', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ background: '#050E18', borderTop: '1px solid rgba(25,167,199,0.12)' }}>
           {/* Title bar */}
           <div className="flex items-center justify-between px-5 sm:px-10 py-5 border-b border-white/8">
             <div className="flex items-center gap-3">
@@ -676,7 +676,7 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
                   <p className="text-[10px] text-white/45 mt-0.5">{other.year} · ★ {other.rating}</p>
                 </div>
                 {/* Hover overlay */}
-                <div className="absolute inset-0 bg-amber-400/0 group-hover:bg-amber-400/10 transition-colors duration-300" />
+                <div className="absolute inset-0 bg-[#35C2C8]/0 group-hover:bg-[#35C2C8]/10 transition-colors duration-300" />
               </div>
             ))}
           </div>
