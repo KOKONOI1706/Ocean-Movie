@@ -1,4 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import {
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigate,
+  useParams,
+  type Location,
+} from 'react-router-dom';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { MovieRail } from './components/MovieRail';
@@ -42,13 +51,174 @@ const FALLBACK_SERIES = CINEMA_ITEMS.filter((i) => i.type === 'series');
 const FALLBACK_FOR_YOU = CINEMA_ITEMS.filter((i) => i.aiMatchScore && i.aiMatchScore >= 88).slice(0, 8);
 const FALLBACK_DEEP_WATER = CINEMA_ITEMS.filter((i) => i.moods.includes('philosophical') || i.genres.includes('Mystery')).slice(0, 10);
 
+// ─── Tab id <-> route path mapping ────────────────────────────────────────────
+// Centralizes the mapping so nav components (Header/BottomNav) can keep using
+// simple tab-id strings while the URL itself uses real path segments.
+const TAB_PATHS: Record<string, string> = {
+  discover: '/',
+  auth: '/auth',
+  login: '/auth',
+  explore: '/explore',
+  movies: '/movies',
+  series: '/series',
+  shorts: '/shorts',
+  'ai-films': '/ai-films',
+  collections: '/collections',
+  'my-cinema': '/my-cinema',
+  'ai-discovery': '/ai-discovery',
+};
+
+function pathToTab(pathname: string): string {
+  if (pathname === '/') return 'discover';
+  if (pathname.startsWith('/movie/')) return 'movie-detail';
+  if (pathname.startsWith('/series/')) return 'series-detail';
+  const segment = pathname.split('/')[1];
+  return segment || 'discover';
+}
+
+// ─── Shared helper: resolve a MediaItem by its slug (route param) ───────────
+// Tries the backend first, falls back to the local dataset — mirrors the old
+// query-param bootstrap logic, just keyed off useParams() instead of
+// URLSearchParams.
+function useMediaBySlug(
+  slug: string | undefined,
+  fetcher: (slug: string) => Promise<MediaItem | null | undefined>,
+): { item: MediaItem | null; loading: boolean } {
+  const [item, setItem] = useState<MediaItem | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (!slug) {
+      setItem(null);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    fetcher(slug)
+      .then((result) => {
+        if (!isMounted) return;
+        setItem(result ?? CINEMA_ITEMS.find((c) => c.id === slug) ?? null);
+      })
+      .catch(() => {
+        if (isMounted) setItem(CINEMA_ITEMS.find((c) => c.id === slug) ?? null);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [slug]);
+
+  return { item, loading };
+}
+
+// ─── /movie/:slug ─────────────────────────────────────────────────────────────
+interface MovieDetailRouteProps {
+  onSelectMedia: (item: MediaItem) => void;
+  onOpenWhereToWatch: (item: MediaItem) => void;
+  onOpenSeriesDetail: (item: MediaItem) => void;
+  savedItemIds: string[];
+  onToggleSave: (item: MediaItem) => void;
+}
+
+function MovieDetailRoute({
+  onSelectMedia,
+  onOpenWhereToWatch,
+  onOpenSeriesDetail,
+  savedItemIds,
+  onToggleSave,
+}: MovieDetailRouteProps) {
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+  const { item, loading } = useMediaBySlug(slug, (s) => moviesApi.getById(s));
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [slug]);
+
+  if (loading) return null;
+  if (!item) return <Navigate to="/" replace />;
+
+  return (
+    <MovieDetailPage
+      item={item}
+      onBack={() => {
+        navigate('/');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }}
+      onSelectMedia={onSelectMedia}
+      onOpenWhereToWatch={onOpenWhereToWatch}
+      onOpenSeriesDetail={onOpenSeriesDetail}
+      isSaved={savedItemIds.includes(item.id)}
+      onToggleSave={onToggleSave}
+    />
+  );
+}
+
+// ─── /series/:slug (rendered as an overlay on top of a background route) ────
+interface SeriesDetailRouteProps {
+  onOpenWhereToWatch: (item: MediaItem) => void;
+  savedItemIds: string[];
+  onToggleSave: (item: MediaItem) => void;
+  onUpdateEpisodeProgress: (episodeId: string, percentage: number) => void;
+  hasBackgroundLocation: boolean;
+}
+
+function SeriesDetailRoute({
+  onOpenWhereToWatch,
+  savedItemIds,
+  onToggleSave,
+  onUpdateEpisodeProgress,
+  hasBackgroundLocation,
+}: SeriesDetailRouteProps) {
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+  const { item } = useMediaBySlug(slug, (s) => seriesApi.getById(s));
+
+  if (!item) return null;
+
+  const handleClose = () => {
+    if (hasBackgroundLocation) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
+  };
+
+  return (
+    <SeriesDetailModal
+      item={item}
+      onClose={handleClose}
+      onOpenWhereToWatch={onOpenWhereToWatch}
+      isSaved={savedItemIds.includes(item.id)}
+      onToggleSave={onToggleSave}
+      onUpdateEpisodeProgress={onUpdateEpisodeProgress}
+    />
+  );
+}
+
 function AppContent() {
-  const [currentTab, setCurrentTab] = useState<string>('discover');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentTab = pathToTab(location.pathname);
+
+  // A series detail route can be opened either as a real overlay (navigated to
+  // from within the app, carrying `state.backgroundLocation`) or loaded
+  // directly (shared link / refresh) — in which case we fall back to Discover
+  // as the page rendered behind the modal.
+  const navState = location.state as { backgroundLocation?: Location } | null;
+  const isDirectSeriesLoad = currentTab === 'series-detail' && !navState?.backgroundLocation;
+  const backgroundLocation: Location | null =
+    navState?.backgroundLocation ??
+    (isDirectSeriesLoad
+      ? ({ pathname: '/', search: '', hash: '', state: null, key: 'default' } as Location)
+      : null);
 
   // ─── Modals ────────────────────────────────────────────────────────────────
-  const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
-  const [currentDetailItem, setCurrentDetailItem] = useState<MediaItem | null>(null);
-  const [seriesModalMedia, setSeriesModalMedia] = useState<MediaItem | null>(null);
   const [watchModalMedia, setWatchModalMedia] = useState<MediaItem | null>(null);
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
@@ -149,31 +319,9 @@ function AppContent() {
     }
     loadWatchlist();
 
-    // Handle direct URL navigation (?movie=..., ?series=..., ?tab=...)
-    const params = new URLSearchParams(window.location.search);
-    const movieSlug = params.get('movie');
-    const seriesSlug = params.get('series');
-    const tabParam = params.get('tab');
-
-    if (tabParam) setCurrentTab(tabParam);
-
-    if (movieSlug) {
-      moviesApi.getById(movieSlug)
-        .then((m) => { if (isMounted && m) { setCurrentDetailItem(m); setCurrentTab('movie-detail'); } })
-        .catch(() => {
-          const fallback = CINEMA_ITEMS.find((c) => c.id === movieSlug);
-          if (isMounted && fallback) { setCurrentDetailItem(fallback); setCurrentTab('movie-detail'); }
-        });
-    } else if (seriesSlug) {
-      seriesApi.getById(seriesSlug)
-        .then((s) => { if (isMounted && s) setSeriesModalMedia(s); })
-        .catch(() => {
-          const fallback = CINEMA_ITEMS.find((c) => c.id === seriesSlug);
-          if (isMounted && fallback) setSeriesModalMedia(fallback);
-        });
-    }
-
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // ─── Event Handlers ────────────────────────────────────────────────────────
@@ -215,51 +363,27 @@ function AppContent() {
     console.log(`Updated episode ${episodeId} to ${percentage}%`);
   };
 
+  // Navigate to a movie's full page (/movie/:slug) or open a series overlay
+  // (/series/:slug) on top of whatever page we're currently on.
   const handleSelectMedia = (item: MediaItem) => {
     const isSeries = item.type === 'series' || (item.seasons && item.seasons.length > 0);
-    const url = new URL(window.location.href);
     if (isSeries) {
-      setSeriesModalMedia(item);
-      url.searchParams.set('series', item.id);
-      url.searchParams.delete('movie');
-      window.history.pushState({}, '', url.toString());
+      navigate(`/series/${item.id}`, { state: { backgroundLocation: location } });
     } else {
-      setCurrentDetailItem(item);
-      setCurrentTab('movie-detail');
-      url.searchParams.set('movie', item.id);
-      url.searchParams.delete('series');
-      window.history.pushState({}, '', url.toString());
+      navigate(`/movie/${item.id}`);
     }
   };
 
-  const handleCloseModals = () => {
-    setSelectedMedia(null);
-    setSeriesModalMedia(null);
-    setCurrentDetailItem(null);
-    const url = new URL(window.location.href);
-    url.searchParams.delete('movie');
-    url.searchParams.delete('series');
-    window.history.pushState({}, '', url.toString());
-  };
-
-  const handleBackFromDetail = () => {
-    setCurrentDetailItem(null);
-    setCurrentTab('discover');
-    const url = new URL(window.location.href);
-    url.searchParams.delete('movie');
-    window.history.pushState({}, '', url.toString());
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Related-series link from inside the movie detail page: matches the old
+  // behaviour of dropping back to Discover with the series overlay on top.
+  const handleOpenSeriesFromMovieDetail = (item: MediaItem) => {
+    navigate(`/series/${item.id}`, {
+      state: { backgroundLocation: { pathname: '/', search: '', hash: '', state: null, key: 'default' } },
+    });
   };
 
   const handleNavigate = (tab: string) => {
-    setCurrentTab(tab);
-    const url = new URL(window.location.href);
-    if (tab === 'discover') {
-      url.searchParams.delete('tab');
-    } else {
-      url.searchParams.set('tab', tab);
-    }
-    window.history.pushState({}, '', url.toString());
+    navigate(TAB_PATHS[tab] ?? '/');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -277,14 +401,143 @@ function AppContent() {
     ?? CINEMA_ITEMS.find((c) => c.id === 'the-last-signal')
     ?? CINEMA_ITEMS[0];
 
-  if (currentTab === 'auth' || currentTab === 'login') {
+  if (currentTab === 'auth') {
     return (
       <LoginPage
         onBack={() => handleNavigate('discover')}
         onSuccess={() => handleNavigate('discover')}
+        onNavigate={handleNavigate}
       />
     );
   }
+
+  const discoverContent = (
+    <div>
+
+      {/* 1. Cinematic Full-Bleed Hero */}
+      <div id="hero-section">
+        <Hero
+          featuredItem={featuredFilm}
+          featuredItems={trendingItems.length > 0 ? trendingItems : FALLBACK_TRENDING}
+          onSelectMedia={handleSelectMedia}
+          onTriggerAISearch={handleOpenSearch}
+          onToggleSave={handleToggleSave}
+          savedItemIds={savedItemIds}
+        />
+      </div>
+
+      {/* 2. ĐANG THỊNH HÀNH — Surface level */}
+      <div id="trending-section">
+        {isLoadingRails ? (
+          <MovieRailSkeleton count={5} />
+        ) : (
+          <MovieRail
+            title="ĐANG THỊNH HÀNH"
+            subtitle="Những tác phẩm được khám phá nhiều nhất trên toàn cầu"
+            items={trendingItems}
+            onSelectMedia={handleSelectMedia}
+            onToggleSave={handleToggleSaveById}
+            onWhereToWatch={(item) => setWatchModalMedia(item)}
+            onViewAll={() => handleNavigate('explore')}
+            savedItemIds={savedItemIds}
+            depthAccent="surface"
+          />
+        )}
+      </div>
+
+      {/* 3. ĐỀ XUẤT TỪ AI — Distinctive section */}
+      <div id="ai-recommendations-section">
+        {isLoadingRails ? (
+          <MovieRailSkeleton count={5} />
+        ) : (
+          <AIRecommendationRail
+            items={forYouItems}
+            onSelectMedia={handleSelectMedia}
+            onToggleSave={handleToggleSaveById}
+            onWhereToWatch={(item) => setWatchModalMedia(item)}
+            onViewAll={() => handleNavigate('explore')}
+            savedItemIds={savedItemIds}
+          />
+        )}
+      </div>
+
+      {/* 4. MỚI CẬP NHẬT — Shallow depth */}
+      <div id="new-arrivals-section">
+        {isLoadingRails ? (
+          <MovieRailSkeleton count={5} />
+        ) : (
+          <MovieRail
+            title="MỚI CẬP NHẬT"
+            subtitle="Những gì vừa xuất hiện trong đại dương"
+            items={newArrivals}
+            onSelectMedia={handleSelectMedia}
+            onToggleSave={handleToggleSaveById}
+            onWhereToWatch={(item) => setWatchModalMedia(item)}
+            onViewAll={() => handleNavigate('explore')}
+            savedItemIds={savedItemIds}
+            depthAccent="shallow"
+          />
+        )}
+      </div>
+
+      {/* 5. SERIES — Twilight depth */}
+      <div id="series-section">
+        {isLoadingRails ? (
+          <MovieRailSkeleton count={5} />
+        ) : (
+          <MovieRail
+            title="SERIES"
+            subtitle="Những hành trình dài hơn"
+            items={seriesItems}
+            onSelectMedia={handleSelectMedia}
+            onToggleSave={handleToggleSaveById}
+            onWhereToWatch={(item) => setWatchModalMedia(item)}
+            onViewAll={() => handleNavigate('series')}
+            savedItemIds={savedItemIds}
+            depthAccent="twilight"
+          />
+        )}
+      </div>
+
+      {/* 6. BỘ SƯU TẬP — Editorial collection tiles */}
+      <div id="collections-strip-section">
+        <HomeCollectionStrip
+          onNavigateCollections={() => handleNavigate('collections')}
+        />
+      </div>
+
+      {/* 7. NHỮNG GÌ NẰM BÊN DƯỚI — Deep ocean / Hidden Gems */}
+      <div id="hidden-gems-section">
+        {isLoadingRails ? (
+          <MovieRailSkeleton count={5} />
+        ) : (
+          <MovieRail
+            title="NHỮNG GÌ NẰM BÊN DƯỚI"
+            subtitle="Không phải câu chuyện nào cũng nằm trên mặt nước."
+            items={deepWaterItems}
+            onSelectMedia={handleSelectMedia}
+            onToggleSave={handleToggleSaveById}
+            onWhereToWatch={(item) => setWatchModalMedia(item)}
+            onViewAll={() => handleNavigate('explore')}
+            savedItemIds={savedItemIds}
+            depthAccent="deep"
+          />
+        )}
+      </div>
+
+      {/* 8. ĐỂ AI DẪN ĐƯỜNG — Interactive AI console */}
+      <div id="ai-discovery-section">
+        <AIDiscoveryConsole onSearch={handleOpenSearch} />
+      </div>
+
+      {/* 9. Deep Abyssal Footer — only in discover tab */}
+      <OceanFooter onNavigate={handleNavigate} />
+    </div>
+  );
+
+  // The location used to resolve the "page" Routes — when a series overlay is
+  // open, this is the page behind it rather than the overlay's own URL.
+  const pageLocation = backgroundLocation ?? location;
 
   return (
     <div className="min-h-screen text-[#E8F4F8] font-sans flex flex-col antialiased relative selection:bg-[#19A7C7]/30 selection:text-white bg-[#030A14]">
@@ -300,7 +553,7 @@ function AppContent() {
 
       {/* ─── Minimal Cinematic Header ─── */}
       <Header
-        currentTab={currentTab}
+        currentTab={pathToTab(pageLocation.pathname)}
         onSelectTab={handleNavigate}
         onOpenSearch={handleOpenSearch}
         onOpenProfile={() => setIsProfileOpen(true)}
@@ -312,242 +565,134 @@ function AppContent() {
         className="flex-1 pb-20 relative"
         id="main-content"
       >
+        <Routes location={pageLocation}>
+          <Route path="/" element={discoverContent} />
 
-        {/* ======= DISCOVER / HOME TAB ======= */}
-        {currentTab === 'discover' && (
-          <div>
-
-            {/* 1. Cinematic Full-Bleed Hero */}
-            <div id="hero-section">
-              <Hero
-                featuredItem={featuredFilm}
-                featuredItems={trendingItems.length > 0 ? trendingItems : FALLBACK_TRENDING}
+          <Route
+            path="/movie/:slug"
+            element={(
+              <MovieDetailRoute
                 onSelectMedia={handleSelectMedia}
-                onTriggerAISearch={handleOpenSearch}
+                onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
+                onOpenSeriesDetail={handleOpenSeriesFromMovieDetail}
+                savedItemIds={savedItemIds}
                 onToggleSave={handleToggleSave}
+              />
+            )}
+          />
+
+          <Route
+            path="/explore"
+            element={(
+              <ExploreView
+                initialType="all"
+                onSelectMedia={handleSelectMedia}
+                onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
+                onToggleSave={handleToggleSaveById}
                 savedItemIds={savedItemIds}
               />
-            </div>
+            )}
+          />
 
-            {/* 2. ĐANG THỊNH HÀNH — Surface level */}
-            <div id="trending-section">
-              {isLoadingRails ? (
-                <MovieRailSkeleton count={5} />
-              ) : (
-                <MovieRail
-                  title="ĐANG THỊNH HÀNH"
-                  subtitle="Những tác phẩm được khám phá nhiều nhất trên toàn cầu"
-                  items={trendingItems}
-                  onSelectMedia={handleSelectMedia}
-                  onToggleSave={handleToggleSaveById}
-                  onWhereToWatch={(item) => setWatchModalMedia(item)}
-                  onViewAll={() => handleNavigate('explore')}
-                  savedItemIds={savedItemIds}
-                  depthAccent="surface"
-                />
-              )}
-            </div>
-
-            {/* 3. ĐỀ XUẤT TỪ AI — Distinctive section */}
-            <div id="ai-recommendations-section">
-              {isLoadingRails ? (
-                <MovieRailSkeleton count={5} />
-              ) : (
-                <AIRecommendationRail
-                  items={forYouItems}
-                  onSelectMedia={handleSelectMedia}
-                  onToggleSave={handleToggleSaveById}
-                  onWhereToWatch={(item) => setWatchModalMedia(item)}
-                  onViewAll={() => handleNavigate('explore')}
-                  savedItemIds={savedItemIds}
-                />
-              )}
-            </div>
-
-            {/* 4. MỚI CẬP NHẬT — Shallow depth */}
-            <div id="new-arrivals-section">
-              {isLoadingRails ? (
-                <MovieRailSkeleton count={5} />
-              ) : (
-                <MovieRail
-                  title="MỚI CẬP NHẬT"
-                  subtitle="Những gì vừa xuất hiện trong đại dương"
-                  items={newArrivals}
-                  onSelectMedia={handleSelectMedia}
-                  onToggleSave={handleToggleSaveById}
-                  onWhereToWatch={(item) => setWatchModalMedia(item)}
-                  onViewAll={() => handleNavigate('explore')}
-                  savedItemIds={savedItemIds}
-                  depthAccent="shallow"
-                />
-              )}
-            </div>
-
-            {/* 5. SERIES — Twilight depth */}
-            <div id="series-section">
-              {isLoadingRails ? (
-                <MovieRailSkeleton count={5} />
-              ) : (
-                <MovieRail
-                  title="SERIES"
-                  subtitle="Những hành trình dài hơn"
-                  items={seriesItems}
-                  onSelectMedia={handleSelectMedia}
-                  onToggleSave={handleToggleSaveById}
-                  onWhereToWatch={(item) => setWatchModalMedia(item)}
-                  onViewAll={() => handleNavigate('series')}
-                  savedItemIds={savedItemIds}
-                  depthAccent="twilight"
-                />
-              )}
-            </div>
-
-            {/* 6. BỘ SƯU TẬP — Editorial collection tiles */}
-            <div id="collections-strip-section">
-              <HomeCollectionStrip
-                onNavigateCollections={() => handleNavigate('collections')}
+          <Route
+            path="/movies"
+            element={(
+              <ExploreView
+                initialType="movie"
+                onSelectMedia={handleSelectMedia}
+                onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
+                onToggleSave={handleToggleSaveById}
+                savedItemIds={savedItemIds}
               />
-            </div>
-
-            {/* 7. NHỮNG GÌ NẰM BÊN DƯỚI — Deep ocean / Hidden Gems */}
-            <div id="hidden-gems-section">
-              {isLoadingRails ? (
-                <MovieRailSkeleton count={5} />
-              ) : (
-                <MovieRail
-                  title="NHỮNG GÌ NẰM BÊN DƯỚI"
-                  subtitle="Không phải câu chuyện nào cũng nằm trên mặt nước."
-                  items={deepWaterItems}
-                  onSelectMedia={handleSelectMedia}
-                  onToggleSave={handleToggleSaveById}
-                  onWhereToWatch={(item) => setWatchModalMedia(item)}
-                  onViewAll={() => handleNavigate('explore')}
-                  savedItemIds={savedItemIds}
-                  depthAccent="deep"
-                />
-              )}
-            </div>
-
-            {/* 8. ĐỂ AI DẪN ĐƯỜNG — Interactive AI console */}
-            <div id="ai-discovery-section">
-              <AIDiscoveryConsole onSearch={handleOpenSearch} />
-            </div>
-
-            {/* 9. Deep Abyssal Footer — only in discover tab */}
-            <OceanFooter onNavigate={handleNavigate} />
-          </div>
-        )}
-
-        {/* ======= MOVIE DETAIL PAGE ======= */}
-        {currentTab === 'movie-detail' && currentDetailItem && (
-          <MovieDetailPage
-            item={currentDetailItem}
-            onBack={handleBackFromDetail}
-            onSelectMedia={handleSelectMedia}
-            onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
-            onOpenSeriesDetail={(item) => {
-              setCurrentDetailItem(null);
-              setCurrentTab('discover');
-              setSeriesModalMedia(item);
-            }}
-            isSaved={savedItemIds.includes(currentDetailItem.id)}
-            onToggleSave={handleToggleSave}
+            )}
           />
-        )}
 
-        {/* ======= EXPLORE TAB ======= */}
-        {currentTab === 'explore' && (
-          <ExploreView
-            initialType="all"
-            onSelectMedia={handleSelectMedia}
-            onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
-            onToggleSave={handleToggleSaveById}
-            savedItemIds={savedItemIds}
+          <Route
+            path="/series"
+            element={(
+              <ExploreView
+                initialType="series"
+                onSelectMedia={handleSelectMedia}
+                onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
+                onToggleSave={handleToggleSaveById}
+                savedItemIds={savedItemIds}
+              />
+            )}
           />
-        )}
 
-        {/* ======= PHIM TAB ======= */}
-        {currentTab === 'movies' && (
-          <ExploreView
-            initialType="movie"
-            onSelectMedia={handleSelectMedia}
-            onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
-            onToggleSave={handleToggleSaveById}
-            savedItemIds={savedItemIds}
+          <Route
+            path="/shorts"
+            element={(
+              <ExploreView
+                initialType="short"
+                onSelectMedia={handleSelectMedia}
+                onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
+                onToggleSave={handleToggleSaveById}
+                savedItemIds={savedItemIds}
+              />
+            )}
           />
-        )}
 
-        {/* ======= SERIES TAB ======= */}
-        {currentTab === 'series' && (
-          <ExploreView
-            initialType="series"
-            onSelectMedia={handleSelectMedia}
-            onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
-            onToggleSave={handleToggleSaveById}
-            savedItemIds={savedItemIds}
+          <Route
+            path="/ai-films"
+            element={(
+              <ExploreView
+                initialType="ai_film"
+                onSelectMedia={handleSelectMedia}
+                onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
+                onToggleSave={handleToggleSaveById}
+                savedItemIds={savedItemIds}
+              />
+            )}
           />
-        )}
 
-        {/* ======= PHIM NGẮN TAB ======= */}
-        {currentTab === 'shorts' && (
-          <ExploreView
-            initialType="short"
-            onSelectMedia={handleSelectMedia}
-            onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
-            onToggleSave={handleToggleSaveById}
-            savedItemIds={savedItemIds}
+          <Route
+            path="/collections"
+            element={(
+              <CollectionsView
+                onSelectMedia={handleSelectMedia}
+                onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
+                onToggleSave={handleToggleSaveById}
+                savedItemIds={savedItemIds}
+              />
+            )}
           />
-        )}
 
-        {/* ======= AI FILMS TAB ======= */}
-        {currentTab === 'ai-films' && (
-          <ExploreView
-            initialType="ai_film"
-            onSelectMedia={handleSelectMedia}
-            onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
-            onToggleSave={handleToggleSaveById}
-            savedItemIds={savedItemIds}
+          <Route
+            path="/my-cinema"
+            element={(
+              <MyCinemaView
+                savedItems={savedItems}
+                userRatings={userRatings}
+                onSelectMedia={handleSelectMedia}
+                onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
+                onRemoveSaved={handleRemoveSaved}
+                onOpenCreator={(creator) => setSelectedCreator(creator)}
+              />
+            )}
           />
-        )}
 
-        {/* ======= COLLECTIONS TAB ======= */}
-        {currentTab === 'collections' && (
-          <CollectionsView
-            onSelectMedia={handleSelectMedia}
-            onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
-            onToggleSave={handleToggleSaveById}
-            savedItemIds={savedItemIds}
+          <Route
+            path="/ai-discovery"
+            element={(
+              <div className="py-12 min-h-[70vh] flex items-center justify-center">
+                <AIDiscoveryConsole onSearch={handleOpenSearch} />
+              </div>
+            )}
           />
-        )}
 
-        {/* ======= MY CINEMA TAB ======= */}
-        {currentTab === 'my-cinema' && (
-          <MyCinemaView
-            savedItems={savedItems}
-            userRatings={userRatings}
-            onSelectMedia={handleSelectMedia}
-            onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
-            onRemoveSaved={handleRemoveSaved}
-            onOpenCreator={(creator) => setSelectedCreator(creator)}
-          />
-        )}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
 
-        {/* ======= AI DISCOVERY TAB ======= */}
-        {currentTab === 'ai-discovery' && (
-          <div className="py-12 min-h-[70vh] flex items-center justify-center">
-            <AIDiscoveryConsole onSearch={handleOpenSearch} />
-          </div>
-        )}
-
-        {/* ======= Footer for non-discover tabs ======= */}
-        {currentTab !== 'discover' && (
+        {/* ======= Footer for non-discover routes ======= */}
+        {pageLocation.pathname !== '/' && (
           <OceanFooter onNavigate={handleNavigate} />
         )}
       </main>
 
       {/* ─── Mobile Bottom Navigation ─── */}
       <BottomNav
-        currentTab={currentTab}
+        currentTab={pathToTab(pageLocation.pathname)}
         onSelectTab={handleNavigate}
         onOpenSearch={() => handleOpenSearch()}
         onOpenProfile={() => setIsProfileOpen(true)}
@@ -556,17 +701,22 @@ function AppContent() {
 
       {/* ================= MODALS ================= */}
 
-      {/* MovieDetailModal removed — replaced by MovieDetailPage full-page view */}
-
-      {seriesModalMedia && (
-        <SeriesDetailModal
-          item={seriesModalMedia}
-          onClose={handleCloseModals}
-          onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
-          isSaved={savedItemIds.includes(seriesModalMedia.id)}
-          onToggleSave={handleToggleSave}
-          onUpdateEpisodeProgress={handleUpdateEpisodeProgress}
-        />
+      {/* ─── /series/:slug overlay ─── */}
+      {backgroundLocation && (
+        <Routes>
+          <Route
+            path="/series/:slug"
+            element={(
+              <SeriesDetailRoute
+                onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
+                savedItemIds={savedItemIds}
+                onToggleSave={handleToggleSave}
+                onUpdateEpisodeProgress={handleUpdateEpisodeProgress}
+                hasBackgroundLocation={Boolean(navState?.backgroundLocation)}
+              />
+            )}
+          />
+        </Routes>
       )}
 
       <AISearchModal
