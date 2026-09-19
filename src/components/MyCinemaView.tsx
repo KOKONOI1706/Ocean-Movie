@@ -141,7 +141,7 @@ export const MyCinemaView: React.FC<MyCinemaViewProps> = ({
     <div className="w-full text-[#E8F4F8] py-10 sm:py-14 text-left">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
         {/* Ocean Page Header */}
-        <div className="rounded-3xl p-6 sm:p-8 border border-cyan-500/20 bg-cyan-950/20 backdrop-blur-md shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="rounded-3xl p-6 sm:p-8 border border-[#35C2C8]/20 bg-[#071728]/80 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.4)] flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#35C2C8]/10 text-[#35C2C8] border border-[#35C2C8]/25 text-xs font-semibold">
               <Compass className="w-3.5 h-3.5" />
@@ -150,37 +150,37 @@ export const MyCinemaView: React.FC<MyCinemaViewProps> = ({
             <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
               Hải Trình Của Tôi
             </h1>
-            <p className="text-sm text-gray-300 max-w-xl">
+            <p className="text-sm text-[#8BA7B8] max-w-xl">
               Nơi lưu trữ những hòn đảo câu chuyện bạn đã ghé thăm, các tập phim đang theo dõi và tác giả truyền cảm hứng.
             </p>
           </div>
 
-          <div className="flex items-center gap-4 bg-white/5 p-3 rounded-2xl border border-white/10 backdrop-blur-sm self-start md:self-auto">
+          <div className="flex items-center gap-4 bg-[#0B2035]/50 p-3 rounded-2xl border border-[#19A7C7]/20 backdrop-blur-sm self-start md:self-auto">
             <div className="text-center px-2">
               <span className="text-xl font-bold text-white block">
                 {savedMediaList.length}
               </span>
-              <span className="text-[11px] text-gray-400 font-medium">Đã lưu</span>
+              <span className="text-[11px] text-[#8BA7B8] font-medium">Đã lưu</span>
             </div>
             <div className="w-px h-8 bg-white/10" />
             <div className="text-center px-2">
               <span className="text-xl font-bold text-[#35C2C8] block">
                 {continueWatchingItems.length}
               </span>
-              <span className="text-[11px] text-gray-400 font-medium">Đang xem</span>
+              <span className="text-[11px] text-[#8BA7B8] font-medium">Đang xem</span>
             </div>
             <div className="w-px h-8 bg-white/10" />
             <div className="text-center px-2">
               <span className="text-xl font-bold text-[#19A7C7] block">
                 {ratedMediaList.length || 8}
               </span>
-              <span className="text-[11px] text-gray-400 font-medium">Đã đánh giá</span>
+              <span className="text-[11px] text-[#8BA7B8] font-medium">Đã đánh giá</span>
             </div>
           </div>
         </div>
 
         {/* Sub Navigation Tabs */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar border-b border-cyan-900/30 pb-2">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar border-b border-[#19A7C7]/15 pb-2">
           {[
             { id: 'continue', label: `Đang xem dở (${continueWatchingItems.length})` },
             { id: 'list', label: `Danh sách đã lưu (${savedMediaList.length})` },
@@ -192,8 +192,8 @@ export const MyCinemaView: React.FC<MyCinemaViewProps> = ({
               onClick={() => setActiveSubTab(tab.id as any)}
               className={`px-4 py-2 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 activeSubTab === tab.id
-                  ? 'bg-gradient-to-br from-cyan-600 to-[#35C2C8] text-white shadow-md'
-                  : 'bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white border border-white/10'
+                  ? 'bg-gradient-to-r from-[#087EA4] to-[#35C2C8] text-white shadow-[0_0_12px_rgba(53,194,200,0.3)]'
+                  : 'bg-[#0B2035]/50 text-[#8BA7B8] hover:bg-[#0F2A45] hover:text-white border border-[#19A7C7]/20 hover:border-[#35C2C8]/40'
               }`}
             >
               {tab.label}
@@ -212,7 +212,7 @@ export const MyCinemaView: React.FC<MyCinemaViewProps> = ({
               {continueWatchingItems.map((item, idx) => (
                 <div
                   key={idx}
-                  className="bg-[#061826]/60 backdrop-blur-md rounded-2xl overflow-hidden border border-white/10 hover:border-[#35C2C8]/50 shadow-lg hover:shadow-cyan-950/40 transition-all flex flex-col justify-between group"
+                  className="bg-[#061826]/60 backdrop-blur-md rounded-2xl overflow-hidden border border-[#19A7C7]/15 hover:border-[#35C2C8]/50 shadow-lg hover:shadow-cyan-950/40 transition-all flex flex-col justify-between group"
                 >
                   <div className="relative aspect-[16/9] overflow-hidden bg-black/40">
                     <img
@@ -245,7 +245,7 @@ export const MyCinemaView: React.FC<MyCinemaViewProps> = ({
                     <h3 className="font-bold text-sm text-white group-hover:text-[#35C2C8] transition-colors">
                       {item.episodeTitle}
                     </h3>
-                    <p className="text-xs text-gray-400 truncate">
+                    <p className="text-xs text-[#8BA7B8] truncate">
                       Tác phẩm: {item.media.title}
                     </p>
 
@@ -295,12 +295,12 @@ export const MyCinemaView: React.FC<MyCinemaViewProps> = ({
                 ))}
               </div>
             ) : (
-              <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-12 text-center border border-dashed border-white/15 space-y-3">
-                <Bookmark className="w-8 h-8 text-cyan-400/50 mx-auto" />
+              <div className="bg-[#071728]/50 backdrop-blur-sm rounded-3xl p-12 text-center border border-dashed border-[#35C2C8]/25 space-y-3">
+                <Bookmark className="w-8 h-8 text-[#35C2C8]/50 mx-auto" />
                 <h3 className="font-bold text-base text-white">
                   Hải trình của bạn chưa lưu tác phẩm nào
                 </h3>
-                <p className="text-xs text-gray-400 max-w-md mx-auto">
+                <p className="text-xs text-[#8BA7B8] max-w-md mx-auto">
                   Hãy nhấn biểu tượng dấu cộng (+) hoặc nút "Lưu vào Hải trình" tại bất kỳ bộ phim nào để dễ dàng theo dõi lại.
                 </p>
               </div>
@@ -323,7 +323,7 @@ export const MyCinemaView: React.FC<MyCinemaViewProps> = ({
                 <div
                   key={idx}
                   onClick={() => onSelectMedia(media)}
-                  className="bg-[#061826]/60 backdrop-blur-md p-4 rounded-2xl border border-white/10 hover:border-[#35C2C8]/50 shadow-md flex items-center gap-4 cursor-pointer transition-all"
+                  className="bg-[#061826]/60 backdrop-blur-md p-4 rounded-2xl border border-[#19A7C7]/15 hover:border-[#35C2C8]/50 shadow-md flex items-center gap-4 cursor-pointer transition-all"
                 >
                   <img
                     src={media.posterUrl}
@@ -334,7 +334,7 @@ export const MyCinemaView: React.FC<MyCinemaViewProps> = ({
                     <h3 className="font-bold text-sm text-white truncate">
                       {media.title}
                     </h3>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-[#8BA7B8]">
                       {media.year} · {media.genres[0]}
                     </p>
                     <div className="flex items-center gap-1 mt-1 text-amber-400 font-bold text-xs">
@@ -361,7 +361,7 @@ export const MyCinemaView: React.FC<MyCinemaViewProps> = ({
                 return (
                   <div
                     key={creator.id}
-                    className="bg-[#061826]/60 backdrop-blur-md rounded-2xl p-5 border border-white/10 hover:border-[#35C2C8]/50 shadow-md flex flex-col justify-between space-y-4"
+                    className="bg-[#061826]/60 backdrop-blur-md rounded-2xl p-5 border border-[#19A7C7]/15 hover:border-[#35C2C8]/50 shadow-md flex flex-col justify-between space-y-4"
                   >
                     <div className="flex items-center gap-3">
                       <img
@@ -376,17 +376,17 @@ export const MyCinemaView: React.FC<MyCinemaViewProps> = ({
                         <p className="text-xs text-[#35C2C8] font-medium">
                           {creator.role}
                         </p>
-                        <span className="text-[11px] text-gray-400">
+                        <span className="text-[11px] text-[#8BA7B8]">
                           {creator.bornLocation}
                         </span>
                       </div>
                     </div>
 
-                    <p className="text-xs text-gray-300 line-clamp-2 italic">
+                    <p className="text-xs text-[#8BA7B8] line-clamp-2 italic">
                       {creator.manifesto}
                     </p>
 
-                    <div className="pt-2 border-t border-white/10 flex items-center justify-between">
+                    <div className="pt-2 border-t border-[#19A7C7]/15 flex items-center justify-between">
                       <button
                         onClick={() => onOpenCreator(creator)}
                         className="text-xs font-semibold text-[#35C2C8] hover:text-cyan-300 transition-colors cursor-pointer"
@@ -399,7 +399,7 @@ export const MyCinemaView: React.FC<MyCinemaViewProps> = ({
                         className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
                           isFollowed
                             ? 'bg-[#35C2C8]/15 text-[#35C2C8] border border-[#35C2C8]/30'
-                            : 'bg-white/10 text-gray-300 hover:bg-white/15'
+                            : 'bg-white/10 text-[#8BA7B8] hover:bg-white/15'
                         }`}
                       >
                         {isFollowed ? 'Đang theo dõi' : '+ Theo dõi'}
