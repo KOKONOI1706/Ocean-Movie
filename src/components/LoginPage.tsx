@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { AuthForm } from './AuthForm';
+import { OceanFooter } from './ocean/OceanFooter';
 import { Waves, Sparkles, Compass, ArrowLeft, Film, BookmarkCheck, Shield, ChevronRight } from 'lucide-react';
 
 interface LoginPageProps {
   onBack?: () => void;
   onSuccess?: () => void;
+  onNavigate?: (tab: string) => void;
   initialMode?: 'login' | 'register';
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({
   onBack,
   onSuccess,
+  onNavigate,
   initialMode = 'login',
 }) => {
   const [currentMode, setCurrentMode] = useState<'login' | 'register'>(initialMode);
@@ -49,12 +52,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
         {/* Brand Link */}
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-cyan-950/60 border border-cyan-400/30 flex items-center justify-center text-cyan-400 shadow-md shadow-cyan-950/50">
+          <div className="w-9 h-9 rounded-xl bg-cyan-950/50 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-md shadow-cyan-950/50">
             <Waves className="w-5 h-5" />
           </div>
-          <span className="font-bold text-base sm:text-lg tracking-wider text-white uppercase font-sans">
-            BIỂN PHIM
-          </span>
+          <div className="flex flex-col">
+            <span className="font-serif font-medium text-lg sm:text-xl tracking-wide text-white leading-none">
+              BIỂN PHIM
+            </span>
+            <span className="text-[10px] text-cyan-400/80 font-medium tracking-widest uppercase mt-0.5">
+              OCEAN CINEMA
+            </span>
+          </div>
         </div>
 
         {/* Security badge */}
@@ -177,9 +185,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-xs text-slate-500 border-t border-cyan-950/40">
-        <p>© 2026 Biển Phim • Nền tảng khám phá điện ảnh đa chiều sâu. Thiết kế với trải nghiệm chuẩn rạp.</p>
-      </footer>
+      <div className="relative z-10">
+        <OceanFooter onNavigate={(tab) => onNavigate?.(tab)} />
+      </div>
     </div>
   );
 };
