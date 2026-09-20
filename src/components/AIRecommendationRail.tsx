@@ -23,13 +23,13 @@ const AIRecommendationCard: React.FC<{
 
   return (
     <article
-      className="group relative flex flex-col rounded-lg overflow-hidden bg-[#050E1C]/95 border border-cyan-700/20 hover:border-cyan-400/40 shadow-lg hover:shadow-[0_16px_48px_rgba(8,126,164,0.18)] transition-all duration-350 ease-out cursor-pointer select-none w-[240px] sm:w-[280px] shrink-0 text-left"
+      className="group relative flex flex-col rounded-lg overflow-hidden bg-[#050E1C]/95 border border-cyan-700/20 hover:border-cyan-400/40 shadow-lg hover:shadow-[0_16px_48px_rgba(8,126,164,0.18)] transition-all duration-350 ease-out cursor-pointer select-none w-[180px] sm:w-[220px] shrink-0 text-left"
       onClick={() => onSelect(item)}
     >
       {/* Image with AI match overlay */}
-      <div className="relative aspect-[16/10] overflow-hidden bg-[#020A12]">
+      <div className="relative aspect-[2/3] overflow-hidden bg-[#020A12]">
         <img
-          src={item.backdropUrl || item.posterUrl}
+          src={item.posterUrl}
           alt={item.title}
           loading="lazy"
           decoding="async"

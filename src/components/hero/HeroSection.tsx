@@ -75,9 +75,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#030A14] to-transparent" />
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-[92vh] sm:min-h-screen max-w-[1400px] flex-col justify-end px-5 pb-8 pt-24 sm:px-8 lg:justify-center lg:px-12 lg:pb-16 lg:pt-20">
+      <div className="relative z-10 mx-auto flex min-h-[92vh] sm:min-h-screen max-w-[1600px] flex-col justify-end px-5 pb-8 pt-24 sm:px-8 lg:justify-center lg:px-12 lg:pb-16 lg:pt-20">
         <div className="grid grid-cols-1 items-end gap-8 lg:grid-cols-12 lg:gap-6">
-          <div className="lg:col-span-5 xl:col-span-4 lg:mb-8">
+          <div className="lg:col-span-4 lg:mb-8">
             <FeaturedMovie
               item={active}
               isSaved={savedItemIds.includes(active.id)}
@@ -87,8 +87,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             />
           </div>
 
-          <div className="relative lg:col-span-7 xl:col-span-8">
-            <div className="relative mx-auto w-full max-w-3xl lg:mr-0 lg:ml-8">
+          <div className="relative lg:col-span-8">
+            <div className="relative mx-auto w-full max-w-5xl xl:max-w-6xl lg:mr-0 lg:ml-8">
               <MovieArtwork item={active} quote={active.editorialQuote} />
               <div className="relative -mt-10 sm:-mt-16 lg:absolute lg:bottom-[-150px] lg:-right-80 lg:mt-0 lg:w-[140%] xl:w-[112%]">
                 <FloatingMovieCarousel

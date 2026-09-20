@@ -7,7 +7,7 @@ interface MovieRailSkeletonProps {
 
 export const MovieRailSkeleton: React.FC<MovieRailSkeletonProps> = ({
   count = 5,
-  aspectRatio = 'landscape',
+  aspectRatio = 'poster',
 }) => {
   return (
     <section className="py-8 sm:py-10 select-none" aria-label="Đang tải..." aria-busy="true">
