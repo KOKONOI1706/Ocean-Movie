@@ -39,6 +39,12 @@ export const WhereToWatchModal: React.FC<WhereToWatchModalProps> = ({ item, onCl
       const result = await aiApi.findWhereToWatch(item.id, isSeries ? 'series' : 'movie');
       setAiResults(result.options);
       setAiSource(result.source);
+      // Results come back region-tagged (currently US, from JustWatch's US
+      // catalog) — switch the tab so they're visible immediately instead of
+      // silently filtered out by whatever region happened to be selected.
+      if (result.options.length > 0) {
+        setSelectedRegion(result.options[0].region || 'Global');
+      }
     } catch {
       setAiSource('search_failed');
     } finally {

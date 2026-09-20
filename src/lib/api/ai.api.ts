@@ -3,7 +3,7 @@ import { transformBackendMovie } from './transformers.js';
 import { MediaItem, StreamingOption } from '../../types.js';
 
 export interface WhereToWatchSearchResult {
-  source: 'cache' | 'ai_search' | 'no_results' | 'search_failed' | 'not_configured';
+  source: 'cache' | 'ai_search' | 'no_results' | 'search_failed';
   options: StreamingOption[];
 }
 

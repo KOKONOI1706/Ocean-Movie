@@ -11,47 +11,81 @@ function getGemini(): GoogleGenAI | null {
   return genAIClient;
 }
 
-// Only surface links whose domain is a real, known legal streaming platform —
-// grounded search results are real pages Google actually found, but we still
-// don't want to show a link just because Gemini's summary called it a
-// "streaming site"; matching a hand-maintained allowlist keeps every link
-// pointing somewhere legitimate instead of trusting the model's judgment.
-const KNOWN_PROVIDERS: { match: RegExp; name: string; type: 'FREE' | 'SUBSCRIPTION' | 'RENT' | 'BUY' }[] = [
-  { match: /netflix\.com/i, name: 'Netflix', type: 'SUBSCRIPTION' },
-  { match: /primevideo\.com|amazon\.com\/.*(video|dp)/i, name: 'Prime Video', type: 'SUBSCRIPTION' },
-  { match: /disneyplus\.com/i, name: 'Disney+', type: 'SUBSCRIPTION' },
-  { match: /hulu\.com/i, name: 'Hulu', type: 'SUBSCRIPTION' },
-  { match: /max\.com|hbomax\.com/i, name: 'Max', type: 'SUBSCRIPTION' },
-  { match: /tv\.apple\.com/i, name: 'Apple TV', type: 'RENT' },
-  { match: /play\.google\.com/i, name: 'Google TV', type: 'RENT' },
-  { match: /youtube\.com\/watch/i, name: 'YouTube', type: 'RENT' },
-  { match: /vudu\.com|fandangoathome\.com/i, name: 'Fandango at Home', type: 'RENT' },
-  { match: /peacocktv\.com/i, name: 'Peacock', type: 'SUBSCRIPTION' },
-  { match: /paramountplus\.com/i, name: 'Paramount+', type: 'SUBSCRIPTION' },
-  { match: /crunchyroll\.com/i, name: 'Crunchyroll', type: 'SUBSCRIPTION' },
-  { match: /mubi\.com/i, name: 'Mubi', type: 'SUBSCRIPTION' },
-];
-
-function matchKnownProvider(uri: string): { name: string; type: 'FREE' | 'SUBSCRIPTION' | 'RENT' | 'BUY' } | null {
-  for (const p of KNOWN_PROVIDERS) {
-    if (p.match.test(uri)) return { name: p.name, type: p.type };
-  }
-  return null;
-}
-
 // Cached links older than this are re-searched rather than trusted forever —
 // streaming availability changes (titles leave/join catalogs) and a live web
 // search is the whole point of this feature.
 const AVAILABILITY_STALE_AFTER_MS = 14 * 24 * 60 * 60 * 1000;
 
+const SCRAPE_HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; BienPhimBot/1.0; +https://bienphim.vn)' };
+
+async function fetchText(url: string): Promise<string> {
+  const res = await fetch(url, { headers: SCRAPE_HEADERS });
+  if (!res.ok) throw new Error(`${url} -> HTTP ${res.status}`);
+  return res.text();
+}
+
+function mapMonetizationType(t: string | undefined): 'FREE' | 'SUBSCRIPTION' | 'RENT' | 'BUY' {
+  switch (t) {
+    case 'FREE':
+    case 'ADS':
+      return 'FREE';
+    case 'RENT':
+      return 'RENT';
+    case 'BUY':
+      return 'BUY';
+    default:
+      return 'SUBSCRIPTION'; // FLATRATE, FLATRATE_AND_BUY, etc.
+  }
+}
+
+interface JustWatchOffer {
+  provider: string;
+  type: 'FREE' | 'SUBSCRIPTION' | 'RENT' | 'BUY';
+  url: string;
+  price?: string;
+}
+
+/**
+ * JustWatch server-renders each title page with click-out links
+ * (`e.justwatch.com/a?...&cx=<base64 JSON>`) whose payload is the exact data
+ * JustWatch itself uses to send visitors to the right provider — the real
+ * destination URL, provider name, and price. Reading that payload straight
+ * off the page gives real, currently-live offers with no API key, no
+ * model involved, and nothing to hallucinate: every link is one JustWatch
+ * itself lists right now.
+ */
+function extractJustWatchOffers(html: string): JustWatchOffer[] {
+  const offers = new Map<string, JustWatchOffer>();
+  // The page HTML-entity-encodes "&" as "&amp;" inside the href attribute,
+  // so the separator before cx= is "&amp;cx=", not a bare "&cx=".
+  const linkRegex = /href="https:\/\/e\.justwatch\.com\/a\?[^"]*?(?:\?|&(?:amp;)?)cx=([^"&]+)/g;
+  let match: RegExpExecArray | null;
+  while ((match = linkRegex.exec(html))) {
+    try {
+      const decoded = JSON.parse(Buffer.from(decodeURIComponent(match[1]), 'base64').toString('utf-8'));
+      const clickout = decoded?.data?.find((d: any) => d.schema?.includes('clickout_context'))?.data;
+      if (!clickout?.provider || !clickout?.deeplinkFallback) continue;
+      const type = mapMonetizationType(clickout.monetizationType);
+      const key = `${clickout.provider}-${type}`;
+      if (offers.has(key)) continue;
+      offers.set(key, {
+        provider: clickout.provider,
+        type,
+        url: clickout.deeplinkFallback,
+        price: clickout.priceCent ? `${(clickout.priceCent / 100).toFixed(2)} ${clickout.currency || 'USD'}` : undefined,
+      });
+    } catch {
+      // Malformed/unexpected payload shape — skip this one link, not the whole page.
+    }
+  }
+  return Array.from(offers.values());
+}
+
 export class AIService {
   /**
-   * Live web search for real, legal streaming links via Gemini's Google
-   * Search grounding tool. Unlike the rest of this service, this doesn't ask
-   * the model to author an answer — it only trusts the actual URLs the
-   * search tool retrieved, filtered to a known-provider allowlist, so every
-   * link shown is one Google Search genuinely found and that points at a
-   * real streaming platform (never a model-hallucinated URL).
+   * Live web search for real, legal streaming links — no API key required.
+   * Searches JustWatch (which itself aggregates real licensing deals) for
+   * the title, then scrapes the actual click-out offers off its title page.
    */
   async findWhereToWatch(mediaIdOrSlug: string, mediaType: 'movie' | 'series') {
     const media =
@@ -83,39 +117,24 @@ export class AIService {
       };
     }
 
-    const gemini = getGemini();
-    if (!gemini) {
-      return { source: 'not_configured' as const, options: [] };
-    }
-
-    const year = 'year' in media ? media.year : media.startYear;
-    const prompt = `Search the web and tell me which official, legal streaming platforms currently offer "${media.title}" (${year}) to watch, rent, or buy. List each platform's direct watch/title page URL.`;
-
-    let groundingChunks: { web?: { uri?: string; title?: string } }[] = [];
+    let offers: JustWatchOffer[];
     try {
-      const response = await gemini.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: prompt,
-        config: { tools: [{ googleSearch: {} }] },
-      });
-      groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+      const pathType = mediaType === 'movie' ? 'movie' : 'tv-show';
+      const searchHtml = await fetchText(`https://www.justwatch.com/us/search?q=${encodeURIComponent(media.title)}`);
+      const linkMatch = searchHtml.match(
+        new RegExp(`href="https://www\\.justwatch\\.com/us/${pathType}/([a-z0-9-]+)"`)
+      );
+      if (!linkMatch) {
+        return { source: 'no_results' as const, options: [] };
+      }
+      const detailHtml = await fetchText(`https://www.justwatch.com/us/${pathType}/${linkMatch[1]}`);
+      offers = extractJustWatchOffers(detailHtml).slice(0, 8);
     } catch (err) {
-      console.warn('Gemini grounded web search failed:', err);
+      console.warn('JustWatch web search failed:', err);
       return { source: 'search_failed' as const, options: [] };
     }
 
-    const foundByProvider = new Map<string, { name: string; type: string; url: string }>();
-    for (const chunk of groundingChunks) {
-      const uri = chunk.web?.uri;
-      if (!uri) continue;
-      const match = matchKnownProvider(uri);
-      if (match && !foundByProvider.has(match.name)) {
-        foundByProvider.set(match.name, { name: match.name, type: match.type, url: uri });
-      }
-    }
-
-    const found = Array.from(foundByProvider.values()).slice(0, 6);
-    if (found.length === 0) {
+    if (offers.length === 0) {
       return { source: 'no_results' as const, options: [] };
     }
 
@@ -127,24 +146,32 @@ export class AIService {
       await prisma.availability.deleteMany({ where: { seriesId: media.id } });
     }
     const saved = [];
-    for (const f of found) {
-      const slug = f.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    for (const offer of offers) {
+      const slug = offer.provider.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
       const provider = await prisma.provider.upsert({
         where: { slug },
-        update: { name: f.name },
-        create: { name: f.name, slug },
+        update: { name: offer.provider },
+        create: { name: offer.provider, slug },
       });
       const availability = await prisma.availability.create({
         data: {
           providerId: provider.id,
           ...(mediaType === 'movie' ? { movieId: media.id } : { seriesId: media.id }),
-          region: 'Global',
-          type: f.type as any,
-          url: f.url,
-          badge: 'Tìm thấy qua AI',
+          region: 'US',
+          type: offer.type,
+          url: offer.url,
+          price: offer.price,
+          badge: 'Tìm thấy qua tìm kiếm trực tuyến',
         },
       });
-      saved.push({ provider: f.name, type: f.type.toLowerCase(), region: 'Global', url: f.url, badge: availability.badge || undefined });
+      saved.push({
+        provider: offer.provider,
+        type: offer.type.toLowerCase(),
+        region: 'US',
+        url: offer.url,
+        price: offer.price,
+        badge: availability.badge || undefined,
+      });
     }
 
     return { source: 'ai_search' as const, options: saved };
