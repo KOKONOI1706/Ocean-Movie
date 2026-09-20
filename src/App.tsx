@@ -21,12 +21,11 @@ import { MovieDetailPage } from './components/MovieDetailPage';
 import { SeriesDetailModal } from './components/SeriesDetailModal';
 import { AISearchModal } from './components/AISearchModal';
 import { WhereToWatchModal } from './components/WhereToWatchModal';
-import { UserProfileModal } from './components/UserProfileModal';
+import { UserProfilePage } from './components/UserProfilePage';
 import { CreatorDetailModal } from './components/CreatorDetailModal';
 import { BottomNav } from './components/BottomNav';
 
 import { CINEMA_ITEMS } from './data/cinemaData';
-import { INITIAL_USER_TASTE } from './data/collectionsData';
 import { MediaItem, SavedMediaItem, Creator } from './types';
 import {
   discoverApi,
@@ -36,7 +35,7 @@ import {
 } from './lib/api';
 
 import { OceanDepthProvider } from './context/OceanDepthContext';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginPage } from './components/LoginPage';
 import { OceanBackground } from './components/ocean/OceanBackground';
 import { VerticalDepthIndicator } from './components/ocean/VerticalDepthIndicator';
@@ -66,6 +65,7 @@ const TAB_PATHS: Record<string, string> = {
   collections: '/collections',
   'my-cinema': '/my-cinema',
   'ai-discovery': '/ai-discovery',
+  profile: '/profile',
 };
 
 function pathToTab(pathname: string): string {
@@ -205,6 +205,7 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const currentTab = pathToTab(location.pathname);
+  const { user } = useAuth();
 
   // A series detail route can be opened either as a real overlay (navigated to
   // from within the app, carrying `state.backgroundLocation`) or loaded
@@ -221,7 +222,6 @@ function AppContent() {
   // ─── Modals ────────────────────────────────────────────────────────────────
   const [watchModalMedia, setWatchModalMedia] = useState<MediaItem | null>(null);
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
-  const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [searchInitialQuery, setSearchInitialQuery] = useState<string>('');
 
@@ -556,7 +556,7 @@ function AppContent() {
         currentTab={pathToTab(pageLocation.pathname)}
         onSelectTab={handleNavigate}
         onOpenSearch={handleOpenSearch}
-        onOpenProfile={() => setIsProfileOpen(true)}
+        onOpenProfile={() => handleNavigate('profile')}
         savedCount={savedItems.length}
       />
 
@@ -681,6 +681,20 @@ function AppContent() {
             )}
           />
 
+          <Route
+            path="/profile"
+            element={
+              user ? (
+                <UserProfilePage
+                  savedCount={savedItems.length}
+                  ratedCount={Object.keys(userRatings).length}
+                />
+              ) : (
+                <Navigate to="/auth" replace />
+              )
+            }
+          />
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
 
@@ -695,7 +709,7 @@ function AppContent() {
         currentTab={pathToTab(pageLocation.pathname)}
         onSelectTab={handleNavigate}
         onOpenSearch={() => handleOpenSearch()}
-        onOpenProfile={() => setIsProfileOpen(true)}
+        onOpenProfile={() => handleNavigate('profile')}
         savedCount={savedItems.length}
       />
 
@@ -736,12 +750,6 @@ function AppContent() {
       <WhereToWatchModal
         item={watchModalMedia}
         onClose={() => setWatchModalMedia(null)}
-      />
-
-      <UserProfileModal
-        isOpen={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-        tasteProfile={INITIAL_USER_TASTE}
       />
 
       <CreatorDetailModal

@@ -7,7 +7,16 @@ const app = createApp();
 
 describe('BIỂN PHIM Backend API Integration Tests', () => {
   let authToken = '';
+  let realMovieSlug = '';
+  let realSeriesSlug = '';
   const testEmail = `test_${Date.now()}@bienphim.vn`;
+
+  beforeAll(async () => {
+    const movie = await prisma.movie.findFirst({ orderBy: { rating: 'desc' } });
+    const series = await prisma.series.findFirst({ orderBy: { rating: 'desc' } });
+    realMovieSlug = movie?.slug || '';
+    realSeriesSlug = series?.slug || '';
+  });
 
   afterAll(async () => {
     // Cleanup test user
@@ -74,10 +83,10 @@ describe('BIỂN PHIM Backend API Integration Tests', () => {
   });
 
   it('GET /api/v1/movies/:id returns movie detail with relations', async () => {
-    const res = await request(app).get('/api/v1/movies/the-last-signal');
+    const res = await request(app).get(`/api/v1/movies/${realMovieSlug}`);
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.slug).toBe('the-last-signal');
+    expect(res.body.data.slug).toBe(realMovieSlug);
     expect(res.body.data.genres).toBeDefined();
     expect(res.body.data.availability).toBeDefined();
   });
@@ -91,10 +100,10 @@ describe('BIỂN PHIM Backend API Integration Tests', () => {
   });
 
   it('GET /api/v1/series/:id returns series with seasons', async () => {
-    const res = await request(app).get('/api/v1/series/dark');
+    const res = await request(app).get(`/api/v1/series/${realSeriesSlug}`);
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.slug).toBe('dark');
+    expect(res.body.data.slug).toBe(realSeriesSlug);
     expect(res.body.data.seasons.length).toBeGreaterThan(0);
   });
 
@@ -119,7 +128,7 @@ describe('BIỂN PHIM Backend API Integration Tests', () => {
       .post('/api/v1/me/watchlist')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
-        movieId: 'the-last-signal',
+        movieId: realMovieSlug,
         category: 'WISHLIST',
       });
 
@@ -140,7 +149,7 @@ describe('BIỂN PHIM Backend API Integration Tests', () => {
   // 7. Watch Progress Persistence
   it('PUT /api/v1/me/progress/:id updates playback percentage in DB', async () => {
     const res = await request(app)
-      .put('/api/v1/me/progress/the-last-signal')
+      .put(`/api/v1/me/progress/${realMovieSlug}`)
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         type: 'movie',
@@ -169,7 +178,7 @@ describe('BIỂN PHIM Backend API Integration Tests', () => {
 
   // 9. Cached AI Film Insight
   it('GET /api/v1/ai/films/:id/insight retrieves cached film insight', async () => {
-    const res = await request(app).get('/api/v1/ai/films/the-last-signal/insight');
+    const res = await request(app).get(`/api/v1/ai/films/${realMovieSlug}/insight`);
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data.insight).toBeDefined();
