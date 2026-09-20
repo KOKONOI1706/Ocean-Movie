@@ -7,7 +7,7 @@ import { EDITORIAL_COLLECTIONS, CREATORS_DATA } from '../src/data/collectionsDat
 // UserTasteProfile mock; inlined here since that mock has been replaced by
 // real Prisma-backed profile/preferences data (see UserProfilePage.tsx).
 const DEMO_USER_TASTE = {
-  displayName: 'Nguyễn Duy Công',
+  displayName: 'Thầy Ông Hải',
   favoriteGenres: ['Sci-Fi', 'Mystery', 'Drama'],
   favoriteMoods: ['curious', 'lonely', 'romantics', 'night-owls'],
   activeStreamingServices: ['Netflix', 'YouTube', 'Apple TV+', 'Prime Video'],

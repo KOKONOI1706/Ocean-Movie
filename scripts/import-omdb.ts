@@ -47,6 +47,16 @@ const CURATED_SERIES: CuratedTitle[] = [
   'Black Mirror', 'Arcane',
 ];
 
+// OMDb's Poster field is an Amazon-hosted URL pre-scaled to a small,
+// quality-reduced thumbnail (e.g. "..._V1_QL75_UX380_CR0,4,380,562_.jpg").
+// Replacing those modifiers with a fixed width gets a much sharper image
+// without going all the way to the unbounded original — some of these
+// posters' originals are several MB, far too heavy to ship in a web UI.
+function toHighResPosterUrl(url: string): string {
+  if (!url || !url.includes('media-amazon.com')) return url;
+  return url.replace(/\._V1_.*?(\.(?:jpg|jpeg|png))$/i, '._V1_UX800_$1');
+}
+
 function slugify(text: string): string {
   return text
     .toString()
@@ -133,8 +143,8 @@ async function importMovie(title: string, yearHint?: string) {
       year,
       runtimeMinutes: parseRuntime(details.Runtime),
       rating: parseRating(details.imdbRating),
-      posterUrl: details.Poster,
-      backdropUrl: details.Poster,
+      posterUrl: toHighResPosterUrl(details.Poster),
+      backdropUrl: toHighResPosterUrl(details.Poster),
       isTrending: parseRating(details.imdbRating) >= 8.0,
     },
   });
@@ -190,8 +200,8 @@ async function importSeries(title: string, yearHint?: string) {
       startYear,
       endYear,
       rating: parseRating(details.imdbRating),
-      posterUrl: details.Poster,
-      backdropUrl: details.Poster,
+      posterUrl: toHighResPosterUrl(details.Poster),
+      backdropUrl: toHighResPosterUrl(details.Poster),
       isTrending: parseRating(details.imdbRating) >= 8.0,
     },
   });

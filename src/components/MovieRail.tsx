@@ -35,7 +35,7 @@ export const MovieRail: React.FC<MovieRailProps> = ({
   onWhereToWatch,
   onViewAll,
   savedItemIds = [],
-  aspectRatio = 'landscape',
+  aspectRatio = 'poster',
   showAiBadge = false,
   depthAccent = 'surface',
 }) => {
@@ -166,7 +166,11 @@ export const MovieRail: React.FC<MovieRailProps> = ({
           aria-label={`${title} — danh sách phim`}
         >
           {items.map((item) => (
-            <div key={item.id} role="listitem">
+            <div
+              key={item.id}
+              role="listitem"
+              className={aspectRatio === 'poster' ? 'shrink-0 w-[160px] sm:w-[200px]' : undefined}
+            >
               <MovieCard
                 item={item}
                 onSelect={onSelectMedia}

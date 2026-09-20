@@ -18,7 +18,7 @@ export const MovieArtwork: React.FC<MovieArtworkProps> = ({ item, quote }) => {
   }, [item.posterUrl]);
 
   return (
-    <div className="relative w-full aspect-[16/9] max-h-[52vh] lg:max-h-none">
+    <div className="relative w-full aspect-[16/9] max-h-[58vh] lg:max-h-none">
       <div
         className="absolute -inset-8 rounded-[28px] pointer-events-none"
         style={{
