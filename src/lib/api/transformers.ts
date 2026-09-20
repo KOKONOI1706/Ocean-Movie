@@ -13,7 +13,7 @@ export function transformBackendMovie(item: any): MediaItem {
     provider: a.provider?.name || a.provider,
     type: a.type?.toLowerCase() || 'subscription',
     region: a.region || 'Global',
-    url: a.url || 'https://bienphim.vn',
+    url: a.url,
     badge: a.badge,
     price: a.price,
   })) || item.streamingOptions || [];
@@ -66,6 +66,7 @@ export function transformBackendMovie(item: any): MediaItem {
     backdropUrl: item.backdropUrl,
     posterUrl: item.posterUrl,
     monochromePosterUrl: item.monochromePosterUrl,
+    trailerYoutubeId: item.trailerYoutubeId,
     isCoverFeature: item.isCoverFeature,
     isTrending: item.isTrending,
     aiMatchScore: item.aiInsight?.aiMatchScore || item.aiMatchScore || 92,
@@ -88,7 +89,7 @@ export function transformBackendSeries(item: any): MediaItem {
     provider: a.provider?.name || a.provider,
     type: a.type?.toLowerCase() || 'subscription',
     region: a.region || 'Global',
-    url: a.url || 'https://bienphim.vn',
+    url: a.url,
     badge: a.badge,
     price: a.price,
   })) || item.streamingOptions || [];
@@ -135,6 +136,7 @@ export function transformBackendSeries(item: any): MediaItem {
     backdropUrl: item.backdropUrl,
     posterUrl: item.posterUrl,
     monochromePosterUrl: item.monochromePosterUrl,
+    trailerYoutubeId: item.trailerYoutubeId,
     isCoverFeature: item.isCoverFeature,
     isTrending: item.isTrending,
     aiMatchScore: item.aiInsight?.aiMatchScore || 95,

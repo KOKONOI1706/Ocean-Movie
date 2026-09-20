@@ -21,6 +21,7 @@ interface MovieDetailPageProps {
   item: MediaItem;
   onBack: () => void;
   onSelectMedia: (item: MediaItem) => void;
+  onWatchNow: (item: MediaItem) => void;
   onOpenWhereToWatch: (item: MediaItem) => void;
   onOpenSeriesDetail?: (item: MediaItem) => void;
   isSaved: boolean;
@@ -67,6 +68,7 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
   item,
   onBack,
   onSelectMedia,
+  onWatchNow,
   onOpenWhereToWatch,
   onOpenSeriesDetail,
   isSaved,
@@ -315,7 +317,7 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
               </button>
             ) : (
               <button
-                onClick={() => onOpenWhereToWatch(item)}
+                onClick={() => onWatchNow(item)}
                 className="flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm bg-gradient-to-r from-[#087EA4] to-[#19A7C7] hover:brightness-110 text-white transition-all cursor-pointer shadow-[0_0_20px_rgba(53,194,200,0.35)]"
                 id="detail-watch-now-btn"
               >

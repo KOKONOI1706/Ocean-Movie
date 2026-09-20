@@ -19,20 +19,17 @@ export const WhereToWatchModal: React.FC<WhereToWatchModalProps> = ({ item, onCl
     { id: 'JP', name: 'Nhật Bản' }
   ];
 
-  const allStreamingOptions = item.streamingOptions || [
-    {
-      provider: 'Netflix',
-      type: 'subscription',
-      region: 'Global / VN',
-      url: 'https://netflix.com',
-      badge: 'Gói xem phim Netflix'
-    }
-  ];
-
-  const streamingList = allStreamingOptions.filter((opt) => {
+  const streamingList = (item.streamingOptions || []).filter((opt) => {
     const region = opt.region || 'Global';
     return selectedRegion === 'Global' || region.includes(selectedRegion) || region.toLowerCase().includes('global');
   });
+
+  // JustWatch aggregates real, region-aware legal streaming availability —
+  // an honest way to help the user find this title when we have no
+  // Availability rows of our own for it, instead of pretending to know a
+  // specific (and possibly wrong) provider. JustWatch has no Vietnam edition
+  // (a /vn/ path 404s), so this uses their US catalog, which it does serve.
+  const justWatchSearchUrl = `https://www.justwatch.com/us/search?q=${encodeURIComponent(item.title)}`;
 
   return (
     <div className="fixed inset-0 z-60 overflow-y-auto bg-[#030B14]/85 backdrop-blur-xl flex justify-center p-4 text-[#E8F4F8] animate-in fade-in duration-200">
@@ -126,9 +123,20 @@ export const WhereToWatchModal: React.FC<WhereToWatchModalProps> = ({ item, onCl
                 </a>
               </div>
             )) : (
-              <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#0B2035]/40 border border-dashed border-[#19A7C7]/25 text-xs text-[#8BA7B8]">
-                <Info className="w-4 h-4 text-[#35C2C8] shrink-0" />
-                <span>Chưa có nguồn phát chính thức cho khu vực này. Hãy thử chọn khu vực khác.</span>
+              <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-[#0B2035]/40 border border-dashed border-[#19A7C7]/25 text-xs text-[#8BA7B8]">
+                <div className="flex items-center gap-3">
+                  <Info className="w-4 h-4 text-[#35C2C8] shrink-0" />
+                  <span>Chưa có nguồn phát chính thức nào trong hệ thống cho khu vực này.</span>
+                </div>
+                <a
+                  href={justWatchSearchUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="shrink-0 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-cyan-200 border border-white/10 hover:border-cyan-500/30 text-xs font-semibold flex items-center gap-1.5 transition-all"
+                >
+                  <span>Tìm trên JustWatch</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
               </div>
             )}
           </div>

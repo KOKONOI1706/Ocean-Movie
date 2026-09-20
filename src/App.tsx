@@ -21,6 +21,7 @@ import { MovieDetailPage } from './components/MovieDetailPage';
 import { SeriesDetailModal } from './components/SeriesDetailModal';
 import { AISearchModal } from './components/AISearchModal';
 import { WhereToWatchModal } from './components/WhereToWatchModal';
+import { TrailerPlayerModal } from './components/TrailerPlayerModal';
 import { UserProfilePage } from './components/UserProfilePage';
 import { CreatorDetailModal } from './components/CreatorDetailModal';
 import { BottomNav } from './components/BottomNav';
@@ -119,6 +120,7 @@ function useMediaBySlug(
 // ─── /movie/:slug ─────────────────────────────────────────────────────────────
 interface MovieDetailRouteProps {
   onSelectMedia: (item: MediaItem) => void;
+  onWatchNow: (item: MediaItem) => void;
   onOpenWhereToWatch: (item: MediaItem) => void;
   onOpenSeriesDetail: (item: MediaItem) => void;
   savedItemIds: string[];
@@ -127,6 +129,7 @@ interface MovieDetailRouteProps {
 
 function MovieDetailRoute({
   onSelectMedia,
+  onWatchNow,
   onOpenWhereToWatch,
   onOpenSeriesDetail,
   savedItemIds,
@@ -151,6 +154,7 @@ function MovieDetailRoute({
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }}
       onSelectMedia={onSelectMedia}
+      onWatchNow={onWatchNow}
       onOpenWhereToWatch={onOpenWhereToWatch}
       onOpenSeriesDetail={onOpenSeriesDetail}
       isSaved={savedItemIds.includes(item.id)}
@@ -221,6 +225,7 @@ function AppContent() {
 
   // ─── Modals ────────────────────────────────────────────────────────────────
   const [watchModalMedia, setWatchModalMedia] = useState<MediaItem | null>(null);
+  const [trailerModalMedia, setTrailerModalMedia] = useState<MediaItem | null>(null);
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [searchInitialQuery, setSearchInitialQuery] = useState<string>('');
@@ -374,6 +379,17 @@ function AppContent() {
     }
   };
 
+  // Entry point for every "watch" action in the app: play the real YouTube
+  // trailer when one exists, otherwise go straight to the legal
+  // where-to-watch links (there's nothing to play without one).
+  const handleWatch = (item: MediaItem) => {
+    if (item.trailerYoutubeId) {
+      setTrailerModalMedia(item);
+    } else {
+      setWatchModalMedia(item);
+    }
+  };
+
   // Related-series link from inside the movie detail page: matches the old
   // behaviour of dropping back to Discover with the series overlay on top.
   const handleOpenSeriesFromMovieDetail = (item: MediaItem) => {
@@ -437,7 +453,7 @@ function AppContent() {
             items={trendingItems}
             onSelectMedia={handleSelectMedia}
             onToggleSave={handleToggleSaveById}
-            onWhereToWatch={(item) => setWatchModalMedia(item)}
+            onWhereToWatch={(item) => handleWatch(item)}
             onViewAll={() => handleNavigate('explore')}
             savedItemIds={savedItemIds}
             depthAccent="surface"
@@ -454,7 +470,7 @@ function AppContent() {
             items={forYouItems}
             onSelectMedia={handleSelectMedia}
             onToggleSave={handleToggleSaveById}
-            onWhereToWatch={(item) => setWatchModalMedia(item)}
+            onWhereToWatch={(item) => handleWatch(item)}
             onViewAll={() => handleNavigate('explore')}
             savedItemIds={savedItemIds}
           />
@@ -472,7 +488,7 @@ function AppContent() {
             items={newArrivals}
             onSelectMedia={handleSelectMedia}
             onToggleSave={handleToggleSaveById}
-            onWhereToWatch={(item) => setWatchModalMedia(item)}
+            onWhereToWatch={(item) => handleWatch(item)}
             onViewAll={() => handleNavigate('explore')}
             savedItemIds={savedItemIds}
             depthAccent="shallow"
@@ -491,7 +507,7 @@ function AppContent() {
             items={seriesItems}
             onSelectMedia={handleSelectMedia}
             onToggleSave={handleToggleSaveById}
-            onWhereToWatch={(item) => setWatchModalMedia(item)}
+            onWhereToWatch={(item) => handleWatch(item)}
             onViewAll={() => handleNavigate('series')}
             savedItemIds={savedItemIds}
             depthAccent="twilight"
@@ -517,7 +533,7 @@ function AppContent() {
             items={deepWaterItems}
             onSelectMedia={handleSelectMedia}
             onToggleSave={handleToggleSaveById}
-            onWhereToWatch={(item) => setWatchModalMedia(item)}
+            onWhereToWatch={(item) => handleWatch(item)}
             onViewAll={() => handleNavigate('explore')}
             savedItemIds={savedItemIds}
             depthAccent="deep"
@@ -573,6 +589,7 @@ function AppContent() {
             element={(
               <MovieDetailRoute
                 onSelectMedia={handleSelectMedia}
+                onWatchNow={(item) => handleWatch(item)}
                 onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
                 onOpenSeriesDetail={handleOpenSeriesFromMovieDetail}
                 savedItemIds={savedItemIds}
@@ -587,7 +604,7 @@ function AppContent() {
               <ExploreView
                 initialType="all"
                 onSelectMedia={handleSelectMedia}
-                onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
+                onOpenWhereToWatch={(item) => handleWatch(item)}
                 onToggleSave={handleToggleSaveById}
                 savedItemIds={savedItemIds}
               />
@@ -600,7 +617,7 @@ function AppContent() {
               <ExploreView
                 initialType="movie"
                 onSelectMedia={handleSelectMedia}
-                onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
+                onOpenWhereToWatch={(item) => handleWatch(item)}
                 onToggleSave={handleToggleSaveById}
                 savedItemIds={savedItemIds}
               />
@@ -613,7 +630,7 @@ function AppContent() {
               <ExploreView
                 initialType="series"
                 onSelectMedia={handleSelectMedia}
-                onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
+                onOpenWhereToWatch={(item) => handleWatch(item)}
                 onToggleSave={handleToggleSaveById}
                 savedItemIds={savedItemIds}
               />
@@ -626,7 +643,7 @@ function AppContent() {
               <ExploreView
                 initialType="short"
                 onSelectMedia={handleSelectMedia}
-                onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
+                onOpenWhereToWatch={(item) => handleWatch(item)}
                 onToggleSave={handleToggleSaveById}
                 savedItemIds={savedItemIds}
               />
@@ -639,7 +656,7 @@ function AppContent() {
               <ExploreView
                 initialType="ai_film"
                 onSelectMedia={handleSelectMedia}
-                onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
+                onOpenWhereToWatch={(item) => handleWatch(item)}
                 onToggleSave={handleToggleSaveById}
                 savedItemIds={savedItemIds}
               />
@@ -651,7 +668,7 @@ function AppContent() {
             element={(
               <CollectionsView
                 onSelectMedia={handleSelectMedia}
-                onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
+                onOpenWhereToWatch={(item) => handleWatch(item)}
                 onToggleSave={handleToggleSaveById}
                 savedItemIds={savedItemIds}
               />
@@ -665,7 +682,7 @@ function AppContent() {
                 savedItems={savedItems}
                 userRatings={userRatings}
                 onSelectMedia={handleSelectMedia}
-                onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
+                onOpenWhereToWatch={(item) => handleWatch(item)}
                 onRemoveSaved={handleRemoveSaved}
                 onOpenCreator={(creator) => setSelectedCreator(creator)}
               />
@@ -722,7 +739,7 @@ function AppContent() {
             path="/series/:slug"
             element={(
               <SeriesDetailRoute
-                onOpenWhereToWatch={(item) => setWatchModalMedia(item)}
+                onOpenWhereToWatch={(item) => handleWatch(item)}
                 savedItemIds={savedItemIds}
                 onToggleSave={handleToggleSave}
                 onUpdateEpisodeProgress={handleUpdateEpisodeProgress}
@@ -742,9 +759,18 @@ function AppContent() {
         }}
         onOpenWhereToWatch={(item) => {
           setIsSearchOpen(false);
-          setWatchModalMedia(item);
+          handleWatch(item);
         }}
         initialQuery={searchInitialQuery}
+      />
+
+      <TrailerPlayerModal
+        item={trailerModalMedia}
+        onClose={() => setTrailerModalMedia(null)}
+        onFindWhereToWatch={(item) => {
+          setTrailerModalMedia(null);
+          setWatchModalMedia(item);
+        }}
       />
 
       <WhereToWatchModal

@@ -13,7 +13,8 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "import:omdb": "tsx scripts/import-omdb.ts",
-    "import:tmdb-backdrops": "tsx scripts/import-tmdb-backdrops.ts"
+    "import:tmdb-backdrops": "tsx scripts/import-tmdb-backdrops.ts",
+    "import:tmdb-trailers": "tsx scripts/import-tmdb-trailers.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
