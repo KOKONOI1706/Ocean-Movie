@@ -11,7 +11,145 @@ function getGemini(): GoogleGenAI | null {
   return genAIClient;
 }
 
+// Only surface links whose domain is a real, known legal streaming platform —
+// grounded search results are real pages Google actually found, but we still
+// don't want to show a link just because Gemini's summary called it a
+// "streaming site"; matching a hand-maintained allowlist keeps every link
+// pointing somewhere legitimate instead of trusting the model's judgment.
+const KNOWN_PROVIDERS: { match: RegExp; name: string; type: 'FREE' | 'SUBSCRIPTION' | 'RENT' | 'BUY' }[] = [
+  { match: /netflix\.com/i, name: 'Netflix', type: 'SUBSCRIPTION' },
+  { match: /primevideo\.com|amazon\.com\/.*(video|dp)/i, name: 'Prime Video', type: 'SUBSCRIPTION' },
+  { match: /disneyplus\.com/i, name: 'Disney+', type: 'SUBSCRIPTION' },
+  { match: /hulu\.com/i, name: 'Hulu', type: 'SUBSCRIPTION' },
+  { match: /max\.com|hbomax\.com/i, name: 'Max', type: 'SUBSCRIPTION' },
+  { match: /tv\.apple\.com/i, name: 'Apple TV', type: 'RENT' },
+  { match: /play\.google\.com/i, name: 'Google TV', type: 'RENT' },
+  { match: /youtube\.com\/watch/i, name: 'YouTube', type: 'RENT' },
+  { match: /vudu\.com|fandangoathome\.com/i, name: 'Fandango at Home', type: 'RENT' },
+  { match: /peacocktv\.com/i, name: 'Peacock', type: 'SUBSCRIPTION' },
+  { match: /paramountplus\.com/i, name: 'Paramount+', type: 'SUBSCRIPTION' },
+  { match: /crunchyroll\.com/i, name: 'Crunchyroll', type: 'SUBSCRIPTION' },
+  { match: /mubi\.com/i, name: 'Mubi', type: 'SUBSCRIPTION' },
+];
+
+function matchKnownProvider(uri: string): { name: string; type: 'FREE' | 'SUBSCRIPTION' | 'RENT' | 'BUY' } | null {
+  for (const p of KNOWN_PROVIDERS) {
+    if (p.match.test(uri)) return { name: p.name, type: p.type };
+  }
+  return null;
+}
+
+// Cached links older than this are re-searched rather than trusted forever —
+// streaming availability changes (titles leave/join catalogs) and a live web
+// search is the whole point of this feature.
+const AVAILABILITY_STALE_AFTER_MS = 14 * 24 * 60 * 60 * 1000;
+
 export class AIService {
+  /**
+   * Live web search for real, legal streaming links via Gemini's Google
+   * Search grounding tool. Unlike the rest of this service, this doesn't ask
+   * the model to author an answer — it only trusts the actual URLs the
+   * search tool retrieved, filtered to a known-provider allowlist, so every
+   * link shown is one Google Search genuinely found and that points at a
+   * real streaming platform (never a model-hallucinated URL).
+   */
+  async findWhereToWatch(mediaIdOrSlug: string, mediaType: 'movie' | 'series') {
+    const media =
+      mediaType === 'movie'
+        ? await prisma.movie.findFirst({
+            where: { OR: [{ id: mediaIdOrSlug }, { slug: mediaIdOrSlug }] },
+            include: { availability: { include: { provider: true } } },
+          })
+        : await prisma.series.findFirst({
+            where: { OR: [{ id: mediaIdOrSlug }, { slug: mediaIdOrSlug }] },
+            include: { availability: { include: { provider: true } } },
+          });
+
+    if (!media) throw new NotFoundError('Không tìm thấy tác phẩm');
+
+    const freshCached = media.availability.filter(
+      (a) => Date.now() - a.lastChecked.getTime() < AVAILABILITY_STALE_AFTER_MS
+    );
+    if (freshCached.length > 0) {
+      return {
+        source: 'cache' as const,
+        options: freshCached.map((a) => ({
+          provider: a.provider.name,
+          type: a.type.toLowerCase(),
+          region: a.region,
+          url: a.url,
+          badge: a.badge || undefined,
+        })),
+      };
+    }
+
+    const gemini = getGemini();
+    if (!gemini) {
+      return { source: 'not_configured' as const, options: [] };
+    }
+
+    const year = 'year' in media ? media.year : media.startYear;
+    const prompt = `Search the web and tell me which official, legal streaming platforms currently offer "${media.title}" (${year}) to watch, rent, or buy. List each platform's direct watch/title page URL.`;
+
+    let groundingChunks: { web?: { uri?: string; title?: string } }[] = [];
+    try {
+      const response = await gemini.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] },
+      });
+      groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+    } catch (err) {
+      console.warn('Gemini grounded web search failed:', err);
+      return { source: 'search_failed' as const, options: [] };
+    }
+
+    const foundByProvider = new Map<string, { name: string; type: string; url: string }>();
+    for (const chunk of groundingChunks) {
+      const uri = chunk.web?.uri;
+      if (!uri) continue;
+      const match = matchKnownProvider(uri);
+      if (match && !foundByProvider.has(match.name)) {
+        foundByProvider.set(match.name, { name: match.name, type: match.type, url: uri });
+      }
+    }
+
+    const found = Array.from(foundByProvider.values()).slice(0, 6);
+    if (found.length === 0) {
+      return { source: 'no_results' as const, options: [] };
+    }
+
+    // Persist so the next visitor for this title gets an instant cache hit
+    // instead of paying for another search.
+    if (mediaType === 'movie') {
+      await prisma.availability.deleteMany({ where: { movieId: media.id } });
+    } else {
+      await prisma.availability.deleteMany({ where: { seriesId: media.id } });
+    }
+    const saved = [];
+    for (const f of found) {
+      const slug = f.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      const provider = await prisma.provider.upsert({
+        where: { slug },
+        update: { name: f.name },
+        create: { name: f.name, slug },
+      });
+      const availability = await prisma.availability.create({
+        data: {
+          providerId: provider.id,
+          ...(mediaType === 'movie' ? { movieId: media.id } : { seriesId: media.id }),
+          region: 'Global',
+          type: f.type as any,
+          url: f.url,
+          badge: 'Tìm thấy qua AI',
+        },
+      });
+      saved.push({ provider: f.name, type: f.type.toLowerCase(), region: 'Global', url: f.url, badge: availability.badge || undefined });
+    }
+
+    return { source: 'ai_search' as const, options: saved };
+  }
+
   /**
    * Natural Language AI Search:
    * 1. Extract structured criteria using Gemini (or heuristic fallback).

@@ -1,6 +1,11 @@
 import { apiClient } from './client.js';
 import { transformBackendMovie } from './transformers.js';
-import { MediaItem } from '../../types.js';
+import { MediaItem, StreamingOption } from '../../types.js';
+
+export interface WhereToWatchSearchResult {
+  source: 'cache' | 'ai_search' | 'no_results' | 'search_failed' | 'not_configured';
+  options: StreamingOption[];
+}
 
 export interface AISearchResult {
   aiUnderstanding: {
@@ -49,5 +54,14 @@ export const aiApi = {
   async getTasteProfile() {
     const res = await apiClient.get<any>('/ai/taste-profile');
     return res.data;
+  },
+
+  /** Live web search (via Gemini + Google Search grounding) for real, legal streaming links. */
+  async findWhereToWatch(idOrSlug: string, mediaType: 'movie' | 'series'): Promise<WhereToWatchSearchResult> {
+    const res = await apiClient.get<any>(`/ai/where-to-watch/${idOrSlug}`, { type: mediaType });
+    return {
+      source: res.data?.source || 'no_results',
+      options: res.data?.options || [],
+    };
   },
 };

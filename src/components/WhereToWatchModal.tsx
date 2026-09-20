@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { MediaItem } from '../types';
-import { X, ExternalLink, Globe, ShieldCheck, Info } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { MediaItem, StreamingOption } from '../types';
+import { X, ExternalLink, Globe, ShieldCheck, Info, Search, Loader2 } from 'lucide-react';
+import { aiApi } from '../lib/api/ai.api';
 
 interface WhereToWatchModalProps {
   item: MediaItem | null;
@@ -9,6 +10,17 @@ interface WhereToWatchModalProps {
 
 export const WhereToWatchModal: React.FC<WhereToWatchModalProps> = ({ item, onClose }) => {
   const [selectedRegion, setSelectedRegion] = useState<string>('VN');
+  const [aiSearchState, setAiSearchState] = useState<'idle' | 'loading' | 'done'>('idle');
+  const [aiResults, setAiResults] = useState<StreamingOption[]>([]);
+  const [aiSource, setAiSource] = useState<string | null>(null);
+
+  // Reset per-title search state whenever a different item is opened, so a
+  // previous title's "no results" or found links don't leak into this one.
+  useEffect(() => {
+    setAiSearchState('idle');
+    setAiResults([]);
+    setAiSource(null);
+  }, [item?.id]);
 
   if (!item) return null;
 
@@ -19,7 +31,22 @@ export const WhereToWatchModal: React.FC<WhereToWatchModalProps> = ({ item, onCl
     { id: 'JP', name: 'Nhật Bản' }
   ];
 
-  const streamingList = (item.streamingOptions || []).filter((opt) => {
+  const isSeries = item.type === 'series' || (item.seasons && item.seasons.length > 0);
+
+  const handleAiSearch = async () => {
+    setAiSearchState('loading');
+    try {
+      const result = await aiApi.findWhereToWatch(item.id, isSeries ? 'series' : 'movie');
+      setAiResults(result.options);
+      setAiSource(result.source);
+    } catch {
+      setAiSource('search_failed');
+    } finally {
+      setAiSearchState('done');
+    }
+  };
+
+  const streamingList = [...(item.streamingOptions || []), ...aiResults].filter((opt) => {
     const region = opt.region || 'Global';
     return selectedRegion === 'Global' || region.includes(selectedRegion) || region.toLowerCase().includes('global');
   });
@@ -123,20 +150,46 @@ export const WhereToWatchModal: React.FC<WhereToWatchModalProps> = ({ item, onCl
                 </a>
               </div>
             )) : (
-              <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-[#0B2035]/40 border border-dashed border-[#19A7C7]/25 text-xs text-[#8BA7B8]">
-                <div className="flex items-center gap-3">
-                  <Info className="w-4 h-4 text-[#35C2C8] shrink-0" />
-                  <span>Chưa có nguồn phát chính thức nào trong hệ thống cho khu vực này.</span>
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-[#0B2035]/40 border border-dashed border-[#19A7C7]/25 text-xs text-[#8BA7B8]">
+                  <div className="flex items-center gap-3">
+                    <Info className="w-4 h-4 text-[#35C2C8] shrink-0" />
+                    <span>
+                      {aiSearchState === 'done'
+                        ? 'AI không tìm thấy nguồn phát hợp pháp nào cho khu vực này.'
+                        : 'Chưa có nguồn phát chính thức nào trong hệ thống cho khu vực này.'}
+                    </span>
+                  </div>
+                  <a
+                    href={justWatchSearchUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="shrink-0 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-cyan-200 border border-white/10 hover:border-cyan-500/30 text-xs font-semibold flex items-center gap-1.5 transition-all"
+                  >
+                    <span>Tìm trên JustWatch</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
                 </div>
-                <a
-                  href={justWatchSearchUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="shrink-0 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-cyan-200 border border-white/10 hover:border-cyan-500/30 text-xs font-semibold flex items-center gap-1.5 transition-all"
-                >
-                  <span>Tìm trên JustWatch</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
+
+                {aiSearchState !== 'done' && (
+                  <button
+                    onClick={handleAiSearch}
+                    disabled={aiSearchState === 'loading'}
+                    className="w-full flex items-center justify-center gap-2 p-3 rounded-2xl bg-gradient-to-r from-[#087EA4]/25 to-[#19A7C7]/25 border border-[#35C2C8]/30 hover:border-[#35C2C8]/60 text-cyan-100 text-xs font-semibold transition-all disabled:opacity-70 disabled:cursor-wait cursor-pointer"
+                  >
+                    {aiSearchState === 'loading' ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>AI đang tìm kiếm trên Internet...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Search className="w-3.5 h-3.5" />
+                        <span>Tìm kiếm trên Internet bằng AI</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             )}
           </div>
