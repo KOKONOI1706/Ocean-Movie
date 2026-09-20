@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { MediaItem, SavedMediaItem, UserTasteProfile, Creator } from '../types';
+import { MediaItem, SavedMediaItem, Creator } from '../types';
 import { CINEMA_ITEMS } from '../data/cinemaData';
-import { CREATORS_DATA, INITIAL_USER_TASTE } from '../data/collectionsData';
+import { CREATORS_DATA } from '../data/collectionsData';
 import { progressApi } from '../lib/api';
 import { Compass, Bookmark, Star, Play, ArrowRight, Trash2 } from 'lucide-react';
 import { MovieCard } from './MovieCard';
@@ -24,7 +24,6 @@ export const MyCinemaView: React.FC<MyCinemaViewProps> = ({
   onOpenCreator
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'continue' | 'list' | 'ratings' | 'creators'>('continue');
-  const [tasteProfile] = useState<UserTasteProfile>(INITIAL_USER_TASTE);
   const [followedCreators, setFollowedCreators] = useState<string[]>(['elena-vance', 'baran-bo-odar']);
   const [liveProgress, setLiveProgress] = useState<any[]>([]);
 

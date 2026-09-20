@@ -1,7 +1,18 @@
 import { PrismaClient, MediaType, AvailabilityType, WatchlistCategory } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { CINEMA_ITEMS, MOOD_CATEGORIES } from '../src/data/cinemaData.js';
-import { EDITORIAL_COLLECTIONS, CREATORS_DATA, INITIAL_USER_TASTE } from '../src/data/collectionsData.js';
+import { EDITORIAL_COLLECTIONS, CREATORS_DATA } from '../src/data/collectionsData.js';
+
+// Demo user seed profile — was previously imported from a frontend-only
+// UserTasteProfile mock; inlined here since that mock has been replaced by
+// real Prisma-backed profile/preferences data (see UserProfilePage.tsx).
+const DEMO_USER_TASTE = {
+  displayName: 'Nguyễn Duy Công',
+  favoriteGenres: ['Sci-Fi', 'Mystery', 'Drama'],
+  favoriteMoods: ['curious', 'lonely', 'romantics', 'night-owls'],
+  activeStreamingServices: ['Netflix', 'YouTube', 'Apple TV+', 'Prime Video'],
+  editorialSummary: 'Bạn có xu hướng thích sci-fi chậm, giàu cảm xúc, kết hợp với những câu chuyện về con người và công nghệ sâu lắng. Bạn đặc biệt yêu thích những tác phẩm có phong cách hình ảnh đẹp mắt và âm thanh du dương.',
+};
 
 const prisma = new PrismaClient();
 
@@ -56,16 +67,16 @@ export async function seed() {
     create: {
       email: 'demo@bienphim.vn',
       username: 'duycuong',
-      displayName: INITIAL_USER_TASTE.name || 'Nguyễn Duy Công',
+      displayName: DEMO_USER_TASTE.displayName,
       passwordHash,
       avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80',
       role: 'USER',
       preference: {
         create: {
-          favoriteGenres: INITIAL_USER_TASTE.topGenres.map((g) => g.genre),
-          favoriteMoods: INITIAL_USER_TASTE.favoriteMoods,
-          preferredProviders: INITIAL_USER_TASTE.activeStreamingServices,
-          editorialSummary: INITIAL_USER_TASTE.editorialSummary
+          favoriteGenres: DEMO_USER_TASTE.favoriteGenres,
+          favoriteMoods: DEMO_USER_TASTE.favoriteMoods,
+          preferredProviders: DEMO_USER_TASTE.activeStreamingServices,
+          editorialSummary: DEMO_USER_TASTE.editorialSummary
         }
       }
     }

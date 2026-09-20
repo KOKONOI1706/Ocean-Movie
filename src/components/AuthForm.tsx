@@ -39,7 +39,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({
   const handleQuickDemo = () => {
     if (mode === 'login') {
       setEmail('demo@bienphim.vn');
-      setPassword('demo123456');
+      setPassword('password123');
     } else {
       setEmail('explorer@bienphim.vn');
       setUsername('deep_explorer');
