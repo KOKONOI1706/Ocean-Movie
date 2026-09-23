@@ -1,6 +1,6 @@
-import { Prisma } from '@prisma/client';
+import { MediaType, Prisma } from '@prisma/client';
 import { prisma } from '../config/prisma.js';
-import { parseEpisodeTitle, type ParsedEpisodeTitle } from './normalizer.js';
+import { parseEpisodeTitle, parseMovieTitle, type ParsedEpisodeTitle, type ParsedMovieTitle } from './normalizer.js';
 import { STREAM_TYPE_RANK, detectStreamType } from './stream.js';
 import { scrapeEpisodePage } from './sources/html.source.js';
 import { getConfiguredSources } from './sources/registry.js';
@@ -22,8 +22,25 @@ export interface IngestReport {
   series: Array<{ id: string; slug: string; title: string; created: boolean; episodes: number }>;
   episodesCreated: number;
   episodesUpdated: number;
+  movies: Array<{ id: string; slug: string; title: string; type: MediaType; created: boolean }>;
   skipped: Array<{ title: string; reason: string }>;
 }
+
+/**
+ * - `series`: every item must carry an episode marker (unparseable items are skipped).
+ * - `movie`:  every item is a standalone film.
+ * - `auto`:   items with an episode marker become episodes, the rest become films.
+ */
+export type IngestMode = 'auto' | 'series' | 'movie';
+
+export interface IngestOptions {
+  sourceName?: string;
+  mode?: IngestMode;
+  /** Movie type used for films created by this batch (default AI_FILM). */
+  movieType?: MediaType;
+}
+
+export const MOVIE_TYPES = ['MOVIE', 'AI_FILM', 'SHORT', 'DOCUMENTARY', 'ANIME'] as const satisfies readonly MediaType[];
 
 /**
  * Parse raw titles and group them by series. Duplicate (series, season, episode)
@@ -171,16 +188,105 @@ async function upsertGroup(tx: Tx, group: NormalizedSeriesGroup) {
   };
 }
 
+export interface NormalizedMovie extends ParsedMovieTitle {
+  item: RawScrapedItem;
+  streamType: ReturnType<typeof detectStreamType>;
+}
+
+/** Parse film titles; duplicates within the batch keep the best stream. */
+export function normalizeMovies(items: RawScrapedItem[]) {
+  const movies = new Map<string, NormalizedMovie>();
+  const skipped: IngestReport['skipped'] = [];
+  for (const item of items) {
+    const parsed = parseMovieTitle(item.title);
+    if (!parsed) {
+      skipped.push({ title: item.title, reason: 'Không nhận diện được tên phim' });
+      continue;
+    }
+    const candidate: NormalizedMovie = { ...parsed, item, streamType: detectStreamType(item.streamUrl) };
+    const existing = movies.get(parsed.normalizedTitle);
+    if (!existing) movies.set(parsed.normalizedTitle, candidate);
+    else if (STREAM_TYPE_RANK[candidate.streamType] < STREAM_TYPE_RANK[existing.streamType]) {
+      skipped.push({ title: existing.item.title, reason: 'Trùng phim, đã chọn nguồn phát tốt hơn' });
+      movies.set(parsed.normalizedTitle, candidate);
+    } else {
+      skipped.push({ title: item.title, reason: 'Trùng phim đã có trong lô' });
+    }
+  }
+  return { movies: [...movies.values()], skipped };
+}
+
+async function upsertMovie(movie: NormalizedMovie, type: MediaType) {
+  const { item } = movie;
+  const streamData = {
+    streamUrl: item.streamUrl,
+    streamType: movie.streamType,
+    sourceName: item.sourceName,
+    sourceUrl: item.pageUrl,
+    rawTitle: movie.rawTitle,
+    lastScrapedAt: new Date(),
+  };
+
+  const existing =
+    (await prisma.movie.findUnique({ where: { normalizedTitle: movie.normalizedTitle } })) ??
+    (await prisma.movie.findUnique({ where: { slug: movie.slug } }));
+
+  if (existing) {
+    // Curated metadata (synopsis, poster, rating…) is left alone; only the stream is refreshed.
+    const updated = await prisma.movie.update({
+      where: { id: existing.id },
+      data: { ...streamData, normalizedTitle: existing.normalizedTitle ?? movie.normalizedTitle },
+    });
+    return { id: updated.id, slug: updated.slug, title: updated.title, type: updated.type, created: false };
+  }
+
+  const created = await prisma.movie.create({
+    data: {
+      ...streamData,
+      slug: movie.slug,
+      normalizedTitle: movie.normalizedTitle,
+      title: movie.title,
+      synopsis: item.synopsis || '',
+      year: movie.year || item.year || new Date().getFullYear(),
+      runtimeMinutes: item.runtimeMinutes ?? 0,
+      posterUrl: item.posterUrl || item.thumbnailUrl || '',
+      backdropUrl: item.thumbnailUrl || item.posterUrl || '',
+      type,
+      isAiFilm: type === 'AI_FILM',
+    },
+  });
+  return { id: created.id, slug: created.slug, title: created.title, type: created.type, created: true };
+}
+
 function isUniqueViolation(err: unknown) {
   return err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002';
 }
 
 export class AggregatorService {
   /** Normalize and upsert pre-scraped items. Safe to re-run: records are deduped by natural keys. */
-  async ingest(items: RawScrapedItem[], defaultSourceName?: string): Promise<IngestReport> {
-    const withSource = items.map((i) => ({ ...i, sourceName: i.sourceName || defaultSourceName }));
-    const { groups, skipped } = normalizeItems(withSource);
-    const report: IngestReport = { series: [], episodesCreated: 0, episodesUpdated: 0, skipped };
+  async ingest(items: RawScrapedItem[], options: IngestOptions = {}): Promise<IngestReport> {
+    const { mode = 'series', movieType = 'AI_FILM' } = options;
+    const withSource = items.map((i) => ({ ...i, sourceName: i.sourceName || options.sourceName }));
+
+    let episodeItems = withSource;
+    let movieItems: RawScrapedItem[] = [];
+    if (mode === 'movie') {
+      episodeItems = [];
+      movieItems = withSource;
+    } else if (mode === 'auto') {
+      episodeItems = withSource.filter((i) => parseEpisodeTitle(i.title));
+      movieItems = withSource.filter((i) => !parseEpisodeTitle(i.title));
+    }
+
+    const { groups, skipped } = normalizeItems(episodeItems);
+    const normalizedMovies = normalizeMovies(movieItems);
+    const report: IngestReport = {
+      series: [],
+      episodesCreated: 0,
+      episodesUpdated: 0,
+      movies: [],
+      skipped: [...skipped, ...normalizedMovies.skipped],
+    };
 
     for (const group of groups) {
       const run = () => prisma.$transaction((tx) => upsertGroup(tx, group), { timeout: 30_000 });
@@ -197,11 +303,21 @@ export class AggregatorService {
       report.episodesUpdated += result.episodesUpdated;
     }
 
+    for (const movie of normalizedMovies.movies) {
+      try {
+        report.movies.push(await upsertMovie(movie, movieType));
+      } catch (err) {
+        if (!isUniqueViolation(err)) throw err;
+        report.movies.push(await upsertMovie(movie, movieType));
+      }
+    }
+
     return report;
   }
 
   /** Scrape episode pages directly and ingest whatever is playable. */
-  async scrapeUrls(urls: string[], sourceName?: string): Promise<IngestReport> {
+  async scrapeUrls(urls: string[], options: IngestOptions = {}): Promise<IngestReport> {
+    const { sourceName } = options;
     const items: RawScrapedItem[] = [];
     const failures: IngestReport['skipped'] = [];
     for (const url of urls) {
@@ -213,7 +329,7 @@ export class AggregatorService {
         failures.push({ title: url, reason: (err as Error).message });
       }
     }
-    const report = await this.ingest(items, sourceName);
+    const report = await this.ingest(items, options);
     report.skipped.unshift(...failures);
     return report;
   }
@@ -223,7 +339,12 @@ export class AggregatorService {
   }
 
   /** Query configured search sources, then normalize + ingest the results. */
-  async search(query: string, sourceNames: string[] | undefined, limit: number): Promise<IngestReport> {
+  async search(
+    query: string,
+    sourceNames: string[] | undefined,
+    limit: number,
+    options: IngestOptions = {}
+  ): Promise<IngestReport> {
     const all = getConfiguredSources();
     if (all.length === 0) {
       throw new ValidationError('Chưa cấu hình nguồn tìm kiếm nào (AGGREGATOR_SOURCES)');
@@ -241,7 +362,7 @@ export class AggregatorService {
       }
     }
 
-    const report = await this.ingest(items);
+    const report = await this.ingest(items, options);
     report.skipped.unshift(...failures);
     return report;
   }

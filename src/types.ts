@@ -86,6 +86,11 @@ export interface MediaItem {
   // Streaming availability
   streamingOptions: StreamingOption[];
 
+  // In-app stream (crawled films)
+  streamUrl?: string;
+  streamType?: StreamType;
+  sourceName?: string;
+
   // Series specific
   seasons?: Season[];
 

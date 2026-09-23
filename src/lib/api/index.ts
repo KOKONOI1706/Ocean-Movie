@@ -8,3 +8,4 @@ export * from './user.api.js';
 export * from './watchlist.api.js';
 export * from './progress.api.ts';
 export * from './ai.api.js';
+export * from './aggregator.api.js';

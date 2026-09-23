@@ -58,7 +58,7 @@ export function transformBackendMovie(item: any): MediaItem {
     cast,
     genres,
     moods,
-    runtime: item.runtimeMinutes ? `${item.runtimeMinutes} min` : item.runtime || '100 min',
+    runtime: item.runtimeMinutes ? `${item.runtimeMinutes} min` : item.runtime || (item.streamUrl ? '—' : '100 min'),
     runtimeMinutes: item.runtimeMinutes || 100,
     rating: item.rating || 8.5,
     editorialQuote: item.editorialQuote,
@@ -74,6 +74,9 @@ export function transformBackendMovie(item: any): MediaItem {
     aiInvolvement,
     streamingOptions,
     subtitlesAvailable,
+    streamUrl: item.streamUrl || undefined,
+    streamType: item.streamType ? (String(item.streamType).toLowerCase() as StreamType) : undefined,
+    sourceName: item.sourceName || undefined,
   };
 }
 

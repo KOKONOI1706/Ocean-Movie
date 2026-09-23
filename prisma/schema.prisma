@@ -91,6 +91,15 @@ model Movie {
   promptDirector      String?
   workflowNotes       String?
 
+  // Aggregator: in-app stream + provenance for crawled films
+  normalizedTitle     String?      @unique
+  streamUrl           String?
+  streamType          StreamType?
+  sourceName          String?
+  sourceUrl           String?
+  rawTitle            String?
+  lastScrapedAt       DateTime?
+
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
 

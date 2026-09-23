@@ -15,6 +15,7 @@ import { WhereToWatchModal } from './components/WhereToWatchModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { CreatorDetailModal } from './components/CreatorDetailModal';
 import { BottomNav } from './components/BottomNav';
+import { AdminCrawlView } from './components/admin/AdminCrawlView';
 
 import { CINEMA_ITEMS } from './data/cinemaData';
 import { INITIAL_USER_TASTE } from './data/collectionsData';
@@ -24,6 +25,7 @@ import {
   watchlistApi,
   moviesApi,
   seriesApi,
+  userApi,
 } from './lib/api';
 
 import { OceanDepthProvider } from './context/OceanDepthContext';
@@ -59,6 +61,7 @@ function AppContent() {
   const [forYouList,      setForYouList]      = useState<MediaItem[] | null>(null);
   const [deepWaterList,   setDeepWaterList]   = useState<MediaItem[] | null>(null);
   const [isLoadingRails,  setIsLoadingRails]  = useState(true);
+  const [isStaff,         setIsStaff]         = useState(false);
 
   // ─── Watchlist & User State ────────────────────────────────────────────────
   const [savedItems, setSavedItems] = useState<SavedMediaItem[]>([
@@ -145,6 +148,11 @@ function AppContent() {
       }
     }
     loadWatchlist();
+
+    // Staff accounts get the crawl console in the main navigation
+    userApi.getMe()
+      .then((me) => { if (isMounted) setIsStaff(['ADMIN', 'CURATOR'].includes(me?.role)); })
+      .catch(() => {});
 
     // Handle direct URL navigation (?movie=..., ?series=..., ?tab=...)
     const params = new URLSearchParams(window.location.search);
@@ -281,6 +289,7 @@ function AppContent() {
         onOpenSearch={handleOpenSearch}
         onOpenProfile={() => setIsProfileOpen(true)}
         savedCount={savedItems.length}
+        isStaff={isStaff}
       />
 
       {/* ─── Main Content ─── */}
@@ -495,6 +504,20 @@ function AppContent() {
           </div>
         )}
 
+        {/* ======= ADMIN: CRAWL CONSOLE ======= */}
+        {currentTab === 'admin' && (
+          <AdminCrawlView
+            onAuthChange={setIsStaff}
+            onOpenMedia={(kind, slug) => {
+              if (kind === 'series') {
+                seriesApi.getById(slug).then(setSeriesModalMedia).catch(() => {});
+              } else {
+                moviesApi.getById(slug).then(setSelectedMedia).catch(() => {});
+              }
+            }}
+          />
+        )}
+
         {/* ======= Footer for non-discover tabs ======= */}
         {currentTab !== 'discover' && (
           <OceanFooter onNavigate={handleNavigate} />
@@ -561,6 +584,10 @@ function AppContent() {
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         tasteProfile={INITIAL_USER_TASTE}
+        onOpenAdmin={() => {
+          setIsProfileOpen(false);
+          handleNavigate('admin');
+        }}
       />
 
       <CreatorDetailModal

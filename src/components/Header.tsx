@@ -7,6 +7,8 @@ interface HeaderProps {
   onOpenSearch: (initialQuery?: string) => void;
   onOpenProfile: () => void;
   savedCount: number;
+  /** Logged-in ADMIN/CURATOR: shows the crawl console entry. */
+  isStaff?: boolean;
 }
 
 const NAV_ITEMS = [
@@ -24,7 +26,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSearch,
   onOpenProfile,
   savedCount,
+  isStaff = false,
 }) => {
+  const navItems = isStaff ? [...NAV_ITEMS, { id: 'admin', label: 'THU THẬP' }] : NAV_ITEMS;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -70,7 +74,7 @@ export const Header: React.FC<HeaderProps> = ({
           role="navigation"
           aria-label="Main Navigation"
         >
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const isActive = currentTab === item.id;
             return (
               <button
@@ -135,7 +139,7 @@ export const Header: React.FC<HeaderProps> = ({
       {/* ─── Mobile Dropdown Menu ─── */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-[#030A14]/98 border-b border-cyan-900/30 px-6 py-6 space-y-4 backdrop-blur-2xl animate-fade-in text-left">
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => handleNav(item.id)}

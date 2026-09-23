@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseEpisodeTitle, slugify, stripDiacritics } from '../normalizer.js';
+import { parseEpisodeTitle, parseMovieTitle, slugify, stripDiacritics } from '../normalizer.js';
 
 describe('slugify', () => {
   it('strips Vietnamese diacritics including đ', () => {
@@ -73,5 +73,24 @@ describe('parseEpisodeTitle', () => {
     expect(parseEpisodeTitle('Interstellar')).toBeNull();
     expect(parseEpisodeTitle('')).toBeNull();
     expect(parseEpisodeTitle('   ')).toBeNull();
+  });
+});
+
+describe('parseMovieTitle', () => {
+  it.each([
+    ['The Last Signal (2025) [AI Film] 1080p', 'The Last Signal', 2025],
+    ['Neon Tide - 2024 | Vietsub', 'Neon Tide', 2024],
+    ['Blade Runner 2049', 'Blade Runner 2049', undefined],
+    ['Sông Đêm (AI Short) HD', 'Sông Đêm (AI Short)', undefined],
+  ])('%s', (raw, title, year) => {
+    const parsed = parseMovieTitle(raw);
+    expect(parsed?.title).toBe(title);
+    expect(parsed?.year).toBe(year);
+    expect(parsed?.slug).toBe(slugify(title));
+  });
+
+  it('returns null for empty titles', () => {
+    expect(parseMovieTitle('  ')).toBeNull();
+    expect(parseMovieTitle('[1080p]')).toBeNull();
   });
 });

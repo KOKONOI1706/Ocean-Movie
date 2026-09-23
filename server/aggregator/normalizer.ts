@@ -211,3 +211,34 @@ export function parseEpisodeTitle(rawTitle: string): ParsedEpisodeTitle | null {
 
   return null;
 }
+
+export interface ParsedMovieTitle {
+  rawTitle: string;
+  title: string;
+  normalizedTitle: string;
+  slug: string;
+  year?: number;
+}
+
+// "(2024)", "[2024]", or "- 2024" at the end. A bare trailing number is
+// ambiguous ("Blade Runner 2049") so it is never read as a year.
+const MOVIE_YEAR_RE = /(?:[([【]\s*((?:19|20)\d{2})\s*[)\]】]|\s[-–—|]\s*((?:19|20)\d{2})\s*$)/u;
+
+/** Parse a single-film title (no episode marker): strip noise, pull out the release year. */
+export function parseMovieTitle(rawTitle: string): ParsedMovieTitle | null {
+  if (!rawTitle || !rawTitle.trim()) return null;
+  // Drop non-year bracket tags and trailing noise first so "Film - 2024 | Vietsub" exposes its year.
+  const decoded = stripTrailingNoise(
+    decodeEntities(rawTitle)
+      .replace(/[[【{〔]([^\]】}〕]*)[\]】}〕]/gu, (tag, inner: string) => (/^\s*(19|20)\d{2}\s*$/.test(inner) ? tag : ' '))
+      .replace(/\s+/g, ' ')
+  );
+  const yearMatch = MOVIE_YEAR_RE.exec(decoded);
+  const year = yearMatch ? parseInt(yearMatch[1] || yearMatch[2], 10) : undefined;
+  const withoutYear = yearMatch ? decoded.slice(0, yearMatch.index) + decoded.slice(yearMatch.index + yearMatch[0].length) : decoded;
+
+  const title = tidy(cleanRawTitle(withoutYear));
+  const slug = slugify(title);
+  if (!slug) return null;
+  return { rawTitle, title, normalizedTitle: slug, slug, year };
+}

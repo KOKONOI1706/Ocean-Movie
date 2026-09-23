@@ -20,6 +20,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { CINEMA_ITEMS } from '../data/cinemaData';
+import { MoviePlayerModal } from './player/MoviePlayerModal';
 
 interface MovieDetailModalProps {
   item: MediaItem;
@@ -60,6 +61,7 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
   onToggleSave,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'ai' | 'streaming' | 'subtitles'>('overview');
   const [selectedSub, setSelectedSub] = useState(item.subtitlesAvailable?.[0]?.language || 'Tiếng Việt');
   const [userScore, setUserScore] = useState<number | null>(null);
@@ -118,6 +120,8 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
   ] as const;
 
   return (
+    <>
+    {isPlaying && <MoviePlayerModal item={item} onClose={() => setIsPlaying(false)} />}
     <div
       className="fixed inset-0 z-50 overflow-y-auto bg-[#062B45]/80 backdrop-blur-md flex justify-center p-0 sm:p-4 md:p-8 text-[#062B45] animate-fade-in"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
@@ -243,7 +247,7 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
                   </button>
                 ) : (
                   <button
-                    onClick={() => onOpenWhereToWatch(item)}
+                    onClick={() => (item.streamUrl ? setIsPlaying(true) : onOpenWhereToWatch(item))}
                     className="btn-primary flex-1 sm:flex-none"
                   >
                     <Play className="w-4 h-4 fill-current" />
@@ -559,5 +563,6 @@ export const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
         </div>
       </div>
     </div>
+    </>
   );
 };

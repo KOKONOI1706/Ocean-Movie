@@ -45,6 +45,9 @@ export const OceanFooter: React.FC<OceanFooterProps> = ({ onNavigate }) => {
           <button onClick={() => onNavigate('my-cinema')} className="hover:text-cyan-300 transition-colors cursor-pointer">
             Hải trình
           </button>
+          <button onClick={() => onNavigate('admin')} className="hover:text-cyan-300 transition-colors cursor-pointer">
+            Quản trị · Thu thập phim
+          </button>
         </div>
 
         {/* Legal & Copyright */}

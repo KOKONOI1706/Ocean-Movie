@@ -115,3 +115,78 @@ describe('Video aggregator API', () => {
     expect(res.body.data.skipped[0].reason).toMatch(/nội bộ/);
   });
 });
+
+describe('Video aggregator API — films', () => {
+  const stamp = Date.now();
+  const email = `aggregator_films_${stamp}@bienphim.vn`;
+  const filmTitle = `Neon Tide Test ${stamp}`;
+  const filmSlug = `neon-tide-test-${stamp}`;
+  const seriesSlug = `echo-test-${stamp}`;
+  let adminToken = '';
+
+  beforeAll(async () => {
+    await request(app).post('/api/v1/auth/register').send({
+      email,
+      username: `aggregator_films_${stamp}`,
+      password: 'password123',
+      displayName: 'Aggregator Films Tester',
+    });
+    await prisma.user.update({ where: { email }, data: { role: 'CURATOR' } });
+    const login = await request(app).post('/api/v1/auth/login').send({ identifier: email, password: 'password123' });
+    adminToken = login.body.data.accessToken;
+  });
+
+  afterAll(async () => {
+    await prisma.movie.deleteMany({ where: { slug: filmSlug } });
+    await prisma.series.deleteMany({ where: { slug: seriesSlug } });
+    await prisma.user.deleteMany({ where: { email } });
+    await prisma.$disconnect();
+  });
+
+  it('auto mode stores titles without an episode marker as AI films', async () => {
+    const res = await request(app)
+      .post('/api/v1/aggregator/ingest')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        mode: 'auto',
+        movieType: 'AI_FILM',
+        items: [
+          { title: `${filmTitle} (2025) [AI Film] 1080p`, streamUrl: 'https://player.example.com/embed/neon' },
+          { title: `${filmTitle} - 2025`, streamUrl: 'https://cdn.example.com/neon/index.m3u8' },
+          { title: `Echo Test ${stamp} - Ep 1`, streamUrl: 'https://cdn.example.com/echo/1.m3u8' },
+        ],
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.movies).toHaveLength(1);
+    expect(res.body.data.movies[0]).toMatchObject({ slug: filmSlug, type: 'AI_FILM', created: true });
+    expect(res.body.data.series[0]).toMatchObject({ slug: seriesSlug, episodes: 1 });
+
+    const movie = await request(app).get(`/api/v1/movies/${filmSlug}`);
+    expect(movie.body.data).toMatchObject({
+      type: 'AI_FILM',
+      isAiFilm: true,
+      year: 2025,
+      streamType: 'HLS',
+      streamUrl: 'https://cdn.example.com/neon/index.m3u8',
+    });
+  });
+
+  it('re-ingesting a film updates the stream instead of duplicating it', async () => {
+    const res = await request(app)
+      .post('/api/v1/aggregator/ingest')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ mode: 'movie', items: [{ title: filmTitle, streamUrl: 'https://cdn.example.com/neon/v2.mp4' }] });
+
+    expect(res.body.data.movies[0]).toMatchObject({ slug: filmSlug, created: false });
+    expect(await prisma.movie.count({ where: { slug: filmSlug } })).toBe(1);
+    const movie = await prisma.movie.findUnique({ where: { slug: filmSlug } });
+    expect(movie).toMatchObject({ streamType: 'FILE', streamUrl: 'https://cdn.example.com/neon/v2.mp4' });
+  });
+
+  it('lists AI films for the AI films tab', async () => {
+    const res = await request(app).get('/api/v1/movies?type=AI_FILM&sort=created_desc&limit=100');
+    expect(res.status).toBe(200);
+    expect(res.body.data.map((m: any) => m.slug)).toContain(filmSlug);
+  });
+});

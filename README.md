@@ -56,12 +56,35 @@ before running tests.
 Collects stream/embed links from external sources, normalizes their titles into
 `Series → Season → Episode` records, and plays them in-app.
 
+### Admin crawl console (UI)
+
+Open **Quản trị · Thu thập phim** from the site footer or the profile menu, or go
+to `/?tab=admin`. Sign in with an `ADMIN` or `CURATOR` account (see
+`ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env.example`). After you sign in, a
+**THU THẬP** item appears in the header. The console has three ways to crawl:
+
+- **Dán liên kết phát**: paste `Title | streamUrl` lines (or a JSON array).
+  *Xem trước* shows how each title will be recognized before anything is saved.
+- **Cào trang web**: paste page URLs. The scraper pulls the stream and
+  `og:title` from each page.
+- **Tìm trên nguồn**: search the sources configured in `AGGREGATOR_SOURCES`.
+
+*Lưu thành* sets how items are stored:
+- **Tự động**: titles with an episode number become episodes; everything else
+  becomes a film.
+- **Phim lẻ**: every item is a film.
+- **Series**: episodes only.
+
+Films are saved with the chosen type. The default is **Phim AI** (`AI_FILM`),
+so they show up in the *Phim AI* tab and play in-app from *Xem phim ngay*.
+
 ### Schema
 
 `Series` gains `normalizedTitle` (unique dedupe key) and `sourceName`. `Episode`
 gains `slug`, `streamUrl`, `streamType` (`HLS` | `FILE` | `EMBED`), `sourceName`,
-`sourceUrl`, `rawTitle` and `lastScrapedAt`. The SQL is in
-`supabase/migrations/20260923000000_video_aggregator.sql`; locally, `pnpm db:push`
+`sourceUrl`, `rawTitle` and `lastScrapedAt`. `Movie` gets the same stream and
+provenance fields, plus a unique `normalizedTitle`, for crawled films. The SQL is
+in `supabase/migrations/`; locally, `pnpm db:push`
 applies the same change from `prisma/schema.prisma`.
 
 ### Pipeline (`server/aggregator/`)
@@ -94,12 +117,16 @@ at sources you are licensed to redistribute.
 | Method | Path | Body |
 |---|---|---|
 | `POST` | `/api/v1/aggregator/parse` | `{ titles: string[] }`: dry run of the normalizer |
-| `POST` | `/api/v1/aggregator/ingest` | `{ sourceName?, items: [{ title, streamUrl, pageUrl?, thumbnailUrl?, synopsis?, year? }] }` |
+| `POST` | `/api/v1/aggregator/ingest` | `{ mode?, movieType?, sourceName?, items: [{ title, streamUrl, pageUrl?, thumbnailUrl?, synopsis?, year? }] }` |
 | `POST` | `/api/v1/aggregator/scrape` | `{ urls: string[], sourceName? }` |
 | `POST` | `/api/v1/aggregator/search` | `{ query, sources?, limit? }` |
 | `GET` | `/api/v1/aggregator/sources` | — |
 
-CLI: `pnpm aggregator --file items.json | --url <page> | --query "<text>" | --parse "<title>"`.
+`scrape` and `search` take the same `mode` (`series` by default, `movie` or
+`auto`) and `movieType` (`AI_FILM` by default) options.
+
+CLI: `pnpm aggregator --file items.json | --url <page> | --query "<text>" | --parse "<title>"`,
+plus `--mode movie|auto|series` and `--movie-type AI_FILM`.
 
 ### Player (`src/components/player/`)
 

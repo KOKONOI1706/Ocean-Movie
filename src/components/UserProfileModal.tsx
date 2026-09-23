@@ -5,12 +5,14 @@ import { UserTasteProfile } from '../types';
 interface UserProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenAdmin?: () => void;
   tasteProfile: UserTasteProfile;
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   isOpen,
   onClose,
+  onOpenAdmin,
   tasteProfile
 }) => {
   if (!isOpen) return null;
@@ -146,6 +148,15 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             ))}
           </div>
         </div>
+
+        {onOpenAdmin && (
+          <button
+            onClick={onOpenAdmin}
+            className="w-full py-2.5 rounded-xl border border-[#087EA4]/30 text-[#087EA4] hover:bg-[#EAF8FC] text-xs font-bold cursor-pointer"
+          >
+            Quản trị · Thu thập phim
+          </button>
+        )}
       </div>
     </div>
   );
