@@ -133,6 +133,11 @@ model Series {
   isTrending          Boolean      @default(false)
   editorialQuote      String?
 
+  // Aggregator: lowercase, diacritic-free base title used as the dedupe key
+  // when scraped episodes are grouped into a series.
+  normalizedTitle     String?      @unique
+  sourceName          String?
+
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
 
@@ -159,6 +164,12 @@ model Series {
 // ==========================================
 // 3. SERIES HIERARCHY: SEASONS & EPISODES
 // ==========================================
+
+enum StreamType {
+  HLS   // .m3u8 playlist, played through hls.js
+  FILE  // progressive file (.mp4, .webm), played natively
+  EMBED // third-party player page, rendered in an iframe
+}
 
 model Season {
   id           String    @id @default(uuid())
@@ -199,6 +210,15 @@ model Episode {
   importantEvents    String[]        @default([])
   beforeYouWatchNote String?
 
+  // Streaming & aggregator provenance
+  slug               String?
+  streamUrl          String?
+  streamType         StreamType?
+  sourceName         String?
+  sourceUrl          String?
+  rawTitle           String?
+  lastScrapedAt      DateTime?
+
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 
@@ -208,6 +228,7 @@ model Episode {
 
   @@unique([seasonId, episodeNumber])
   @@index([seasonId])
+  @@index([slug])
 }
 
 // ==========================================

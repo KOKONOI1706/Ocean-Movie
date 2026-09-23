@@ -1,4 +1,4 @@
-import { MediaItem, Season, Episode } from '../../types.js';
+import { MediaItem, Season, Episode, StreamType } from '../../types.js';
 
 export function transformBackendMovie(item: any): MediaItem {
   if (!item) return item;
@@ -98,23 +98,28 @@ export function transformBackendSeries(item: any): MediaItem {
     title: s.title,
     year: s.year || item.startYear,
     episodeCount: s.episodes?.length || s.episodeCount || 0,
-    episodes: s.episodes?.map((ep: any): Episode => ({
-      id: ep.id,
-      seasonNumber: s.seasonNumber,
-      episodeNumber: ep.episodeNumber,
-      title: ep.title,
-      runtime: `${ep.runtimeMinutes || 45} min`,
-      airDate: ep.airDate || '2026',
-      synopsis: ep.overview,
-      thumbnail: ep.thumbnailUrl,
-      playbackProgress: ep.watchProgress?.[0]?.percentage || 0,
-      aiRecap: ep.aiRecap,
-      keyCharacters: ep.keyCharacters || [],
-      majorThemes: ep.majorThemes || [],
-      emotionalTone: ep.emotionalTone,
-      importantEvents: ep.importantEvents || [],
-      beforeYouWatchNote: ep.beforeYouWatchNote,
-    })),
+    episodes: [...(s.episodes || [])]
+      .sort((a: any, b: any) => a.episodeNumber - b.episodeNumber)
+      .map((ep: any): Episode => ({
+        id: ep.id,
+        seasonNumber: s.seasonNumber,
+        episodeNumber: ep.episodeNumber,
+        title: ep.title,
+        runtime: ep.runtimeMinutes ? `${ep.runtimeMinutes} min` : ep.streamUrl ? '—' : '45 min',
+        airDate: ep.airDate || '2026',
+        synopsis: ep.overview,
+        thumbnail: ep.thumbnailUrl,
+        playbackProgress: ep.watchProgress?.[0]?.percentage || 0,
+        aiRecap: ep.aiRecap,
+        keyCharacters: ep.keyCharacters || [],
+        majorThemes: ep.majorThemes || [],
+        emotionalTone: ep.emotionalTone,
+        importantEvents: ep.importantEvents || [],
+        beforeYouWatchNote: ep.beforeYouWatchNote,
+        streamUrl: ep.streamUrl || undefined,
+        streamType: ep.streamType ? (String(ep.streamType).toLowerCase() as StreamType) : undefined,
+        sourceName: ep.sourceName || undefined,
+      })),
   })) || [];
 
   return {

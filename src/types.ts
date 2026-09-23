@@ -9,6 +9,8 @@ export interface StreamingOption {
   badge: string;
 }
 
+export type StreamType = 'hls' | 'file' | 'embed';
+
 export interface Episode {
   id: string;
   seasonNumber: number;
@@ -25,6 +27,9 @@ export interface Episode {
   importantEvents: string[];
   beforeYouWatchNote: string;
   playbackProgress?: number; // 0-100
+  streamUrl?: string;
+  streamType?: StreamType;
+  sourceName?: string;
 }
 
 export interface Season {
