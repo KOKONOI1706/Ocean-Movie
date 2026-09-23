@@ -1,6 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { EDITORIAL_COLLECTIONS } from '../data/collectionsData.js';
+import { collectionsApi } from '../lib/api';
+import { EditorialCollection } from '../types.js';
 
 interface HomeCollectionStripProps {
   onNavigateCollections: () => void;
@@ -19,10 +21,28 @@ export const HomeCollectionStrip: React.FC<HomeCollectionStripProps> = ({
 }) => {
   const sectionRef = useRef<HTMLElement>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [featured, setFeatured] = useState<EditorialCollection[]>(
+    FEATURED_COLLECTION_IDS.map((id) => EDITORIAL_COLLECTIONS.find((c) => c.id === id)).filter(
+      Boolean
+    ) as EditorialCollection[]
+  );
 
-  const featured = FEATURED_COLLECTION_IDS.map((id) =>
-    EDITORIAL_COLLECTIONS.find((c) => c.id === id)
-  ).filter(Boolean) as typeof EDITORIAL_COLLECTIONS;
+  useEffect(() => {
+    let mounted = true;
+    collectionsApi
+      .getAll()
+      .then((rows) => {
+        if (!mounted || !rows.length) return;
+        const fromApi = rows.map((row) => row.collection);
+        setFeatured(fromApi.slice(0, 4));
+      })
+      .catch(() => {
+        /* keep editorial fallback */
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     const el = sectionRef.current;

@@ -37,7 +37,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
   return (
     <nav
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/97 backdrop-blur-md border-t border-[#087EA4]/12 pb-safe shadow-[0_-4px_20px_rgba(6,43,69,0.08)]"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#061826]/95 backdrop-blur-xl border-t border-cyan-900/30 pb-safe shadow-[0_-4px_25px_rgba(0,0,0,0.5)]"
       role="navigation"
       aria-label="Bottom navigation"
     >
@@ -57,10 +57,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                 className="flex flex-col items-center justify-center px-3 py-2 gap-0.5 cursor-pointer -mt-4 group"
                 aria-label="Tìm kiếm AI"
               >
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#087EA4] to-[#35C2C8] flex items-center justify-center shadow-lg shadow-[#087EA4]/30 group-hover:shadow-[#087EA4]/50 transition-all group-hover:scale-105 group-active:scale-95">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#087EA4] to-[#35C2C8] flex items-center justify-center shadow-lg shadow-[#087EA4]/40 group-hover:shadow-[#35C2C8]/50 transition-all group-hover:scale-105 group-active:scale-95">
                   <Icon className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-[9px] font-bold text-[#087EA4] mt-1">{item.label}</span>
+                <span className="text-[9px] font-bold text-[#35C2C8] mt-1">{item.label}</span>
               </button>
             );
           }
@@ -70,27 +70,27 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               key={item.id}
               onClick={() => handlePress(item)}
               className={`relative flex flex-col items-center justify-center flex-1 px-2 py-3 gap-1 cursor-pointer transition-all duration-200 ${
-                isActive ? 'text-[#087EA4]' : 'text-[#4A6572] hover:text-[#062B45]'
+                isActive ? 'text-[#35C2C8]' : 'text-gray-400 hover:text-white'
               }`}
               aria-label={item.label}
               aria-current={isActive ? 'page' : undefined}
             >
               <div className={`relative p-1.5 rounded-xl transition-all duration-200 ${
-                isActive ? 'bg-[#EAF8FC]' : 'hover:bg-[#F6F1E7]'
+                isActive ? 'bg-[#35C2C8]/15' : 'hover:bg-white/5'
               }`}>
                 <Icon className={`w-5 h-5 transition-all duration-200 ${isActive ? 'scale-110' : ''}`} />
                 {/* Saved count badge on Hải trình */}
                 {item.id === 'my-cinema' && savedCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#087EA4] text-white text-[9px] font-bold flex items-center justify-center">
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#35C2C8] text-[#030A14] text-[9px] font-bold flex items-center justify-center">
                     {savedCount > 9 ? '9+' : savedCount}
                   </span>
                 )}
               </div>
-              <span className={`text-[10px] font-semibold leading-none ${isActive ? 'text-[#087EA4]' : ''}`}>
+              <span className={`text-[10px] font-semibold leading-none ${isActive ? 'text-[#35C2C8]' : ''}`}>
                 {item.label}
               </span>
               {isActive && (
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-[#087EA4]" />
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-[#35C2C8]" />
               )}
             </button>
           );

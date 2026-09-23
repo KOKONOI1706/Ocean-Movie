@@ -9,12 +9,12 @@ interface DepthMarker {
 }
 
 const DEPTH_MARKERS: DepthMarker[] = [
-  { depth: 0,     label: '0m',      sublabel: 'MẶT NƯỚC',     normalizedPos: 0.00 },
-  { depth: 200,   label: '200m',    sublabel: 'VÙNG SÁNG',    normalizedPos: 0.20 },
-  { depth: 1000,  label: '1000m',   sublabel: 'VÙNG CHẠP TỐI', normalizedPos: 0.42 },
-  { depth: 4000,  label: '4000m',   sublabel: 'VÙNG SÂU',     normalizedPos: 0.65 },
-  { depth: 7000,  label: '7000m',   sublabel: 'VỰC THẲM',     normalizedPos: 0.82 },
-  { depth: 11000, label: '11000m',  sublabel: 'RÃNH HADAL',   normalizedPos: 1.00 },
+  { depth: 0,     label: '0m',      sublabel: 'SURFACE',   normalizedPos: 0.00 },
+  { depth: 200,   label: '200m',    sublabel: 'SHALLOW',   normalizedPos: 0.20 },
+  { depth: 1000,  label: '1000m',   sublabel: 'TWILIGHT',  normalizedPos: 0.42 },
+  { depth: 4000,  label: '4000m',   sublabel: 'DEEP',      normalizedPos: 0.65 },
+  { depth: 7000,  label: '7000m',   sublabel: 'ABYSS',     normalizedPos: 0.82 },
+  { depth: 11000, label: '11000m',  sublabel: 'HADAL',     normalizedPos: 1.00 },
 ];
 
 export const VerticalDepthIndicator: React.FC = () => {

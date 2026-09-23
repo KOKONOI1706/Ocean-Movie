@@ -138,19 +138,23 @@ export interface Creator {
   knownFor: string[];
 }
 
-export interface UserTasteProfile {
-  name: string;
-  memberSince: string;
-  editorialSummary: string;
-  topGenres: { genre: string; percentage: number }[];
+export interface AuthUser {
+  id: string;
+  email: string;
+  username: string;
+  displayName: string;
+  avatarUrl?: string | null;
+  role: string;
+  createdAt: string;
+}
+
+export interface UserPreferences {
+  favoriteGenres: string[];
   favoriteMoods: string[];
-  activeStreamingServices: string[];
-  stats: {
-    filmsWatched: number;
-    hoursLogged: number;
-    aiFilmsDiscovered: number;
-    notesWritten: number;
-  };
+  favoriteLanguages: string[];
+  preferredRuntime?: string | null;
+  preferredContentTypes: string[];
+  preferredProviders: string[];
 }
 
 export type SavedCategory = 'wishlist' | 'watching' | 'watched' | 'favorite';

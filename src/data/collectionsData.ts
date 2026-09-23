@@ -1,4 +1,4 @@
-import { EditorialCollection, Creator, UserTasteProfile } from '../types';
+import { EditorialCollection, Creator } from '../types';
 
 export const EDITORIAL_COLLECTIONS: EditorialCollection[] = [
   {
@@ -135,23 +135,3 @@ export const CREATORS_DATA: Creator[] = [
     knownFor: ['Past Lives', 'The Wheel', 'Endlings']
   }
 ];
-
-export const INITIAL_USER_TASTE: UserTasteProfile = {
-  name: 'Nguyễn Duy Cương',
-  memberSince: 'Thành viên Hải Trình · Tháng 9, 2026',
-  editorialSummary: 'Bạn có xu hướng thích sci-fi chậm, giàu cảm xúc, kết hợp với những câu chuyện về con người và công nghệ sâu lắng. Bạn đặc biệt yêu thích những tác phẩm có phong cách hình ảnh đẹp mắt và âm thanh du dương.',
-  topGenres: [
-    { genre: 'Khoa học viễn tưởng (Sci-Fi)', percentage: 38 },
-    { genre: 'Tâm lý & Bí ẩn (Mystery)', percentage: 26 },
-    { genre: 'Điện ảnh thư thái (Slow Cinema)', percentage: 21 },
-    { genre: 'Phim AI & Thử nghiệm', percentage: 15 }
-  ],
-  favoriteMoods: ['curious', 'lonely', 'romantics', 'night-owls'],
-  activeStreamingServices: ['Netflix', 'YouTube', 'Apple TV+', 'Prime Video'],
-  stats: {
-    filmsWatched: 42,
-    hoursLogged: 78,
-    aiFilmsDiscovered: 12,
-    notesWritten: 19
-  }
-};

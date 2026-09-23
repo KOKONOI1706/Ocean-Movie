@@ -1,4 +1,5 @@
 import { apiClient } from './client.js';
+import { AuthUser, UserPreferences } from '../../types.js';
 
 export const userApi = {
   async register(data: { email: string; username: string; password: string; displayName: string }) {
@@ -22,28 +23,28 @@ export const userApi = {
     return apiClient.post('/auth/logout');
   },
 
-  async getMe() {
-    const res = await apiClient.get<any>('/auth/me');
+  async getMe(): Promise<AuthUser> {
+    const res = await apiClient.get<AuthUser>('/auth/me');
     return res.data;
   },
 
-  async getProfile() {
-    const res = await apiClient.get<any>('/me');
+  async getProfile(): Promise<AuthUser> {
+    const res = await apiClient.get<AuthUser>('/me');
     return res.data;
   },
 
-  async updateProfile(data: { displayName?: string; avatarUrl?: string }) {
-    const res = await apiClient.patch<any>('/me', data);
+  async updateProfile(data: { displayName?: string; avatarUrl?: string }): Promise<AuthUser> {
+    const res = await apiClient.patch<AuthUser>('/me', data);
     return res.data;
   },
 
-  async getPreferences() {
-    const res = await apiClient.get<any>('/me/preferences');
+  async getPreferences(): Promise<UserPreferences> {
+    const res = await apiClient.get<UserPreferences>('/me/preferences');
     return res.data;
   },
 
-  async updatePreferences(preferences: any) {
-    const res = await apiClient.put<any>('/me/preferences', preferences);
+  async updatePreferences(preferences: Partial<UserPreferences>): Promise<UserPreferences> {
+    const res = await apiClient.put<UserPreferences>('/me/preferences', preferences);
     return res.data;
   },
 };

@@ -18,5 +18,11 @@ export default defineConfig(() => {
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },
+    test: {
+      // Agent-managed git worktrees can live under .claude/worktrees — each
+      // is a full checkout, so without this vitest double-runs every test
+      // file (and stale worktrees can carry outdated fixtures).
+      exclude: ['**/node_modules/**', '**/dist/**', '**/.claude/worktrees/**'],
+    },
   };
 });

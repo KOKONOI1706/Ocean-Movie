@@ -13,10 +13,10 @@ import {
   ShieldCheck,
   Tv,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import {
   aggregatorApi,
   userApi,
-  apiClient,
   IngestMode,
   IngestReport,
   MovieType,
@@ -24,15 +24,8 @@ import {
   RawItemInput,
 } from '../../lib/api';
 
-interface AdminUser {
-  username: string;
-  displayName: string;
-  role: string;
-}
-
 interface AdminCrawlViewProps {
   onOpenMedia: (kind: 'movie' | 'series', slug: string) => void;
-  onAuthChange?: (isStaff: boolean) => void;
 }
 
 const STAFF_ROLES = ['ADMIN', 'CURATOR'];
@@ -100,9 +93,9 @@ const panel = 'rounded-2xl border border-cyan-900/40 bg-[#061527]/80 backdrop-bl
 const input =
   'w-full rounded-xl bg-[#030A14]/80 border border-cyan-900/50 focus:border-cyan-400 focus:outline-none px-3 py-2.5 text-sm text-white placeholder:text-gray-500';
 
-export const AdminCrawlView: React.FC<AdminCrawlViewProps> = ({ onOpenMedia, onAuthChange }) => {
-  const [user, setUser] = useState<AdminUser | null>(null);
-  const [checkingAuth, setCheckingAuth] = useState(true);
+export const AdminCrawlView: React.FC<AdminCrawlViewProps> = ({ onOpenMedia }) => {
+  // Shared session: signing in here also updates the header and profile page.
+  const { user, logout, refreshUser } = useAuth();
 
   // Login form
   const [identifier, setIdentifier] = useState('');
@@ -129,18 +122,9 @@ export const AdminCrawlView: React.FC<AdminCrawlViewProps> = ({ onOpenMedia, onA
   const isStaff = Boolean(user && STAFF_ROLES.includes(user.role));
 
   useEffect(() => {
-    userApi
-      .getMe()
-      .then((me) => setUser(me || null))
-      .catch(() => setUser(null))
-      .finally(() => setCheckingAuth(false));
-  }, []);
-
-  useEffect(() => {
-    onAuthChange?.(isStaff);
     if (!isStaff) return;
     aggregatorApi.sources().then(setSources).catch(() => setSources([]));
-  }, [isStaff]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isStaff]);
 
   const pasted = useMemo(() => parsePastedItems(pasteText), [pasteText]);
   const urls = useMemo(
@@ -153,23 +137,21 @@ export const AdminCrawlView: React.FC<AdminCrawlViewProps> = ({ onOpenMedia, onA
     setLoginError('');
     setLoggingIn(true);
     try {
+      // Not AuthContext.login(): it toggles the provider's `loading`, which
+      // unmounts the app mid-attempt and would drop this form's error state.
       const data = await userApi.login(identifier.trim(), password);
-      if (!data?.user) throw new Error('Sai tên đăng nhập hoặc mật khẩu');
-      setUser(data.user);
+      if (!data?.accessToken) throw new Error('invalid credentials');
+      await refreshUser();
       setPassword('');
-      if (!STAFF_ROLES.includes(data.user.role)) {
-        setLoginError('Tài khoản này không có quyền quản trị (cần vai trò ADMIN hoặc CURATOR).');
-      }
-    } catch (err) {
-      setLoginError((err as Error).message || 'Đăng nhập thất bại');
+    } catch {
+      setLoginError('Sai tên đăng nhập hoặc mật khẩu');
     } finally {
       setLoggingIn(false);
     }
   };
 
-  const handleLogout = () => {
-    apiClient.clearToken();
-    setUser(null);
+  const handleLogout = async () => {
+    await logout();
     setReport(null);
     setPreview(null);
   };
@@ -210,15 +192,7 @@ export const AdminCrawlView: React.FC<AdminCrawlViewProps> = ({ onOpenMedia, onA
     if (method === 'search') run(() => aggregatorApi.search(query.trim(), selectedSources, options));
   };
 
-  // ─── Loading / login gate ──────────────────────────────────────────────────
-  if (checkingAuth) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center text-cyan-200">
-        <Loader2 className="w-6 h-6 animate-spin" />
-      </div>
-    );
-  }
-
+  // ─── Login gate ────────────────────────────────────────────────────────────
   if (!isStaff) {
     return (
       <div className="max-w-md mx-auto px-4 pt-32 pb-20">

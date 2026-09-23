@@ -1,32 +1,27 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
-// ==========================================
-// 1. USER & AUTHENTICATION
-// ==========================================
-
 model User {
-  id           String    @id @default(uuid())
-  email        String    @unique
-  username     String    @unique
+  id           String          @id @default(uuid())
+  email        String          @unique
+  username     String          @unique
   passwordHash String
   displayName  String
   avatarUrl    String?
-  role         String    @default("USER") // USER, ADMIN, CURATOR
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
+  role         String          @default("USER")
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  ratings      Rating[]
   preference   UserPreference?
-  watchlist    Watchlist[]
   watchHistory WatchHistory[]
   progress     WatchProgress[]
-  ratings      Rating[]
+  watchlist    Watchlist[]
 
   @@index([email])
   @@index([username])
@@ -35,7 +30,6 @@ model User {
 model UserPreference {
   id                    String   @id @default(uuid())
   userId                String   @unique
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   favoriteGenres        String[] @default([])
   favoriteMoods         String[] @default([])
   favoriteLanguages     String[] @default([])
@@ -45,76 +39,51 @@ model UserPreference {
   editorialSummary      String?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
-}
-
-// ==========================================
-// 2. CORE MEDIA ENTITIES (MOVIE & SERIES)
-// ==========================================
-
-enum MediaType {
-  MOVIE
-  SERIES
-  SHORT
-  AI_FILM
-  DOCUMENTARY
-  ANIME
-}
-
-enum MediaStatus {
-  RELEASED
-  UPCOMING
-  IN_PRODUCTION
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Movie {
-  id                  String       @id @default(uuid())
-  slug                String       @unique
+  id                  String            @id @default(uuid())
+  slug                String            @unique
   title               String
   originalTitle       String?
   tagline             String?
   synopsis            String
   year                Int
   runtimeMinutes      Int
-  rating              Float        @default(0.0)
+  rating              Float             @default(0.0)
   posterUrl           String
   backdropUrl         String
   monochromePosterUrl String?
-  type                MediaType    @default(MOVIE)
-  status              MediaStatus  @default(RELEASED)
-  isCoverFeature      Boolean      @default(false)
-  isTrending          Boolean      @default(false)
+  type                MediaType         @default(MOVIE)
+  status              MediaStatus       @default(RELEASED)
+  isCoverFeature      Boolean           @default(false)
+  isTrending          Boolean           @default(false)
   editorialQuote      String?
-
-  // AI Film specific fields
-  isAiFilm            Boolean      @default(false)
-  toolsUsed           String[]     @default([])
+  isAiFilm            Boolean           @default(false)
+  toolsUsed           String[]          @default([])
   promptDirector      String?
   workflowNotes       String?
-
-  // Aggregator: in-app stream + provenance for crawled films
-  normalizedTitle     String?      @unique
+  normalizedTitle     String?           @unique
   streamUrl           String?
   streamType          StreamType?
   sourceName          String?
   sourceUrl           String?
   rawTitle            String?
   lastScrapedAt       DateTime?
-
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
-
-  // Relations
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  aiInsight           AIInsight?
+  availability        Availability[]
+  collectionItems     CollectionMovie[]
+  creators            MovieCreator[]
   genres              MovieGenre[]
   moods               MovieMood[]
-  creators            MovieCreator[]
-  availability        Availability[]
-  subtitles           Subtitle[]
   ratings             Rating[]
-  watchlist           Watchlist[]
+  subtitles           Subtitle[]
   watchHistory        WatchHistory[]
   watchProgress       WatchProgress[]
-  aiInsight           AIInsight?
-  collectionItems     CollectionMovie[]
+  watchlist           Watchlist[]
 
   @@index([title])
   @@index([slug])
@@ -125,43 +94,37 @@ model Movie {
 }
 
 model Series {
-  id                  String       @id @default(uuid())
-  slug                String       @unique
+  id                  String             @id @default(uuid())
+  slug                String             @unique
   title               String
   originalTitle       String?
   tagline             String?
   synopsis            String
   startYear           Int
   endYear             Int?
-  rating              Float        @default(0.0)
+  rating              Float              @default(0.0)
   posterUrl           String
   backdropUrl         String
   monochromePosterUrl String?
-  status              MediaStatus  @default(RELEASED)
-  isCoverFeature      Boolean      @default(false)
-  isTrending          Boolean      @default(false)
+  status              MediaStatus        @default(RELEASED)
+  isCoverFeature      Boolean            @default(false)
+  isTrending          Boolean            @default(false)
   editorialQuote      String?
-
-  // Aggregator: lowercase, diacritic-free base title used as the dedupe key
-  // when scraped episodes are grouped into a series.
-  normalizedTitle     String?      @unique
+  normalizedTitle     String?            @unique
   sourceName          String?
-
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
-
-  // Relations
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  aiInsight           AIInsight?
+  availability        Availability[]
+  collectionItems     CollectionSeries[]
+  ratings             Rating[]
   seasons             Season[]
+  creators            SeriesCreator[]
   genres              SeriesGenre[]
   moods               SeriesMood[]
-  creators            SeriesCreator[]
-  availability        Availability[]
   subtitles           Subtitle[]
-  ratings             Rating[]
-  watchlist           Watchlist[]
   watchHistory        WatchHistory[]
-  aiInsight           AIInsight?
-  collectionItems     CollectionSeries[]
+  watchlist           Watchlist[]
 
   @@index([title])
   @@index([slug])
@@ -170,31 +133,19 @@ model Series {
   @@index([isTrending])
 }
 
-// ==========================================
-// 3. SERIES HIERARCHY: SEASONS & EPISODES
-// ==========================================
-
-enum StreamType {
-  HLS   // .m3u8 playlist, played through hls.js
-  FILE  // progressive file (.mp4, .webm), played natively
-  EMBED // third-party player page, rendered in an iframe
-}
-
 model Season {
   id           String    @id @default(uuid())
   seriesId     String
-  series       Series    @relation(fields: [seriesId], references: [id], onDelete: Cascade)
   seasonNumber Int
   title        String
   overview     String?
   posterUrl    String?
   year         Int?
   episodeCount Int       @default(0)
-
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
-
   episodes     Episode[]
+  series       Series    @relation(fields: [seriesId], references: [id], onDelete: Cascade)
 
   @@unique([seriesId, seasonNumber])
   @@index([seriesId])
@@ -203,23 +154,18 @@ model Season {
 model Episode {
   id                 String          @id @default(uuid())
   seasonId           String
-  season             Season          @relation(fields: [seasonId], references: [id], onDelete: Cascade)
   episodeNumber      Int
   title              String
   overview           String
   runtimeMinutes     Int
   airDate            String?
   thumbnailUrl       String?
-
-  // Editorial & AI Recap
   aiRecap            String?
   keyCharacters      String[]        @default([])
   majorThemes        String[]        @default([])
   emotionalTone      String?
   importantEvents    String[]        @default([])
   beforeYouWatchNote String?
-
-  // Streaming & aggregator provenance
   slug               String?
   streamUrl          String?
   streamType         StreamType?
@@ -227,40 +173,34 @@ model Episode {
   sourceUrl          String?
   rawTitle           String?
   lastScrapedAt      DateTime?
-
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
-
+  aiInsight          AIInsight?
+  season             Season          @relation(fields: [seasonId], references: [id], onDelete: Cascade)
   subtitles          Subtitle[]
   watchProgress      WatchProgress[]
-  aiInsight          AIInsight?
 
   @@unique([seasonId, episodeNumber])
   @@index([seasonId])
   @@index([slug])
 }
 
-// ==========================================
-// 4. TAXONOMY: GENRES, MOODS & CREATORS
-// ==========================================
-
 model Genre {
-  id          String        @id @default(uuid())
-  name        String        @unique
-  slug        String        @unique
-  createdAt   DateTime      @default(now())
-
-  movies      MovieGenre[]
-  series      SeriesGenre[]
+  id        String        @id @default(uuid())
+  name      String        @unique
+  slug      String        @unique
+  createdAt DateTime      @default(now())
+  movies    MovieGenre[]
+  series    SeriesGenre[]
 
   @@index([slug])
 }
 
 model MovieGenre {
   movieId String
-  movie   Movie   @relation(fields: [movieId], references: [id], onDelete: Cascade)
   genreId String
-  genre   Genre   @relation(fields: [genreId], references: [id], onDelete: Cascade)
+  genre   Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+  movie   Movie  @relation(fields: [movieId], references: [id], onDelete: Cascade)
 
   @@id([movieId, genreId])
   @@index([movieId])
@@ -269,9 +209,9 @@ model MovieGenre {
 
 model SeriesGenre {
   seriesId String
-  series   Series  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
   genreId  String
-  genre    Genre   @relation(fields: [genreId], references: [id], onDelete: Cascade)
+  genre    Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+  series   Series @relation(fields: [seriesId], references: [id], onDelete: Cascade)
 
   @@id([seriesId, genreId])
   @@index([seriesId])
@@ -279,14 +219,13 @@ model SeriesGenre {
 }
 
 model Mood {
-  id          String      @id @default(uuid())
-  name        String      @unique
-  slug        String      @unique
+  id          String       @id @default(uuid())
+  name        String       @unique
+  slug        String       @unique
   subtitle    String?
   manifesto   String?
   accentQuote String?
-  createdAt   DateTime    @default(now())
-
+  createdAt   DateTime     @default(now())
   movies      MovieMood[]
   series      SeriesMood[]
 
@@ -295,9 +234,9 @@ model Mood {
 
 model MovieMood {
   movieId String
-  movie   Movie   @relation(fields: [movieId], references: [id], onDelete: Cascade)
   moodId  String
-  mood    Mood    @relation(fields: [moodId], references: [id], onDelete: Cascade)
+  mood    Mood   @relation(fields: [moodId], references: [id], onDelete: Cascade)
+  movie   Movie  @relation(fields: [movieId], references: [id], onDelete: Cascade)
 
   @@id([movieId, moodId])
   @@index([movieId])
@@ -306,9 +245,9 @@ model MovieMood {
 
 model SeriesMood {
   seriesId String
-  series   Series  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
   moodId   String
-  mood     Mood    @relation(fields: [moodId], references: [id], onDelete: Cascade)
+  mood     Mood   @relation(fields: [moodId], references: [id], onDelete: Cascade)
+  series   Series @relation(fields: [seriesId], references: [id], onDelete: Cascade)
 
   @@id([seriesId, moodId])
   @@index([seriesId])
@@ -331,7 +270,6 @@ model Creator {
   knownFor     String[]        @default([])
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
-
   movies       MovieCreator[]
   series       SeriesCreator[]
 
@@ -341,10 +279,10 @@ model Creator {
 
 model MovieCreator {
   movieId   String
-  movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
   creatorId String
-  creator   Creator  @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  role      String   @default("Director") // Director, Screenwriter, Actor, etc.
+  role      String  @default("Director")
+  creator   Creator @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  movie     Movie   @relation(fields: [movieId], references: [id], onDelete: Cascade)
 
   @@id([movieId, creatorId, role])
   @@index([movieId])
@@ -353,19 +291,15 @@ model MovieCreator {
 
 model SeriesCreator {
   seriesId  String
-  series    Series   @relation(fields: [seriesId], references: [id], onDelete: Cascade)
   creatorId String
-  creator   Creator  @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  role      String   @default("Creator")
+  role      String  @default("Creator")
+  creator   Creator @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  series    Series  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
 
   @@id([seriesId, creatorId, role])
   @@index([seriesId])
   @@index([creatorId])
 }
-
-// ==========================================
-// 5. EDITORIAL COLLECTIONS
-// ==========================================
 
 model Collection {
   id          String             @id @default(uuid())
@@ -379,7 +313,6 @@ model Collection {
   tags        String[]           @default([])
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
-
   movies      CollectionMovie[]
   series      CollectionSeries[]
 
@@ -388,10 +321,10 @@ model Collection {
 
 model CollectionMovie {
   collectionId String
-  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   movieId      String
-  movie        Movie      @relation(fields: [movieId], references: [id], onDelete: Cascade)
   order        Int        @default(0)
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  movie        Movie      @relation(fields: [movieId], references: [id], onDelete: Cascade)
 
   @@id([collectionId, movieId])
   @@index([collectionId])
@@ -400,25 +333,14 @@ model CollectionMovie {
 
 model CollectionSeries {
   collectionId String
-  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   seriesId     String
-  series       Series     @relation(fields: [seriesId], references: [id], onDelete: Cascade)
   order        Int        @default(0)
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  series       Series     @relation(fields: [seriesId], references: [id], onDelete: Cascade)
 
   @@id([collectionId, seriesId])
   @@index([collectionId])
   @@index([seriesId])
-}
-
-// ==========================================
-// 6. STREAMING PROVIDERS & AVAILABILITY
-// ==========================================
-
-enum AvailabilityType {
-  FREE
-  SUBSCRIPTION
-  RENT
-  BUY
 }
 
 model Provider {
@@ -428,7 +350,6 @@ model Provider {
   logoUrl      String?
   websiteUrl   String?
   createdAt    DateTime       @default(now())
-
   availability Availability[]
 
   @@index([slug])
@@ -437,12 +358,8 @@ model Provider {
 model Availability {
   id          String           @id @default(uuid())
   providerId  String
-  provider    Provider         @relation(fields: [providerId], references: [id], onDelete: Cascade)
   movieId     String?
-  movie       Movie?           @relation(fields: [movieId], references: [id], onDelete: Cascade)
   seriesId    String?
-  series      Series?          @relation(fields: [seriesId], references: [id], onDelete: Cascade)
-
   region      String           @default("Global")
   type        AvailabilityType @default(SUBSCRIPTION)
   url         String
@@ -453,6 +370,9 @@ model Availability {
   lastChecked DateTime         @default(now())
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
+  movie       Movie?           @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  provider    Provider         @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  series      Series?          @relation(fields: [seriesId], references: [id], onDelete: Cascade)
 
   @@index([providerId])
   @@index([movieId])
@@ -460,53 +380,37 @@ model Availability {
   @@index([region])
 }
 
-// ==========================================
-// 7. SUBTITLES
-// ==========================================
-
 model Subtitle {
   id               String   @id @default(uuid())
   movieId          String?
-  movie            Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
   seriesId         String?
-  series           Series?  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
   episodeId        String?
-  episode          Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
-
   language         String
   isAiAssisted     Boolean  @default(false)
   sampleOriginal   String?
   sampleTranslated String?
   createdAt        DateTime @default(now())
+  episode          Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  movie            Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  series           Series?  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
 
   @@index([movieId])
   @@index([seriesId])
   @@index([episodeId])
 }
 
-// ==========================================
-// 8. USER ACTIVITY & INTERACTIONS
-// ==========================================
-
-enum WatchlistCategory {
-  WISHLIST
-  WATCHING
-  WATCHED
-  FAVORITE
-}
-
 model Watchlist {
   id        String            @id @default(uuid())
   userId    String
-  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   movieId   String?
-  movie     Movie?            @relation(fields: [movieId], references: [id], onDelete: Cascade)
   seriesId  String?
-  series    Series?           @relation(fields: [seriesId], references: [id], onDelete: Cascade)
   category  WatchlistCategory @default(WISHLIST)
   userNote  String?
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
+  movie     Movie?            @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  series    Series?           @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, movieId])
   @@unique([userId, seriesId])
@@ -517,17 +421,16 @@ model Watchlist {
 model WatchProgress {
   id              String   @id @default(uuid())
   userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   movieId         String?
-  movie           Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
   episodeId       String?
-  episode         Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
-
   progressSeconds Int      @default(0)
   durationSeconds Int      @default(0)
-  percentage      Int      @default(0) // 0 - 100
+  percentage      Int      @default(0)
   completed       Boolean  @default(false)
   updatedAt       DateTime @updatedAt
+  episode         Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  movie           Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, movieId])
   @@unique([userId, episodeId])
@@ -537,17 +440,16 @@ model WatchProgress {
 model WatchHistory {
   id              String   @id @default(uuid())
   userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   movieId         String?
-  movie           Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
   seriesId        String?
-  series          Series?  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
-
   seasonNumber    Int?
   episodeNumber   Int?
   watchedAt       DateTime @default(now())
   progressSeconds Int      @default(0)
   completed       Boolean  @default(false)
+  movie           Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  series          Series?  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([watchedAt])
@@ -556,16 +458,15 @@ model WatchHistory {
 model Rating {
   id        String   @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   movieId   String?
-  movie     Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
   seriesId  String?
-  series    Series?  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
-
-  score     Int // 1 - 10
+  score     Int
   note      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  movie     Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  series    Series?  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, movieId])
   @@unique([userId, seriesId])
@@ -573,19 +474,11 @@ model Rating {
   @@index([score])
 }
 
-// ==========================================
-// 9. AI INSIGHTS & CACHED ANALYSIS
-// ==========================================
-
 model AIInsight {
   id                 String   @id @default(uuid())
   movieId            String?  @unique
-  movie              Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
   seriesId           String?  @unique
-  series             Series?  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
   episodeId          String?  @unique
-  episode            Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
-
   aiMatchScore       Int?
   whyYouMayLike      String?
   themes             String?
@@ -595,11 +488,48 @@ model AIInsight {
   emotionalIntensity String?
   audienceFit        String?
   rawJson            Json?
-
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+  episode            Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  movie              Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  series             Series?  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
 
   @@index([movieId])
   @@index([seriesId])
   @@index([episodeId])
+}
+
+enum MediaType {
+  MOVIE
+  SERIES
+  SHORT
+  AI_FILM
+  DOCUMENTARY
+  ANIME
+}
+
+enum MediaStatus {
+  RELEASED
+  UPCOMING
+  IN_PRODUCTION
+}
+
+enum AvailabilityType {
+  FREE
+  SUBSCRIPTION
+  RENT
+  BUY
+}
+
+enum WatchlistCategory {
+  WISHLIST
+  WATCHING
+  WATCHED
+  FAVORITE
+}
+
+enum StreamType {
+  HLS
+  FILE
+  EMBED
 }

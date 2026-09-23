@@ -1,14 +1,24 @@
 import React, { useEffect, useRef } from 'react';
 import { useOceanDepth, OceanZoneId } from '../../context/OceanDepthContext.js';
 import {
+  DolphinIllustration,
   SeaTurtleIllustration,
+  FishSchoolIllustration,
   MantaRayIllustration,
+  JellyfishShallowIllustration,
+  CoralFishIllustration,
+  BioluminescentJellyIllustration,
   LanternfishIllustration,
+  LanternSquidIllustration,
   CombJellyIllustration,
-  GiantSquidIllustration,
+  SpermWhaleIllustration,
   AnglerfishIllustration,
+  GulperEelIllustration,
+  GiantSquidIllustration,
+  AtollaJellyfishIllustration,
   HadalSnailfishIllustration,
-} from './MarineLifeIllustrations.js';
+  GiantIsopodIllustration,
+} from './MarineLifeIllustrations.tsx';
 
 interface Particle {
   x: number;
@@ -23,8 +33,10 @@ interface Particle {
 }
 
 export const OceanBackground: React.FC = () => {
-  const { depth, zone, zoneProgress } = useOceanDepth();
+  const { depth, zone, zoneProgress, progress } = useOceanDepth();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const depthRef = useRef(depth);
+  depthRef.current = depth;
 
   // Background gradient color interpolation based on depth
   const getGradientStyle = () => {
@@ -84,6 +96,7 @@ export const OceanBackground: React.FC = () => {
       });
     }
 
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let time = 0;
 
     const render = () => {
@@ -91,21 +104,22 @@ export const OceanBackground: React.FC = () => {
       ctx.clearRect(0, 0, width, height);
 
       particles.forEach((p) => {
-        // Particles behavior shifts as we go deeper
-        if (depth <= 200) {
-          // Surface/Shallow: bubbles float upwards gently
-          p.y -= Math.abs(p.speedY) * 0.8 + 0.2;
-          p.x += Math.sin(time + p.pulseOffset) * 0.3;
-          if (p.y < 0) p.y = height;
-        } else {
-          // Twilight & Deep Ocean: marine snow drifts slowly downward
-          p.y += Math.abs(p.speedY) * 0.5 + 0.15;
-          p.x += Math.cos(time * 0.5 + p.pulseOffset) * 0.2;
-          if (p.y > height) p.y = 0;
-        }
+        const currentDepth = depthRef.current;
 
-        if (p.x < 0) p.x = width;
-        if (p.x > width) p.x = 0;
+        if (!reducedMotion) {
+          if (currentDepth <= 200) {
+            p.y -= Math.abs(p.speedY) * 0.8 + 0.2;
+            p.x += Math.sin(time + p.pulseOffset) * 0.3;
+            if (p.y < 0) p.y = height;
+          } else {
+            p.y += Math.abs(p.speedY) * 0.5 + 0.15;
+            p.x += Math.cos(time * 0.5 + p.pulseOffset) * 0.2;
+            if (p.y > height) p.y = 0;
+          }
+
+          if (p.x < 0) p.x = width;
+          if (p.x > width) p.x = 0;
+        }
 
         const currentOpacity =
           p.opacity * (0.6 + 0.4 * Math.sin(time * p.pulseSpeed * 60 + p.pulseOffset));
@@ -113,10 +127,10 @@ export const OceanBackground: React.FC = () => {
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
 
-        if (depth <= 200) {
+        if (currentDepth <= 200) {
           // Sunlit bubbles / plankton
           ctx.fillStyle = `rgba(53, 194, 200, ${currentOpacity * 0.7})`;
-        } else if (depth <= 1000) {
+        } else if (currentDepth <= 1000) {
           // Twilight: Soft marine snow and violet-cyan photophore specks
           const isBio = p.type === 'bioluminescent';
           ctx.fillStyle = isBio
@@ -141,7 +155,7 @@ export const OceanBackground: React.FC = () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
     };
-  }, [depth]);
+  }, []);
 
   return (
     <div
@@ -163,7 +177,8 @@ export const OceanBackground: React.FC = () => {
           alt=""
           className="w-full h-full object-cover object-center"
           style={{
-            filter: `brightness(${Math.max(0.3, 0.7 - (depth / 4000) * 0.4)}) saturate(1.15)`,
+            transform: `scale(${1.05 + progress * 0.07}) translateY(${progress * 2.5}%)`,
+            filter: `brightness(${Math.max(0.28, 0.7 - progress * 0.38)}) saturate(${1.12 - progress * 0.18})`,
           }}
         />
       </div>
@@ -202,37 +217,86 @@ export const OceanBackground: React.FC = () => {
           VINTAGE MARINE LIFE ENCOUNTERS (Depth-Gated)
           ========================================== */}
 
-      {/* ZONE 1: Sea Turtle Swimming (Surface 0-50m) */}
+      {/* ZONE 1: Dolphin, Sea Turtle & Fish School (Surface 0-50m) */}
       {zone === 'surface' && (
-        <div
-          className="absolute top-24 right-4 sm:right-16 z-2 transition-all duration-1000 animate-sea-drift"
-          style={{
-            transform: `translateY(${zoneProgress * 40}px)`,
-            opacity: Math.max(0.2, 0.85 - zoneProgress * 0.4),
-          }}
-        >
-          <SeaTurtleIllustration />
-        </div>
+        <>
+          <div
+            className="absolute top-16 left-4 sm:left-14 z-2 transition-all duration-1000 animate-sea-drift"
+            style={{
+              transform: `translateY(${zoneProgress * 30}px) scale(0.95)`,
+              opacity: Math.max(0.2, 0.85 - zoneProgress * 0.3),
+            }}
+          >
+            <DolphinIllustration />
+          </div>
+          <div
+            className="absolute top-28 right-4 sm:right-16 z-2 transition-all duration-1000 animate-sea-drift"
+            style={{
+              transform: `translateY(${zoneProgress * 45}px)`,
+              opacity: Math.max(0.2, 0.9 - zoneProgress * 0.35),
+            }}
+          >
+            <SeaTurtleIllustration />
+          </div>
+          <div
+            className="absolute bottom-20 left-1/3 z-2 transition-all duration-1000 animate-fish-drift hidden sm:block"
+            style={{
+              transform: `translateY(${zoneProgress * 20}px)`,
+              opacity: 0.7,
+            }}
+          >
+            <FishSchoolIllustration />
+          </div>
+        </>
       )}
 
-      {/* ZONE 2: Manta Ray Gliding (Shallow 50-200m) */}
+      {/* ZONE 2: Manta Ray, Shallow Jellyfish & Coral Fish (Shallow 50-200m) */}
       {zone === 'shallow' && (
-        <div
-          className="absolute top-36 left-4 sm:left-12 z-2 transition-all duration-1000 animate-manta-glide"
-          style={{
-            transform: `translateY(${zoneProgress * 50}px) scale(0.95)`,
-            opacity: 0.8,
-          }}
-        >
-          <MantaRayIllustration />
-        </div>
+        <>
+          <div
+            className="absolute top-28 left-4 sm:left-12 z-2 transition-all duration-1000 animate-manta-glide"
+            style={{
+              transform: `translateY(${zoneProgress * 50}px) scale(0.95)`,
+              opacity: 0.85,
+            }}
+          >
+            <MantaRayIllustration />
+          </div>
+          <div
+            className="absolute top-20 right-8 sm:right-24 z-2 transition-all duration-1000 animate-jelly-pulse"
+            style={{
+              transform: `translateY(${-zoneProgress * 25}px)`,
+              opacity: 0.8,
+            }}
+          >
+            <JellyfishShallowIllustration />
+          </div>
+          <div
+            className="absolute bottom-24 right-1/4 z-2 transition-all duration-1000 animate-fish-drift hidden sm:block"
+            style={{
+              transform: `translateY(${zoneProgress * 30}px)`,
+              opacity: 0.75,
+            }}
+          >
+            <CoralFishIllustration />
+          </div>
+        </>
       )}
 
-      {/* ZONE 3: Lanternfish & Comb Jelly (Twilight 200-1000m) */}
+      {/* ZONE 3: Lanternfish, Bioluminescent Jelly, Squid & Comb Jelly (Twilight 200-1000m) */}
       {zone === 'twilight' && (
         <>
           <div
-            className="absolute top-28 right-8 sm:right-24 z-2 transition-all duration-1000 animate-fish-drift"
+            className="absolute top-16 left-6 sm:left-16 z-2 transition-all duration-1000 animate-jelly-pulse"
+            style={{
+              transform: `translateY(${zoneProgress * 30}px)`,
+              opacity: 0.85,
+            }}
+          >
+            <BioluminescentJellyIllustration />
+          </div>
+          <div
+            className="absolute top-24 right-8 sm:right-20 z-2 transition-all duration-1000 animate-fish-drift"
             style={{
               transform: `translateY(${zoneProgress * 40}px)`,
               opacity: 0.85,
@@ -241,10 +305,19 @@ export const OceanBackground: React.FC = () => {
             <LanternfishIllustration />
           </div>
           <div
-            className="absolute bottom-24 left-8 sm:left-20 z-2 transition-all duration-1000 animate-jelly-pulse"
+            className="absolute bottom-28 right-12 sm:right-32 z-2 transition-all duration-1000 animate-squid-drift hidden md:block"
+            style={{
+              transform: `translateY(${zoneProgress * 50}px) scale(0.9)`,
+              opacity: 0.8,
+            }}
+          >
+            <LanternSquidIllustration />
+          </div>
+          <div
+            className="absolute bottom-20 left-8 sm:left-24 z-2 transition-all duration-1000 animate-jelly-pulse"
             style={{
               transform: `translateY(${-zoneProgress * 30}px)`,
-              opacity: 0.75,
+              opacity: 0.85,
             }}
           >
             <CombJellyIllustration />
@@ -252,23 +325,41 @@ export const OceanBackground: React.FC = () => {
         </>
       )}
 
-      {/* ZONE 4: Giant Squid & Anglerfish (Deep Ocean 1000-4000m) */}
+      {/* ZONE 4: Sperm Whale, Giant Squid, Gulper Eel & Anglerfish (Deep Ocean 1000-4000m) */}
       {zone === 'deep' && (
         <>
           <div
-            className="absolute top-16 left-0 -ml-12 sm:ml-4 z-2 transition-all duration-1000 animate-squid-drift"
+            className="absolute top-10 right-8 sm:right-28 z-2 transition-all duration-1000 animate-sea-drift"
+            style={{
+              transform: `translateY(${zoneProgress * 25}px) scale(0.95)`,
+              opacity: 0.7,
+            }}
+          >
+            <SpermWhaleIllustration />
+          </div>
+          <div
+            className="absolute top-20 left-0 -ml-8 sm:ml-4 z-2 transition-all duration-1000 animate-squid-drift"
             style={{
               transform: `translateY(${zoneProgress * 60}px)`,
-              opacity: 0.75,
+              opacity: 0.8,
             }}
           >
             <GiantSquidIllustration />
           </div>
           <div
-            className="absolute bottom-20 right-6 sm:right-20 z-2 transition-all duration-1000 animate-angler-bob"
+            className="absolute bottom-32 left-1/3 z-2 transition-all duration-1000 animate-manta-glide hidden lg:block"
+            style={{
+              transform: `translateY(${zoneProgress * 35}px) scale(0.85)`,
+              opacity: 0.75,
+            }}
+          >
+            <GulperEelIllustration />
+          </div>
+          <div
+            className="absolute bottom-16 right-6 sm:right-20 z-2 transition-all duration-1000 animate-angler-bob"
             style={{
               transform: `translateY(${-zoneProgress * 35}px)`,
-              opacity: 0.85,
+              opacity: 0.9,
             }}
           >
             <AnglerfishIllustration />
@@ -276,17 +367,37 @@ export const OceanBackground: React.FC = () => {
         </>
       )}
 
-      {/* ZONE 5: Hadal Snailfish (Abyss 4000-11000m) */}
+      {/* ZONE 5: Hadal Snailfish, Atolla Jellyfish & Giant Isopod (Abyss 4000-11000m) */}
       {zone === 'abyss' && (
-        <div
-          className="absolute bottom-28 left-1/2 -translate-x-1/2 z-2 transition-all duration-1000 animate-snailfish-glide"
-          style={{
-            transform: `translateX(-50%) translateY(${zoneProgress * 30}px)`,
-            opacity: 0.85,
-          }}
-        >
-          <HadalSnailfishIllustration />
-        </div>
+        <>
+          <div
+            className="absolute top-20 left-8 sm:left-24 z-2 transition-all duration-1000 animate-jelly-pulse"
+            style={{
+              transform: `translateY(${zoneProgress * 25}px)`,
+              opacity: 0.85,
+            }}
+          >
+            <AtollaJellyfishIllustration />
+          </div>
+          <div
+            className="absolute bottom-28 left-1/2 -translate-x-1/2 z-2 transition-all duration-1000 animate-snailfish-glide"
+            style={{
+              transform: `translateX(-50%) translateY(${zoneProgress * 30}px)`,
+              opacity: 0.85,
+            }}
+          >
+            <HadalSnailfishIllustration />
+          </div>
+          <div
+            className="absolute bottom-16 right-8 sm:right-28 z-2 transition-all duration-1000 animate-sea-drift hidden sm:block"
+            style={{
+              transform: `translateY(${zoneProgress * 20}px) scale(0.85)`,
+              opacity: 0.8,
+            }}
+          >
+            <GiantIsopodIllustration />
+          </div>
+        </>
       )}
 
       {/* Editorial Watermark Coordinates */}

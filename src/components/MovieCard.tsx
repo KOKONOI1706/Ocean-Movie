@@ -18,7 +18,7 @@ export const MovieCard: React.FC<MovieCardProps> = ({
   onToggleSave,
   onWhereToWatch,
   isSaved = false,
-  aspectRatio = 'landscape',
+  aspectRatio = 'poster',
   showAiBadge = false,
 }) => {
   const isSeries = item.type === 'series' || (item.seasons && item.seasons.length > 0);

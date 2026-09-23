@@ -34,8 +34,8 @@ jobs:
 
     env:
       NODE_ENV: test
-      JWT_SECRET: ci-jwt-secret
-      JWT_REFRESH_SECRET: ci-refresh-secret
+      JWT_SECRET: ci-jwt-secret-not-for-production-000000
+      JWT_REFRESH_SECRET: ci-refresh-secret-not-for-production-00
       CORS_ORIGIN: http://localhost:3000
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       POSTGRES_DB: ocean_movie_test
