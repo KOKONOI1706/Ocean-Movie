@@ -178,6 +178,17 @@ describe('Video aggregator API — films', () => {
     });
   });
 
+  it('stores the embed URL for video-site page links', async () => {
+    const res = await request(app)
+      .post('/api/v1/aggregator/ingest')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ mode: 'movie', items: [{ title: `YouTube Test ${stamp}`, streamUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }] });
+    expect(res.status).toBe(201);
+    const movie = await prisma.movie.findUnique({ where: { slug: `youtube-test-${stamp}` } });
+    expect(movie).toMatchObject({ streamType: 'EMBED', streamUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0' });
+    await prisma.movie.delete({ where: { slug: `youtube-test-${stamp}` } });
+  });
+
   it('re-ingesting a film updates the stream instead of duplicating it', async () => {
     const res = await request(app)
       .post('/api/v1/aggregator/ingest')
