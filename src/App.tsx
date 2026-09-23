@@ -24,6 +24,7 @@ import { WhereToWatchModal } from './components/WhereToWatchModal';
 import { UserProfilePage } from './components/UserProfilePage';
 import { CreatorDetailModal } from './components/CreatorDetailModal';
 import { BottomNav } from './components/BottomNav';
+import { AdminApp, STAFF_ROLES } from './admin/AdminApp';
 
 import { CINEMA_ITEMS } from './data/cinemaData';
 import { MediaItem, SavedMediaItem, Creator } from './types';
@@ -32,6 +33,7 @@ import {
   watchlistApi,
   moviesApi,
   seriesApi,
+  userApi,
 } from './lib/api';
 
 import { OceanDepthProvider } from './context/OceanDepthContext';
@@ -66,7 +68,9 @@ const TAB_PATHS: Record<string, string> = {
   'my-cinema': '/my-cinema',
   'ai-discovery': '/ai-discovery',
   profile: '/profile',
+  admin: '/admin',
 };
+
 
 function pathToTab(pathname: string): string {
   if (pathname === '/') return 'discover';
@@ -405,7 +409,11 @@ function AppContent() {
     return (
       <LoginPage
         onBack={() => handleNavigate('discover')}
-        onSuccess={() => handleNavigate('discover')}
+        onSuccess={async () => {
+          // Staff land on the admin dashboard; everyone else goes home.
+          const me = await userApi.getMe().catch(() => null);
+          handleNavigate(me && STAFF_ROLES.includes(me.role) ? 'admin' : 'discover');
+        }}
         onNavigate={handleNavigate}
       />
     );
@@ -558,6 +566,7 @@ function AppContent() {
         onOpenSearch={handleOpenSearch}
         onOpenProfile={() => handleNavigate('profile')}
         savedCount={savedItems.length}
+        isStaff={STAFF_ROLES.includes(user?.role ?? '')}
       />
 
       {/* ─── Main Content ─── */}
@@ -695,6 +704,7 @@ function AppContent() {
             }
           />
 
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
 
@@ -764,12 +774,28 @@ function AppContent() {
   );
 }
 
+// The admin console is a separate app shell: none of the consumer chrome
+// (ocean background, header, footer, bottom nav) is mounted under /admin.
+function RootSwitch() {
+  const location = useLocation();
+  if (location.pathname === '/admin' || location.pathname.startsWith('/admin/')) {
+    return (
+      <Routes>
+        <Route path="/admin/*" element={<AdminApp />} />
+      </Routes>
+    );
+  }
+  return (
+    <OceanDepthProvider>
+      <AppContent />
+    </OceanDepthProvider>
+  );
+}
+
 export function App() {
   return (
     <AuthProvider>
-      <OceanDepthProvider>
-        <AppContent />
-      </OceanDepthProvider>
+      <RootSwitch />
     </AuthProvider>
   );
 }

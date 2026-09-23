@@ -57,12 +57,17 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
     async function loadCatalog() {
       try {
         setIsLoading(true);
-        const [moviesRes, seriesRes] = await Promise.all([
+        const [moviesRes, seriesRes, aiRes] = await Promise.all([
           moviesApi.getAll({ limit: 50 }),
           seriesApi.getAll({ limit: 50 }),
+          // Newly crawled AI films start unrated, so fetch them explicitly.
+          moviesApi.getAll({ type: 'AI_FILM', limit: 100, sort: 'created_desc' }).catch(() => ({ items: [] as MediaItem[] })),
         ]);
         if (isMounted) {
-          const combined = [...(moviesRes.items || []), ...(seriesRes.items || [])];
+          const seen = new Set<string>();
+          const combined = [...(moviesRes.items || []), ...(aiRes.items || []), ...(seriesRes.items || [])].filter(
+            (item) => !seen.has(item.id) && seen.add(item.id)
+          );
           if (combined.length > 0) {
             setCatalogItems(combined);
           }

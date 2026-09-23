@@ -12,6 +12,10 @@ const rawEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   CORS_ORIGIN: z.string().optional(),
   GEMINI_API_KEY: z.string().optional().default(''),
+  // Video aggregator: comma separated hostnames the scraper may fetch (empty = any public host)
+  AGGREGATOR_ALLOWED_HOSTS: z.string().optional().default(''),
+  // Video aggregator: JSON array of search source definitions (see server/aggregator/sources/registry.ts)
+  AGGREGATOR_SOURCES: z.string().optional().default('[]'),
 });
 
 const rawEnv = rawEnvSchema.parse(process.env);

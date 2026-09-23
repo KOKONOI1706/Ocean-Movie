@@ -72,7 +72,7 @@ export class SeriesRepository {
           availability: { include: { provider: true } },
           seasons: {
             orderBy: { seasonNumber: 'asc' },
-            include: { episodes: true },
+            include: { episodes: { orderBy: { episodeNumber: 'asc' } } },
           },
           aiInsight: true,
         },

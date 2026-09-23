@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Compass, Film, Tv, Sparkles, Star, Clock, LogOut, Pencil, Check, X, Loader2, CircleUser, Bookmark,
+  Compass, Film, Tv, Sparkles, Star, Clock, LogOut, Pencil, Check, X, Loader2, CircleUser, Bookmark, Radar,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { userApi } from '../lib/api';
 import { UserPreferences } from '../types';
@@ -59,6 +60,8 @@ function formatMemberSince(iso: string): string {
 
 export const UserProfilePage: React.FC<UserProfilePageProps> = ({ savedCount, ratedCount }) => {
   const { user, logout, refreshUser } = useAuth();
+  const navigate = useNavigate();
+  const isStaff = user?.role === 'ADMIN' || user?.role === 'CURATOR';
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [displayName, setDisplayName] = useState(user?.displayName || '');
@@ -442,7 +445,16 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({ savedCount, ra
         </div>
 
         {/* ─── Account actions ─── */}
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          {isStaff && (
+            <button
+              onClick={() => navigate('/admin')}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-950/30 hover:bg-cyan-950/50 border border-cyan-500/25 hover:border-cyan-500/40 text-xs font-semibold text-cyan-300 hover:text-cyan-200 transition-all cursor-pointer"
+            >
+              <Radar className="w-3.5 h-3.5" />
+              Thu thập phim
+            </button>
+          )}
           <button
             onClick={handleLogout}
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-950/30 hover:bg-red-950/50 border border-red-500/25 hover:border-red-500/40 text-xs font-semibold text-red-300 hover:text-red-200 transition-all cursor-pointer"

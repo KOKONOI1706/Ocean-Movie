@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Waves, User, Menu, X, CircleUser, LogIn } from 'lucide-react';
+import { Search, Waves, User, Menu, X, CircleUser, LogIn, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface HeaderProps {
@@ -8,6 +8,8 @@ interface HeaderProps {
   onOpenSearch: (initialQuery?: string) => void;
   onOpenProfile?: () => void;
   savedCount: number;
+  /** Logged-in ADMIN/CURATOR: shows the crawl console entry. */
+  isStaff?: boolean;
 }
 
 const NAV_ITEMS = [
@@ -25,8 +27,10 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSearch,
   onOpenProfile,
   savedCount,
+  isStaff = false,
 }) => {
   const { user } = useAuth();
+  const navItems = NAV_ITEMS;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -90,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
           role="navigation"
           aria-label="Main Navigation"
         >
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const isActive = currentTab === item.id;
             return (
               <button
@@ -129,7 +133,19 @@ export const Header: React.FC<HeaderProps> = ({
             <Search className="w-4 h-4 text-cyan-400" />
           </button>
 
-          {/* User Auth / Profile Button */}
+          {/* Staff: jump to the separate admin dashboard */}
+          {isStaff && (
+            <button
+              onClick={() => onSelectTab('admin')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-pointer bg-amber-400/15 hover:bg-amber-400/25 border border-amber-300/40 hover:border-amber-300 text-xs font-semibold text-amber-200 hover:text-amber-100 transition-all shadow-md"
+              title="Mở bảng quản trị"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Quản trị</span>
+            </button>
+          )}
+
+                    {/* User Auth / Profile Button */}
           {user ? (
             <button
               onClick={handleAuthClick}
@@ -175,7 +191,7 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Mobile Dropdown Menu */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-[#020914]/98 border-b border-cyan-900/30 px-6 py-6 space-y-4 backdrop-blur-2xl animate-fade-in text-left">
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => handleNav(item.id)}

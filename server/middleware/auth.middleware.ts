@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { UnauthorizedError } from '../utils/errors.js';
+import { ForbiddenError, UnauthorizedError } from '../utils/errors.js';
 import { verifyAccessToken, TokenPayload } from '../utils/jwt.js';
 
 declare global {
@@ -38,4 +38,13 @@ export function optionalAuth(req: Request, _res: Response, next: NextFunction) {
     }
   }
   next();
+}
+
+/** Must run after `requireAuth`. */
+export function requireRole(...roles: string[]) {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    if (!req.user) return next(new UnauthorizedError());
+    if (!roles.includes(req.user.role)) return next(new ForbiddenError());
+    next();
+  };
 }

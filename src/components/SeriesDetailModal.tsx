@@ -16,6 +16,7 @@ import {
   Tv
 } from 'lucide-react';
 import { EpisodeDetailModal } from './EpisodeDetailModal';
+import { SeriesPlayerModal } from './player/SeriesPlayerModal';
 
 interface SeriesDetailModalProps {
   item: MediaItem;
@@ -39,6 +40,7 @@ export const SeriesDetailModal: React.FC<SeriesDetailModalProps> = ({
   const currentSeason = seasons.find((s) => s.seasonNumber === activeSeasonNum) || seasons[0];
 
   const [activeEpisodeModal, setActiveEpisodeModal] = useState<Episode | null>(null);
+  const [playingEpisode, setPlayingEpisode] = useState<Episode | null>(null);
 
   // Calculate first unfinished episode for "Tiếp tục xem" CTA
   const allEpisodes = seasons.flatMap((s) => s.episodes || []);
@@ -47,13 +49,22 @@ export const SeriesDetailModal: React.FC<SeriesDetailModalProps> = ({
 
   const totalEpisodesCount = allEpisodes.length;
 
+  // Episodes with an aggregated stream can be watched in-app.
+  const playableEpisodes = allEpisodes.filter((ep) => ep.streamUrl);
+  const nextUpPlayable =
+    playableEpisodes.find((ep) => (ep.playbackProgress || 0) < 95) || playableEpisodes[0];
+
   const handleOpenEpisode = (episode: Episode) => {
     setActiveEpisodeModal(episode);
   };
 
   const handlePlayDirect = (episode: Episode) => {
-    onUpdateEpisodeProgress(episode.id, 100);
     setActiveEpisodeModal(null);
+    if (episode.streamUrl) {
+      setPlayingEpisode(episode);
+      return;
+    }
+    onUpdateEpisodeProgress(episode.id, 100);
     onOpenWhereToWatch(item);
   };
 
@@ -128,6 +139,18 @@ export const SeriesDetailModal: React.FC<SeriesDetailModalProps> = ({
 
               {/* Primary Action Button: Tiếp tục xem S01E01 */}
               <div className="flex flex-wrap items-center gap-3 pt-2">
+                {nextUpPlayable && (
+                  <button
+                    onClick={() => setPlayingEpisode(nextUpPlayable)}
+                    className="px-6 py-3 rounded-xl bg-white text-[#062B45] hover:bg-[#EAF8FC] font-bold text-sm shadow-md flex items-center gap-2 cursor-pointer transition-all"
+                  >
+                    <Tv className="w-4 h-4" />
+                    <span>
+                      Xem ngay S{String(nextUpPlayable.seasonNumber).padStart(2, '0')}E{String(nextUpPlayable.episodeNumber).padStart(2, '0')}
+                    </span>
+                  </button>
+                )}
+
                 {nextUpEpisode && (
                   <button
                     onClick={() => handleOpenEpisode(nextUpEpisode)}
@@ -214,6 +237,18 @@ export const SeriesDetailModal: React.FC<SeriesDetailModalProps> = ({
                           S{String(ep.seasonNumber).padStart(2, '0')}E{String(ep.episodeNumber).padStart(2, '0')}
                         </div>
 
+                        {ep.streamUrl && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPlayingEpisode(ep);
+                            }}
+                            className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-[#19A7C7] hover:bg-[#087EA4] text-white text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                          >
+                            <Play className="w-3 h-3 fill-current" /> Phát ngay
+                          </button>
+                        )}
+
                         <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-[#061424]/80 backdrop-blur-md text-[#35C2C8] text-[10px] font-semibold flex items-center gap-1 border border-[#19A7C7]/30">
                           <Clock className="w-3 h-3" />
                           {ep.runtime}
@@ -278,6 +313,16 @@ export const SeriesDetailModal: React.FC<SeriesDetailModalProps> = ({
             onUpdateEpisodeProgress(id, pct);
             setActiveEpisodeModal((prev) => (prev ? { ...prev, playbackProgress: pct } : null));
           }}
+        />
+      )}
+
+      {/* In-app streaming player with episode selector */}
+      {playingEpisode && (
+        <SeriesPlayerModal
+          series={item}
+          initialEpisode={playingEpisode}
+          onClose={() => setPlayingEpisode(null)}
+          onUpdateEpisodeProgress={onUpdateEpisodeProgress}
         />
       )}
     </>

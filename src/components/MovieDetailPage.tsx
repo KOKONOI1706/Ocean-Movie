@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { CINEMA_ITEMS } from '../data/cinemaData';
 import { moviesApi, aiApi } from '../lib/api';
+import { MoviePlayerModal } from './player/MoviePlayerModal';
 
 interface MovieDetailPageProps {
   item: MediaItem;
@@ -73,6 +74,7 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
   onToggleSave,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [activeSection, setActiveSection] = useState<'overview' | 'streaming' | 'ai'>('overview');
   const [userScore, setUserScore] = useState<number | null>(null);
   const [ratingMsg, setRatingMsg] = useState('');
@@ -145,6 +147,7 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
       style={{ fontFamily: '"Plus Jakarta Sans", "Inter", sans-serif' }}
       role="main"
     >
+      {isPlaying && <MoviePlayerModal item={item} onClose={() => setIsPlaying(false)} />}
 
       {/* ═══════════════════════════════════════════════════════════
           HERO — full bleed backdrop, title bottom-left
@@ -315,7 +318,8 @@ export const MovieDetailPage: React.FC<MovieDetailPageProps> = ({
               </button>
             ) : (
               <button
-                onClick={() => onOpenWhereToWatch(item)}
+                // Crawled films carry their own stream and play in-app.
+                onClick={() => (item.streamUrl ? setIsPlaying(true) : onOpenWhereToWatch(item))}
                 className="flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm bg-gradient-to-r from-[#087EA4] to-[#19A7C7] hover:brightness-110 text-white transition-all cursor-pointer shadow-[0_0_20px_rgba(53,194,200,0.35)]"
                 id="detail-watch-now-btn"
               >
