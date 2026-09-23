@@ -60,6 +60,7 @@ export interface MediaItem {
   backdropUrl: string;
   posterUrl: string;
   monochromePosterUrl: string;
+  trailerYoutubeId?: string;
   isCoverFeature?: boolean;
   isTrending?: boolean;
 

@@ -15,7 +15,8 @@
     "aggregator": "tsx server/aggregator/cli.ts",
     "import:omdb": "tsx scripts/import-omdb.ts",
     "import:tmdb-backdrops": "tsx scripts/import-tmdb-backdrops.ts",
-    "admin:create": "tsx scripts/create-admin.ts"
+    "admin:create": "tsx scripts/create-admin.ts",
+    "import:tmdb-trailers": "tsx scripts/import-tmdb-trailers.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

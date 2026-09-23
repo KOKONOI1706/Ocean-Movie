@@ -12,3 +12,4 @@ aiRouter.post('/films/:id/insight', aiController.getFilmInsight);
 aiRouter.get('/series/:id/insight', aiController.getSeriesInsight);
 aiRouter.get('/episodes/:id/recap', aiController.getEpisodeRecap);
 aiRouter.get('/taste-profile', requireAuth, aiController.getTasteProfile);
+aiRouter.get('/where-to-watch/:id', aiController.findWhereToWatch);
