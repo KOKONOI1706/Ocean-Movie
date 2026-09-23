@@ -1,6 +1,7 @@
 import { safeFetchText } from '../http.js';
 import { STREAM_TYPE_RANK, detectStreamType, toHttpUrl } from '../stream.js';
 import type { RawScrapedItem, ScraperSource } from '../types.js';
+import { toEmbedUrl } from '../../../shared/embed.js';
 
 // Lightweight regex extraction — enough for player pages without pulling in a DOM parser.
 const M3U8_RE = /https?:\/\/[^\s"'<>\\]+?\.m3u8(?:\?[^\s"'<>\\]*)?/gi;
@@ -9,6 +10,33 @@ const META_RE = (prop: string) =>
   new RegExp(`<meta[^>]+(?:property|name)\\s*=\\s*["']${prop}["'][^>]*content\\s*=\\s*["']([^"']*)["']`, 'i');
 const TITLE_RE = /<title[^>]*>([^<]*)<\/title>/i;
 const ANCHOR_RE = /<a\b[^>]*?\bhref\s*=\s*["']([^"'#]+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+
+// Iframes that are never the video: sign-in, consent, analytics, ads, social
+// widgets, comments. YouTube's own watch page embeds a hidden Google sign-in
+// frame, which is how a login page once got saved as a "stream".
+const NON_PLAYER_HOSTS = [
+  'accounts.google.com',
+  'accounts.youtube.com',
+  'consent.youtube.com',
+  'consent.google.com',
+  'googletagmanager.com',
+  'google-analytics.com',
+  'doubleclick.net',
+  'googlesyndication.com',
+  'googleadservices.com',
+  'facebook.com',
+  'facebook.net',
+  'platform.twitter.com',
+  'disqus.com',
+  'recaptcha.net',
+];
+const NON_PLAYER_PATHS = /\/(recaptcha|ServiceLogin|signin|login|consent|ads?|plugins)\b/i;
+
+function isNonPlayerFrame(url: URL): boolean {
+  const host = url.hostname.toLowerCase();
+  if (NON_PLAYER_HOSTS.some((h) => host === h || host.endsWith(`.${h}`))) return true;
+  return NON_PLAYER_PATHS.test(url.pathname);
+}
 
 function stripTags(html: string): string {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -25,7 +53,8 @@ export function extractStreamCandidates(html: string, pageUrl: string): string[]
   }
   for (const m of html.matchAll(TAG_SRC_RE)) {
     const url = toHttpUrl(m[2].replace(/&amp;/g, '&'), pageUrl);
-    if (url) found.add(url.toString());
+    if (!url || (m[1].toLowerCase() === 'iframe' && isNonPlayerFrame(url))) continue;
+    found.add(toEmbedUrl(url.toString()));
   }
 
   return [...found].sort((a, b) => STREAM_TYPE_RANK[detectStreamType(a)] - STREAM_TYPE_RANK[detectStreamType(b)]);
@@ -40,6 +69,17 @@ export function extractPageMeta(html: string) {
   };
 }
 
+/**
+ * The stream for a scraped page. When the page itself is a video on a known
+ * site (YouTube/Vimeo/Dailymotion), that video is the stream; otherwise the
+ * best player found on the page.
+ */
+export function resolvePageStream(pageUrl: string, html: string): string | undefined {
+  const direct = toEmbedUrl(pageUrl);
+  if (direct !== pageUrl) return direct;
+  return extractStreamCandidates(html, pageUrl)[0];
+}
+
 /** Scrape a single episode page into a raw item (or null when nothing playable is found). */
 export async function scrapeEpisodePage(
   pageUrl: string,
@@ -47,7 +87,7 @@ export async function scrapeEpisodePage(
   fallbackTitle?: string
 ): Promise<RawScrapedItem | null> {
   const { url, body } = await safeFetchText(pageUrl);
-  const [streamUrl] = extractStreamCandidates(body, url);
+  const streamUrl = resolvePageStream(url, body);
   if (!streamUrl) return null;
 
   const meta = extractPageMeta(body);
