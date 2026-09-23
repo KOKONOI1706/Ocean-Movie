@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { normalizeItems } from '../aggregator.service.js';
 import { isHostAllowed, isPrivateAddress } from '../http.js';
-import { extractPageMeta, extractStreamCandidates } from '../sources/html.source.js';
+import { extractPageMeta, extractStreamCandidates, resolvePageStream } from '../sources/html.source.js';
 import { detectStreamType } from '../stream.js';
 
 describe('detectStreamType', () => {
@@ -36,6 +36,31 @@ describe('extractStreamCandidates', () => {
     const meta = extractPageMeta(page);
     expect(meta.title).toBe('Ngọa Hổ Tàng Long Tập 4 Vietsub');
     expect(meta.thumbnailUrl).toBe('https://img.example.com/ep4.jpg');
+  });
+
+  it('never picks sign-in, consent, analytics or social iframes', () => {
+    const html = `
+      <iframe src="https://accounts.google.com/ServiceLogin?service=youtube&amp;passive=true"></iframe>
+      <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-1"></iframe>
+      <iframe src="https://www.facebook.com/plugins/like.php?href=x"></iframe>
+      <iframe src="https://www.google.com/recaptcha/api2/anchor?k=1"></iframe>
+      <iframe src="https://player.example.com/embed/ep9"></iframe>`;
+    expect(extractStreamCandidates(html, 'https://site.example.com/watch/9')).toEqual(['https://player.example.com/embed/ep9']);
+  });
+
+  it('rewrites embedded video-site page links to their embed form', () => {
+    const html = '<iframe src="https://www.youtube.com/watch?v=dQw4w9WgXcQ"></iframe>';
+    expect(extractStreamCandidates(html, 'https://site.example.com/x')).toEqual(['https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0']);
+  });
+
+  it('uses the video itself when the crawled page is a YouTube/Vimeo watch page', () => {
+    // A real YouTube watch page carries a hidden Google sign-in iframe.
+    const youtubeWatchHtml = '<meta property="og:title" content="Some Video"><iframe src="https://accounts.google.com/ServiceLogin?service=youtube"></iframe>';
+    expect(resolvePageStream('https://www.youtube.com/watch?v=YdBY9EIsrpk', youtubeWatchHtml)).toBe(
+      'https://www.youtube.com/embed/YdBY9EIsrpk?rel=0'
+    );
+    expect(resolvePageStream('https://vimeo.com/76979871', '')).toBe('https://player.vimeo.com/video/76979871');
+    expect(resolvePageStream('https://site.example.com/p', '<video src="/a.mp4"></video>')).toBe('https://site.example.com/a.mp4');
   });
 
   it('ignores non-http sources', () => {
