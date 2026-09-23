@@ -72,6 +72,25 @@ export async function seed() {
   });
   console.log(`👤 User seeded: ${user.email} (password: password123)`);
 
+  // Admin account — only when credentials are provided via env (never hardcoded).
+  if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
+    const admin = await prisma.user.upsert({
+      where: { email: process.env.ADMIN_EMAIL },
+      // Existing account: promote only, keep its current password.
+      update: { role: 'ADMIN' },
+      create: {
+        email: process.env.ADMIN_EMAIL,
+        username: process.env.ADMIN_USERNAME || 'admin',
+        displayName: 'Quản trị viên',
+        passwordHash: await bcrypt.hash(process.env.ADMIN_PASSWORD, 10),
+        role: 'ADMIN',
+      },
+    });
+    console.log(`🛡️  Admin seeded: ${admin.email}`);
+  } else {
+    console.log('ℹ️  ADMIN_EMAIL / ADMIN_PASSWORD not set — skipping admin account');
+  }
+
   // 2. Seed Moods
   const moodMap = new Map<string, string>(); // slug -> id
   for (const m of MOOD_CATEGORIES) {
