@@ -2,6 +2,7 @@ import { MediaType, Prisma } from '@prisma/client';
 import { prisma } from '../config/prisma.js';
 import { parseEpisodeTitle, parseMovieTitle, type ParsedEpisodeTitle, type ParsedMovieTitle } from './normalizer.js';
 import { STREAM_TYPE_RANK, detectStreamType } from './stream.js';
+import { toEmbedUrl } from '../../shared/embed.js';
 import { scrapeEpisodePage } from './sources/html.source.js';
 import { getConfiguredSources } from './sources/registry.js';
 import type { RawScrapedItem } from './types.js';
@@ -266,7 +267,13 @@ export class AggregatorService {
   /** Normalize and upsert pre-scraped items. Safe to re-run: records are deduped by natural keys. */
   async ingest(items: RawScrapedItem[], options: IngestOptions = {}): Promise<IngestReport> {
     const { mode = 'series', movieType = 'AI_FILM' } = options;
-    const withSource = items.map((i) => ({ ...i, sourceName: i.sourceName || options.sourceName }));
+    // Video-site page links (youtube.com/watch, vimeo.com/123…) refuse to be
+    // framed; store their embed URL instead.
+    const withSource = items.map((i) => ({
+      ...i,
+      streamUrl: toEmbedUrl(i.streamUrl),
+      sourceName: i.sourceName || options.sourceName,
+    }));
 
     let episodeItems = withSource;
     let movieItems: RawScrapedItem[] = [];

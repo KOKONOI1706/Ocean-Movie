@@ -1,5 +1,7 @@
 import { MediaItem, Season, Episode, StreamType } from '../../types.js';
 
+const FALLBACK_ARTWORK = '/ocean-bg.jpg';
+
 export function transformBackendMovie(item: any): MediaItem {
   if (!item) return item;
 
@@ -63,8 +65,9 @@ export function transformBackendMovie(item: any): MediaItem {
     rating: item.rating || 8.5,
     editorialQuote: item.editorialQuote,
     synopsis: item.synopsis,
-    backdropUrl: item.backdropUrl,
-    posterUrl: item.posterUrl,
+    // Crawled titles can arrive without artwork; never hand <img> an empty src.
+    backdropUrl: item.backdropUrl || item.posterUrl || FALLBACK_ARTWORK,
+    posterUrl: item.posterUrl || item.backdropUrl || FALLBACK_ARTWORK,
     monochromePosterUrl: item.monochromePosterUrl,
     trailerYoutubeId: item.trailerYoutubeId,
     isCoverFeature: item.isCoverFeature,
@@ -141,8 +144,9 @@ export function transformBackendSeries(item: any): MediaItem {
     rating: item.rating || 9.0,
     editorialQuote: item.editorialQuote,
     synopsis: item.synopsis,
-    backdropUrl: item.backdropUrl,
-    posterUrl: item.posterUrl,
+    // Crawled titles can arrive without artwork; never hand <img> an empty src.
+    backdropUrl: item.backdropUrl || item.posterUrl || FALLBACK_ARTWORK,
+    posterUrl: item.posterUrl || item.backdropUrl || FALLBACK_ARTWORK,
     monochromePosterUrl: item.monochromePosterUrl,
     trailerYoutubeId: item.trailerYoutubeId,
     isCoverFeature: item.isCoverFeature,

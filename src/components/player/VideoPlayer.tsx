@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import type Hls from 'hls.js';
 import { AlertTriangle, Loader2, RotateCcw } from 'lucide-react';
 import { StreamType } from '../../types';
+import { toEmbedUrl } from '../../../shared/embed';
 
 interface VideoPlayerProps {
   src: string;
@@ -54,7 +55,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [errorMessage, setErrorMessage] = useState('');
   const [attempt, setAttempt] = useState(0);
 
-  const url = safeStreamUrl(src);
+  const safe = safeStreamUrl(src);
+  // Fixes rows saved before ingest normalised page links to embed URLs.
+  const url = safe ? toEmbedUrl(safe) : null;
   const kind = url ? inferStreamType(url, type) : 'embed';
 
   // Keep latest callbacks without re-initialising the player on every render.
@@ -172,9 +175,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           title={title || 'Trình phát video'}
           className="absolute inset-0 w-full h-full border-0"
           allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-          allowFullScreen
-          referrerPolicy="no-referrer"
-          sandbox="allow-scripts allow-same-origin allow-presentation"
+          // YouTube's embed player rejects requests without a referrer.
+          referrerPolicy="strict-origin-when-cross-origin"
+          // Popups let "Watch on YouTube"-style links open in a new tab.
+          sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox"
         />
       </div>
     );
@@ -187,7 +191,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         className="absolute inset-0 w-full h-full"
         controls
         playsInline
-        poster={poster}
+        poster={poster || undefined}
         aria-label={title}
         onTimeUpdate={handleTimeUpdate}
         onEnded={() => {
