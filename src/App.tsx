@@ -24,7 +24,7 @@ import { WhereToWatchModal } from './components/WhereToWatchModal';
 import { UserProfilePage } from './components/UserProfilePage';
 import { CreatorDetailModal } from './components/CreatorDetailModal';
 import { BottomNav } from './components/BottomNav';
-import { AdminCrawlView } from './components/admin/AdminCrawlView';
+import { AdminApp, STAFF_ROLES } from './admin/AdminApp';
 
 import { CINEMA_ITEMS } from './data/cinemaData';
 import { MediaItem, SavedMediaItem, Creator } from './types';
@@ -33,6 +33,7 @@ import {
   watchlistApi,
   moviesApi,
   seriesApi,
+  userApi,
 } from './lib/api';
 
 import { OceanDepthProvider } from './context/OceanDepthContext';
@@ -70,7 +71,6 @@ const TAB_PATHS: Record<string, string> = {
   admin: '/admin',
 };
 
-const STAFF_ROLES = ['ADMIN', 'CURATOR'];
 
 function pathToTab(pathname: string): string {
   if (pathname === '/') return 'discover';
@@ -409,7 +409,11 @@ function AppContent() {
     return (
       <LoginPage
         onBack={() => handleNavigate('discover')}
-        onSuccess={() => handleNavigate('discover')}
+        onSuccess={async () => {
+          // Staff land on the admin dashboard; everyone else goes home.
+          const me = await userApi.getMe().catch(() => null);
+          handleNavigate(me && STAFF_ROLES.includes(me.role) ? 'admin' : 'discover');
+        }}
         onNavigate={handleNavigate}
       />
     );
@@ -700,19 +704,6 @@ function AppContent() {
             }
           />
 
-          {/* Staff-only crawl console; the view itself shows a sign-in gate */}
-          <Route
-            path="/admin"
-            element={(
-              <AdminCrawlView
-                onOpenMedia={(kind, slug) =>
-                  kind === 'movie'
-                    ? navigate(`/movie/${slug}`)
-                    : navigate(`/series/${slug}`, { state: { backgroundLocation: location } })
-                }
-              />
-            )}
-          />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -783,12 +774,28 @@ function AppContent() {
   );
 }
 
+// The admin console is a separate app shell: none of the consumer chrome
+// (ocean background, header, footer, bottom nav) is mounted under /admin.
+function RootSwitch() {
+  const location = useLocation();
+  if (location.pathname === '/admin' || location.pathname.startsWith('/admin/')) {
+    return (
+      <Routes>
+        <Route path="/admin/*" element={<AdminApp />} />
+      </Routes>
+    );
+  }
+  return (
+    <OceanDepthProvider>
+      <AppContent />
+    </OceanDepthProvider>
+  );
+}
+
 export function App() {
   return (
     <AuthProvider>
-      <OceanDepthProvider>
-        <AppContent />
-      </OceanDepthProvider>
+      <RootSwitch />
     </AuthProvider>
   );
 }

@@ -29,3 +29,29 @@ export const searchBodySchema = z.object({
 export const parseBodySchema = z.object({
   titles: z.array(z.string().max(500)).min(1).max(500),
 });
+
+export const libraryQuerySchema = z.object({
+  kind: z.enum(['movie', 'series']).default('movie'),
+  q: z.string().trim().max(200).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+const optionalHttpUrl = z
+  .string()
+  .trim()
+  .url()
+  .refine((v) => /^https?:\/\//i.test(v), 'Chỉ chấp nhận URL http(s)');
+
+export const mediaPatchSchema = z
+  .object({
+    title: z.string().trim().min(1).max(300).optional(),
+    synopsis: z.string().max(5000).optional(),
+    // Empty string clears the image.
+    posterUrl: z.union([optionalHttpUrl, z.literal('')]).optional(),
+    backdropUrl: z.union([optionalHttpUrl, z.literal('')]).optional(),
+    year: z.coerce.number().int().min(1900).max(2100).optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, 'Cần ít nhất một trường để cập nhật');
+
+export const idParamSchema = z.object({ id: z.string().min(1).max(100) });

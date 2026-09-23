@@ -1,9 +1,12 @@
 import { Router } from 'express';
-import { aggregatorController } from '../controllers/aggregator.controller.js';
+import { aggregatorController, aggregatorLibraryController as library } from '../controllers/aggregator.controller.js';
 import { requireAuth, requireRole } from '../middleware/auth.middleware.js';
-import { validateBody } from '../middleware/validate.middleware.js';
+import { validateBody, validateParams, validateQuery } from '../middleware/validate.middleware.js';
 import {
+  idParamSchema,
   ingestBodySchema,
+  libraryQuerySchema,
+  mediaPatchSchema,
   parseBodySchema,
   scrapeBodySchema,
   searchBodySchema,
@@ -19,3 +22,11 @@ aggregatorRouter.post('/parse', validateBody(parseBodySchema), aggregatorControl
 aggregatorRouter.post('/ingest', validateBody(ingestBodySchema), aggregatorController.ingest);
 aggregatorRouter.post('/scrape', validateBody(scrapeBodySchema), aggregatorController.scrape);
 aggregatorRouter.post('/search', validateBody(searchBodySchema), aggregatorController.search);
+
+// Admin dashboard: stats and the crawled-content library
+aggregatorRouter.get('/stats', library.stats);
+aggregatorRouter.get('/library', validateQuery(libraryQuerySchema), library.list);
+aggregatorRouter.patch('/movies/:id', validateParams(idParamSchema), validateBody(mediaPatchSchema), library.updateMovie);
+aggregatorRouter.patch('/series/:id', validateParams(idParamSchema), validateBody(mediaPatchSchema), library.updateSeries);
+aggregatorRouter.delete('/movies/:id/stream', validateParams(idParamSchema), library.removeMovieStream);
+aggregatorRouter.delete('/episodes/:id/stream', validateParams(idParamSchema), library.removeEpisodeStream);

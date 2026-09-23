@@ -55,6 +55,16 @@ describe('parseEpisodeTitle', () => {
     expect(parsed!.normalizedTitle).toBe(parsed!.slug);
   });
 
+  it('flags bare trailing numbers as non-explicit', () => {
+    expect(parseEpisodeTitle('Frieren - Ep 5')!.explicit).toBe(true);
+    expect(parseEpisodeTitle('Dark S01E02')!.explicit).toBe(true);
+    expect(parseEpisodeTitle('卧虎藏龙 第3集')!.explicit).toBe(true);
+    expect(parseEpisodeTitle('Frieren #9')!.explicit).toBe(true);
+    expect(parseEpisodeTitle('Frieren 05')!.explicit).toBe(false);
+    expect(parseEpisodeTitle('Frieren - 05')!.explicit).toBe(false);
+    expect(parseEpisodeTitle('District 9')!.explicit).toBe(false);
+  });
+
   it('groups differently formatted titles under the same key', () => {
     const keys = [
       'Crouching Tiger, Hidden Dragon - Ep 1',

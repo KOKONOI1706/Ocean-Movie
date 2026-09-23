@@ -274,8 +274,10 @@ export class AggregatorService {
       episodeItems = [];
       movieItems = withSource;
     } else if (mode === 'auto') {
-      episodeItems = withSource.filter((i) => parseEpisodeTitle(i.title));
-      movieItems = withSource.filter((i) => !parseEpisodeTitle(i.title));
+      // Only explicit markers count here: "District 9" is a film, not episode 9.
+      const isEpisode = (i: RawScrapedItem) => Boolean(parseEpisodeTitle(i.title)?.explicit);
+      episodeItems = withSource.filter(isEpisode);
+      movieItems = withSource.filter((i) => !isEpisode(i));
     }
 
     const { groups, skipped } = normalizeItems(episodeItems);

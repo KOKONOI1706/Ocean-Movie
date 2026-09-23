@@ -26,16 +26,82 @@ export interface IngestReport {
 
 export interface ParseResult {
   title: string;
-  kind: 'episode' | 'movie';
-  parsed: null | {
-    baseTitle?: string;
-    title?: string;
+  /** 'ambiguous' = bare trailing number: an episode in series mode, a film in auto mode. */
+  kind: 'episode' | 'ambiguous' | 'movie';
+  episode: null | {
+    baseTitle: string;
     slug: string;
-    seasonNumber?: number;
-    episodeNumber?: number;
+    seasonNumber: number;
+    episodeNumber: number;
     episodeTitle?: string;
-    year?: number;
+    explicit: boolean;
   };
+  movie: null | { title: string; slug: string; year?: number };
+}
+
+export type StreamTypeCode = 'HLS' | 'FILE' | 'EMBED';
+
+export interface AdminStats {
+  totals: { movies: number; series: number; episodes: number; users: number };
+  crawled: { movies: number; episodes: number; series: number };
+  byStreamType: Record<StreamTypeCode, number>;
+  bySource: Array<{ name: string; count: number }>;
+  recent: Array<{
+    kind: 'movie' | 'episode';
+    id: string;
+    slug: string;
+    title: string;
+    subtitle: string;
+    streamType: StreamTypeCode | null;
+    sourceName: string | null;
+    lastScrapedAt: string | null;
+  }>;
+}
+
+export interface LibraryMovie {
+  id: string;
+  slug: string;
+  title: string;
+  type: MovieType;
+  year: number;
+  synopsis: string;
+  posterUrl: string;
+  backdropUrl: string;
+  streamUrl: string | null;
+  streamType: StreamTypeCode | null;
+  sourceName: string | null;
+  sourceUrl: string | null;
+  lastScrapedAt: string | null;
+}
+
+export interface LibraryEpisode {
+  id: string;
+  episodeNumber: number;
+  title: string;
+  streamUrl: string | null;
+  streamType: StreamTypeCode | null;
+  sourceName: string | null;
+  lastScrapedAt: string | null;
+}
+
+export interface LibrarySeries {
+  id: string;
+  slug: string;
+  title: string;
+  year: number;
+  synopsis: string;
+  posterUrl: string;
+  backdropUrl: string;
+  sourceName: string | null;
+  seasons: Array<{ seasonNumber: number; episodes: LibraryEpisode[] }>;
+}
+
+export interface MediaPatch {
+  title?: string;
+  synopsis?: string;
+  posterUrl?: string;
+  backdropUrl?: string;
+  year?: number;
 }
 
 function unwrap<T>(res: { success: boolean; data: T; error?: { message: string; details?: unknown } }): T {
@@ -49,6 +115,22 @@ function unwrap<T>(res: { success: boolean; data: T; error?: { message: string; 
 }
 
 export const aggregatorApi = {
+  async stats() {
+    return unwrap(await apiClient.get<AdminStats>('/aggregator/stats'));
+  },
+  async library<K extends 'movie' | 'series'>(kind: K, params: { q?: string; page?: number; limit?: number } = {}) {
+    const res = await apiClient.get<Array<K extends 'movie' ? LibraryMovie : LibrarySeries>>('/aggregator/library', {
+      kind,
+      ...params,
+    });
+    return { items: unwrap(res), pagination: res.pagination! };
+  },
+  async updateMedia(kind: 'movie' | 'series', id: string, patch: MediaPatch) {
+    return unwrap(await apiClient.patch<unknown>(`/aggregator/${kind === 'movie' ? 'movies' : 'series'}/${id}`, patch));
+  },
+  async removeStream(kind: 'movie' | 'episode', id: string) {
+    return unwrap(await apiClient.delete<unknown>(`/aggregator/${kind === 'movie' ? 'movies' : 'episodes'}/${id}/stream`));
+  },
   async sources() {
     return unwrap(await apiClient.get<string[]>('/aggregator/sources'));
   },

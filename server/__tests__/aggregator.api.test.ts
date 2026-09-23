@@ -99,9 +99,12 @@ describe('Video aggregator API', () => {
     const res = await request(app)
       .post('/api/v1/aggregator/parse')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ titles: ['Crouching Tiger, Hidden Dragon - Ep 7'] });
+      .send({ titles: ['Crouching Tiger, Hidden Dragon - Ep 7', 'District 9 (2009)', 'Interstellar'] });
     expect(res.status).toBe(200);
-    expect(res.body.data[0].parsed).toMatchObject({ baseTitle: 'Crouching Tiger, Hidden Dragon', episodeNumber: 7 });
+    const [episode, ambiguous, movie] = res.body.data;
+    expect(episode).toMatchObject({ kind: 'episode', episode: { baseTitle: 'Crouching Tiger, Hidden Dragon', episodeNumber: 7 } });
+    expect(ambiguous).toMatchObject({ kind: 'ambiguous', movie: { title: 'District 9', year: 2009 } });
+    expect(movie).toMatchObject({ kind: 'movie', episode: null, movie: { title: 'Interstellar' } });
   });
 
   it('refuses to scrape internal addresses', async () => {
@@ -137,7 +140,7 @@ describe('Video aggregator API — films', () => {
   });
 
   afterAll(async () => {
-    await prisma.movie.deleteMany({ where: { slug: filmSlug } });
+    await prisma.movie.deleteMany({ where: { slug: { in: [filmSlug, `station-${stamp}-9`] } } });
     await prisma.series.deleteMany({ where: { slug: seriesSlug } });
     await prisma.user.deleteMany({ where: { email } });
     await prisma.$disconnect();
@@ -154,12 +157,15 @@ describe('Video aggregator API — films', () => {
           { title: `${filmTitle} (2025) [AI Film] 1080p`, streamUrl: 'https://player.example.com/embed/neon' },
           { title: `${filmTitle} - 2025`, streamUrl: 'https://cdn.example.com/neon/index.m3u8' },
           { title: `Echo Test ${stamp} - Ep 1`, streamUrl: 'https://cdn.example.com/echo/1.m3u8' },
+          // Bare trailing number: a film title in auto mode, not "episode 9".
+          { title: `Station ${stamp} 9 (2026)`, streamUrl: 'https://cdn.example.com/station/index.m3u8' },
         ],
       });
 
     expect(res.status).toBe(201);
-    expect(res.body.data.movies).toHaveLength(1);
+    expect(res.body.data.movies).toHaveLength(2);
     expect(res.body.data.movies[0]).toMatchObject({ slug: filmSlug, type: 'AI_FILM', created: true });
+    expect(res.body.data.movies[1]).toMatchObject({ slug: `station-${stamp}-9`, title: `Station ${stamp} 9` });
     expect(res.body.data.series[0]).toMatchObject({ slug: seriesSlug, episodes: 1 });
 
     const movie = await request(app).get(`/api/v1/movies/${filmSlug}`);
@@ -188,5 +194,93 @@ describe('Video aggregator API — films', () => {
     const res = await request(app).get('/api/v1/movies?type=AI_FILM&sort=created_desc&limit=100');
     expect(res.status).toBe(200);
     expect(res.body.data.map((m: any) => m.slug)).toContain(filmSlug);
+  });
+});
+
+describe('Admin dashboard API', () => {
+  const stamp = Date.now();
+  const email = `aggregator_dash_${stamp}@bienphim.vn`;
+  const filmSlug = `dash-film-${stamp}`;
+  let staffToken = '';
+  let userToken = '';
+  let movieId = '';
+
+  beforeAll(async () => {
+    const reg = await request(app).post('/api/v1/auth/register').send({
+      email,
+      username: `aggregator_dash_${stamp}`,
+      password: 'password123',
+      displayName: 'Dashboard Tester',
+    });
+    userToken = reg.body.data.accessToken;
+    await prisma.user.update({ where: { email }, data: { role: 'ADMIN' } });
+    const login = await request(app).post('/api/v1/auth/login').send({ identifier: email, password: 'password123' });
+    staffToken = login.body.data.accessToken;
+
+    const ingest = await request(app)
+      .post('/api/v1/aggregator/ingest')
+      .set('Authorization', `Bearer ${staffToken}`)
+      .send({ mode: 'movie', sourceName: 'dash-feed', items: [{ title: `Dash Film ${stamp}`, streamUrl: 'https://cdn.example.com/dash/index.m3u8' }] });
+    movieId = ingest.body.data.movies[0].id;
+  });
+
+  afterAll(async () => {
+    await prisma.movie.deleteMany({ where: { slug: filmSlug } });
+    await prisma.user.deleteMany({ where: { email } });
+    await prisma.$disconnect();
+  });
+
+  it('is staff-only', async () => {
+    expect((await request(app).get('/api/v1/aggregator/stats')).status).toBe(401);
+    const res = await request(app).get('/api/v1/aggregator/stats').set('Authorization', `Bearer ${userToken}`);
+    expect(res.status).toBe(403);
+  });
+
+  it('reports catalogue and crawl stats', async () => {
+    const res = await request(app).get('/api/v1/aggregator/stats').set('Authorization', `Bearer ${staffToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.totals.movies).toBeGreaterThan(0);
+    expect(res.body.data.crawled.movies).toBeGreaterThanOrEqual(1);
+    expect(res.body.data.byStreamType.HLS).toBeGreaterThanOrEqual(1);
+    expect(res.body.data.bySource.map((s: any) => s.name)).toContain('dash-feed');
+    expect(res.body.data.recent.map((r: any) => r.slug)).toContain(filmSlug);
+  });
+
+  it('lists crawled films with search and pagination', async () => {
+    const res = await request(app)
+      .get(`/api/v1/aggregator/library?kind=movie&q=${encodeURIComponent(`Dash Film ${stamp}`)}&limit=5`)
+      .set('Authorization', `Bearer ${staffToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body.pagination).toMatchObject({ page: 1, limit: 5, total: 1 });
+    expect(res.body.data[0]).toMatchObject({ slug: filmSlug, streamType: 'HLS', sourceName: 'dash-feed' });
+  });
+
+  it('edits film metadata and rejects non-http image URLs', async () => {
+    const bad = await request(app)
+      .patch(`/api/v1/aggregator/movies/${movieId}`)
+      .set('Authorization', `Bearer ${staffToken}`)
+      .send({ posterUrl: 'javascript:alert(1)' });
+    expect(bad.status).toBe(400);
+
+    const res = await request(app)
+      .patch(`/api/v1/aggregator/movies/${movieId}`)
+      .set('Authorization', `Bearer ${staffToken}`)
+      .send({ synopsis: 'A drifting signal.', posterUrl: 'https://img.example.com/p.jpg', year: 2024 });
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({ synopsis: 'A drifting signal.', posterUrl: 'https://img.example.com/p.jpg', year: 2024 });
+  });
+
+  it('removes a stream but keeps the film', async () => {
+    const res = await request(app)
+      .delete(`/api/v1/aggregator/movies/${movieId}/stream`)
+      .set('Authorization', `Bearer ${staffToken}`);
+    expect(res.status).toBe(200);
+    const movie = await prisma.movie.findUnique({ where: { id: movieId } });
+    expect(movie).toMatchObject({ streamUrl: null, streamType: null, synopsis: 'A drifting signal.' });
+
+    const missing = await request(app)
+      .delete('/api/v1/aggregator/episodes/does-not-exist/stream')
+      .set('Authorization', `Bearer ${staffToken}`);
+    expect(missing.status).toBe(404);
   });
 });

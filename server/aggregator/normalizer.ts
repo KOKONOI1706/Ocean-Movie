@@ -22,6 +22,12 @@ export interface ParsedEpisodeTitle {
   episodeNumber: number;
   /** Optional per-episode title, e.g. "Ep 3: The Siege" → "The Siege". */
   episodeTitle?: string;
+  /**
+   * True when the title carries an explicit episode marker (Ep, Tập, S01E02,
+   * 1x02, 第3集, #3). False for a bare trailing number ("Frieren 05",
+   * "Show - 05"), which is ambiguous with film titles like "District 9".
+   */
+  explicit: boolean;
 }
 
 // Letter/number lookarounds: `\b` is ASCII-only and breaks on Vietnamese/CJK text.
@@ -59,6 +65,8 @@ const EPISODE_WORD = '(?:episode|ep|e|tập|tap|tâp|ch|chapter|part|pt)';
 interface Matcher {
   re: RegExp;
   season?: number | 'group';
+  /** Bare-number patterns: fine inside a known series, ambiguous on their own. */
+  weak?: boolean;
 }
 
 // Order matters: most specific first. Every regex exposes `base`, `ep` and
@@ -85,9 +93,9 @@ const MATCHERS: Matcher[] = [
   // Show #05
   { re: /^(?<base>.*?)\s#\s*(?<ep>\d{1,4})(?![\p{L}\p{N}])(?<rest>.*)$/u },
   // Show - 05 / Show | 05  (explicit separator then a bare number)
-  { re: /^(?<base>.+?)\s*[-–—|:]\s*(?<ep>\d{1,4})(?![\p{L}\p{N}])(?<rest>.*)$/u },
+  { re: /^(?<base>.+?)\s*[-–—|:]\s*(?<ep>\d{1,4})(?![\p{L}\p{N}])(?<rest>.*)$/u, weak: true },
   // Show 05  (bare trailing number; years are rejected below)
-  { re: new RegExp(`^(?<base>.+?)\\s+(?<ep>\\d{1,4})(?<rest>(?:\\s+(?:${ANY_ALT}))*)$`, 'iu') },
+  { re: new RegExp(`^(?<base>.+?)\\s+(?<ep>\\d{1,4})(?<rest>(?:\\s+(?:${ANY_ALT}))*)$`, 'iu'), weak: true },
 ];
 
 // "Show Season 2 - Ep 3" leaves "Show Season 2" as base; lift the season out.
@@ -206,6 +214,7 @@ export function parseEpisodeTitle(rawTitle: string): ParsedEpisodeTitle | null {
       seasonNumber: Number.isFinite(seasonNumber) && seasonNumber > 0 ? seasonNumber : 1,
       episodeNumber,
       episodeTitle,
+      explicit: !matcher.weak,
     };
   }
 

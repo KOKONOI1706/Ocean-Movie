@@ -56,27 +56,40 @@ before running tests.
 Collects stream/embed links from external sources, normalizes their titles into
 `Series → Season → Episode` records, and plays them in-app.
 
-### Admin crawl console (UI)
+### Admin dashboard (`/admin`)
 
-Open **Quản trị · Thu thập phim** from the site footer or the profile menu, or go
-to `/?tab=admin`. Sign in with an `ADMIN` or `CURATOR` account (see
-`ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env.example`). After you sign in, a
-**THU THẬP** item appears in the header. The console has three ways to crawl:
+A separate staff app with its own layout: a light workspace with a sidebar. It
+has none of the consumer site's ocean background, header, footer or bottom nav.
 
-- **Dán liên kết phát**: paste `Title | streamUrl` lines (or a JSON array).
-  *Xem trước* shows how each title will be recognized before anything is saved.
-- **Cào trang web**: paste page URLs. The scraper pulls the stream and
-  `og:title` from each page.
-- **Tìm trên nguồn**: search the sources configured in `AGGREGATOR_SOURCES`.
+**How to get there**
+- Sign in on the normal login page (`/auth`) with an `ADMIN` or `CURATOR`
+  account and you land on `/admin`.
+- Staff also see a **Quản trị** button in the site header.
+- Going to `/admin` directly shows the dashboard's own sign-in screen.
+- Non-staff accounts get a "no access" screen.
 
-*Lưu thành* sets how items are stored:
-- **Tự động**: titles with an episode number become episodes; everything else
-  becomes a film.
-- **Phim lẻ**: every item is a film.
-- **Series**: episodes only.
+Create an admin account with `ADMIN_EMAIL` / `ADMIN_PASSWORD` and `pnpm db:seed`
+(see `.env.example`), or promote an existing account in SQL:
+`UPDATE "User" SET role = 'ADMIN' WHERE email = '…';`
 
-Films are saved with the chosen type. The default is **Phim AI** (`AI_FILM`),
-so they show up in the *Phim AI* tab and play in-app from *Xem phim ngay*.
+**Pages**
+- **Tổng quan**: catalogue totals, streams by type, sources, and the latest
+  crawled items.
+- **Thu thập phim**: crawl in three ways.
+  - *Dán liên kết phát*: paste `Title | streamUrl` lines or a JSON array.
+  - *Cào trang web*: paste page URLs.
+  - *Tìm trên nguồn*: search the sources in `AGGREGATOR_SOURCES`.
+  - *Lưu thành* sets how items are saved:
+    - *Tự động*: titles with an explicit episode marker (Tập 3, Ep 3,
+      S01E03, 1x03, 第3集, #3) become episodes. Everything else becomes a
+      film, including titles ending in a bare number like "District 9".
+    - *Phim lẻ*: every item is saved as a film.
+    - *Series*: every item is saved as an episode; bare trailing numbers are
+      read as episode numbers.
+  - *Xem trước* shows how each line will be saved before anything is written.
+- **Kho nội dung**: crawled films and series. Fill in the title, year,
+  synopsis, poster or backdrop, or remove a dead stream. Removing a stream
+  keeps the record.
 
 ### Schema
 
@@ -121,6 +134,10 @@ at sources you are licensed to redistribute.
 | `POST` | `/api/v1/aggregator/scrape` | `{ urls: string[], sourceName? }` |
 | `POST` | `/api/v1/aggregator/search` | `{ query, sources?, limit? }` |
 | `GET` | `/api/v1/aggregator/sources` | — |
+| `GET` | `/api/v1/aggregator/stats` | —: dashboard totals and recent crawls |
+| `GET` | `/api/v1/aggregator/library` | query `kind=movie\|series`, `q`, `page`, `limit` |
+| `PATCH` | `/api/v1/aggregator/movies/:id`, `/series/:id` | `{ title?, year?, synopsis?, posterUrl?, backdropUrl? }` |
+| `DELETE` | `/api/v1/aggregator/movies/:id/stream`, `/episodes/:id/stream` | —: detach the stream, keep the record |
 
 `scrape` and `search` take the same `mode` (`series` by default, `movie` or
 `auto`) and `movieType` (`AI_FILM` by default) options.

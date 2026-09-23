@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Waves, User, Menu, X, CircleUser, LogIn } from 'lucide-react';
+import { Search, Waves, User, Menu, X, CircleUser, LogIn, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface HeaderProps {
@@ -30,7 +30,7 @@ export const Header: React.FC<HeaderProps> = ({
   isStaff = false,
 }) => {
   const { user } = useAuth();
-  const navItems = isStaff ? [...NAV_ITEMS, { id: 'admin', label: 'Thu thập', badge: '' }] : NAV_ITEMS;
+  const navItems = NAV_ITEMS;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -133,7 +133,19 @@ export const Header: React.FC<HeaderProps> = ({
             <Search className="w-4 h-4 text-cyan-400" />
           </button>
 
-          {/* User Auth / Profile Button */}
+          {/* Staff: jump to the separate admin dashboard */}
+          {isStaff && (
+            <button
+              onClick={() => onSelectTab('admin')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-pointer bg-amber-400/15 hover:bg-amber-400/25 border border-amber-300/40 hover:border-amber-300 text-xs font-semibold text-amber-200 hover:text-amber-100 transition-all shadow-md"
+              title="Mở bảng quản trị"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Quản trị</span>
+            </button>
+          )}
+
+                    {/* User Auth / Profile Button */}
           {user ? (
             <button
               onClick={handleAuthClick}
