@@ -68,9 +68,18 @@ has none of the consumer site's ocean background, header, footer or bottom nav.
 - Going to `/admin` directly shows the dashboard's own sign-in screen.
 - Non-staff accounts get a "no access" screen.
 
-Create an admin account with `ADMIN_EMAIL` / `ADMIN_PASSWORD` and `pnpm db:seed`
-(see `.env.example`), or promote an existing account in SQL:
-`UPDATE "User" SET role = 'ADMIN' WHERE email = '…';`
+Create an admin account, or promote an existing one and reset its password,
+against the database in `DATABASE_URL`:
+
+```bash
+pnpm admin:create --email you@example.com --password 'at-least-8-chars' [--username you] [--role ADMIN|CURATOR]
+```
+
+`pnpm db:seed` with `ADMIN_EMAIL` / `ADMIN_PASSWORD` also creates one (see `.env.example`).
+
+> Opening `/admin` and getting bounced back to the home page means the server is
+> running code without the dashboard (for example `main` before this feature
+> merged). Check out the branch, run `pnpm install`, and restart `pnpm dev`.
 
 **Pages**
 - **Tổng quan**: catalogue totals, streams by type, sources, and the latest
