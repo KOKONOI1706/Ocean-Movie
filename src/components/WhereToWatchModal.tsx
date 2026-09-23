@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { MediaItem } from '../types';
-import { X, ExternalLink, Globe, ShieldCheck, Info } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { MediaItem, StreamingOption } from '../types';
+import { X, ExternalLink, Globe, ShieldCheck, Info, Search, Loader2 } from 'lucide-react';
+import { aiApi } from '../lib/api/ai.api';
 
 interface WhereToWatchModalProps {
   item: MediaItem | null;
@@ -9,6 +10,17 @@ interface WhereToWatchModalProps {
 
 export const WhereToWatchModal: React.FC<WhereToWatchModalProps> = ({ item, onClose }) => {
   const [selectedRegion, setSelectedRegion] = useState<string>('VN');
+  const [aiSearchState, setAiSearchState] = useState<'idle' | 'loading' | 'done'>('idle');
+  const [aiResults, setAiResults] = useState<StreamingOption[]>([]);
+  const [aiSource, setAiSource] = useState<string | null>(null);
+
+  // Reset per-title search state whenever a different item is opened, so a
+  // previous title's "no results" or found links don't leak into this one.
+  useEffect(() => {
+    setAiSearchState('idle');
+    setAiResults([]);
+    setAiSource(null);
+  }, [item?.id]);
 
   if (!item) return null;
 
@@ -19,20 +31,38 @@ export const WhereToWatchModal: React.FC<WhereToWatchModalProps> = ({ item, onCl
     { id: 'JP', name: 'Nhật Bản' }
   ];
 
-  const allStreamingOptions = item.streamingOptions || [
-    {
-      provider: 'Netflix',
-      type: 'subscription',
-      region: 'Global / VN',
-      url: 'https://netflix.com',
-      badge: 'Gói xem phim Netflix'
-    }
-  ];
+  const isSeries = item.type === 'series' || (item.seasons && item.seasons.length > 0);
 
-  const streamingList = allStreamingOptions.filter((opt) => {
+  const handleAiSearch = async () => {
+    setAiSearchState('loading');
+    try {
+      const result = await aiApi.findWhereToWatch(item.id, isSeries ? 'series' : 'movie');
+      setAiResults(result.options);
+      setAiSource(result.source);
+      // Results come back region-tagged (currently US, from JustWatch's US
+      // catalog) — switch the tab so they're visible immediately instead of
+      // silently filtered out by whatever region happened to be selected.
+      if (result.options.length > 0) {
+        setSelectedRegion(result.options[0].region || 'Global');
+      }
+    } catch {
+      setAiSource('search_failed');
+    } finally {
+      setAiSearchState('done');
+    }
+  };
+
+  const streamingList = [...(item.streamingOptions || []), ...aiResults].filter((opt) => {
     const region = opt.region || 'Global';
     return selectedRegion === 'Global' || region.includes(selectedRegion) || region.toLowerCase().includes('global');
   });
+
+  // JustWatch aggregates real, region-aware legal streaming availability —
+  // an honest way to help the user find this title when we have no
+  // Availability rows of our own for it, instead of pretending to know a
+  // specific (and possibly wrong) provider. JustWatch has no Vietnam edition
+  // (a /vn/ path 404s), so this uses their US catalog, which it does serve.
+  const justWatchSearchUrl = `https://www.justwatch.com/us/search?q=${encodeURIComponent(item.title)}`;
 
   return (
     <div className="fixed inset-0 z-60 overflow-y-auto bg-[#030B14]/85 backdrop-blur-xl flex justify-center p-4 text-[#E8F4F8] animate-in fade-in duration-200">
@@ -126,9 +156,46 @@ export const WhereToWatchModal: React.FC<WhereToWatchModalProps> = ({ item, onCl
                 </a>
               </div>
             )) : (
-              <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#0B2035]/40 border border-dashed border-[#19A7C7]/25 text-xs text-[#8BA7B8]">
-                <Info className="w-4 h-4 text-[#35C2C8] shrink-0" />
-                <span>Chưa có nguồn phát chính thức cho khu vực này. Hãy thử chọn khu vực khác.</span>
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-[#0B2035]/40 border border-dashed border-[#19A7C7]/25 text-xs text-[#8BA7B8]">
+                  <div className="flex items-center gap-3">
+                    <Info className="w-4 h-4 text-[#35C2C8] shrink-0" />
+                    <span>
+                      {aiSearchState === 'done'
+                        ? 'AI không tìm thấy nguồn phát hợp pháp nào cho khu vực này.'
+                        : 'Chưa có nguồn phát chính thức nào trong hệ thống cho khu vực này.'}
+                    </span>
+                  </div>
+                  <a
+                    href={justWatchSearchUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="shrink-0 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-cyan-200 border border-white/10 hover:border-cyan-500/30 text-xs font-semibold flex items-center gap-1.5 transition-all"
+                  >
+                    <span>Tìm trên JustWatch</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+
+                {aiSearchState !== 'done' && (
+                  <button
+                    onClick={handleAiSearch}
+                    disabled={aiSearchState === 'loading'}
+                    className="w-full flex items-center justify-center gap-2 p-3 rounded-2xl bg-gradient-to-r from-[#087EA4]/25 to-[#19A7C7]/25 border border-[#35C2C8]/30 hover:border-[#35C2C8]/60 text-cyan-100 text-xs font-semibold transition-all disabled:opacity-70 disabled:cursor-wait cursor-pointer"
+                  >
+                    {aiSearchState === 'loading' ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>AI đang tìm kiếm trên Internet...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Search className="w-3.5 h-3.5" />
+                        <span>Tìm kiếm trên Internet bằng AI</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             )}
           </div>

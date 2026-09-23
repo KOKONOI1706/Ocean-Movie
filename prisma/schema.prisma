@@ -55,6 +55,7 @@ model Movie {
   posterUrl           String
   backdropUrl         String
   monochromePosterUrl String?
+  trailerYoutubeId    String?
   type                MediaType         @default(MOVIE)
   status              MediaStatus       @default(RELEASED)
   isCoverFeature      Boolean           @default(false)
@@ -106,6 +107,7 @@ model Series {
   posterUrl           String
   backdropUrl         String
   monochromePosterUrl String?
+  trailerYoutubeId    String?
   status              MediaStatus        @default(RELEASED)
   isCoverFeature      Boolean            @default(false)
   isTrending          Boolean            @default(false)

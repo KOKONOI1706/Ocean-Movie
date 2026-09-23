@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Star, Plus, Check, MapPin, Tv, Sparkles } from 'lucide-react';
+import { Star, Plus, Check, MapPin, Tv, Sparkles, Play } from 'lucide-react';
 import { MediaItem } from '../types.js';
 
 interface MovieCardProps {
@@ -115,17 +115,17 @@ export const MovieCard: React.FC<MovieCardProps> = ({
             </button>
           )}
 
-          {onWhereToWatch && item.streamingOptions && item.streamingOptions.length > 0 && (
+          {onWhereToWatch && (item.trailerYoutubeId || (item.streamingOptions && item.streamingOptions.length > 0)) && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onWhereToWatch(item);
               }}
               className="w-7 h-7 rounded-lg bg-black/65 hover:bg-cyan-950/85 text-gray-300 hover:text-white border border-white/20 flex items-center justify-center backdrop-blur-sm transition-colors cursor-pointer"
-              title="Xem ở đâu"
-              aria-label="Xem ở đâu"
+              title={item.trailerYoutubeId ? 'Xem trailer' : 'Xem ở đâu'}
+              aria-label={item.trailerYoutubeId ? 'Xem trailer' : 'Xem ở đâu'}
             >
-              <MapPin className="w-3.5 h-3.5" />
+              {item.trailerYoutubeId ? <Play className="w-3.5 h-3.5" /> : <MapPin className="w-3.5 h-3.5" />}
             </button>
           )}
         </div>

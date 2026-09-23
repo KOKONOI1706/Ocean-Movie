@@ -11,7 +11,172 @@ function getGemini(): GoogleGenAI | null {
   return genAIClient;
 }
 
+// Cached links older than this are re-searched rather than trusted forever —
+// streaming availability changes (titles leave/join catalogs) and a live web
+// search is the whole point of this feature.
+const AVAILABILITY_STALE_AFTER_MS = 14 * 24 * 60 * 60 * 1000;
+
+const SCRAPE_HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; BienPhimBot/1.0; +https://bienphim.vn)' };
+
+async function fetchText(url: string): Promise<string> {
+  const res = await fetch(url, { headers: SCRAPE_HEADERS });
+  if (!res.ok) throw new Error(`${url} -> HTTP ${res.status}`);
+  return res.text();
+}
+
+function mapMonetizationType(t: string | undefined): 'FREE' | 'SUBSCRIPTION' | 'RENT' | 'BUY' {
+  switch (t) {
+    case 'FREE':
+    case 'ADS':
+      return 'FREE';
+    case 'RENT':
+      return 'RENT';
+    case 'BUY':
+      return 'BUY';
+    default:
+      return 'SUBSCRIPTION'; // FLATRATE, FLATRATE_AND_BUY, etc.
+  }
+}
+
+interface JustWatchOffer {
+  provider: string;
+  type: 'FREE' | 'SUBSCRIPTION' | 'RENT' | 'BUY';
+  url: string;
+  price?: string;
+}
+
+/**
+ * JustWatch server-renders each title page with click-out links
+ * (`e.justwatch.com/a?...&cx=<base64 JSON>`) whose payload is the exact data
+ * JustWatch itself uses to send visitors to the right provider — the real
+ * destination URL, provider name, and price. Reading that payload straight
+ * off the page gives real, currently-live offers with no API key, no
+ * model involved, and nothing to hallucinate: every link is one JustWatch
+ * itself lists right now.
+ */
+function extractJustWatchOffers(html: string): JustWatchOffer[] {
+  const offers = new Map<string, JustWatchOffer>();
+  // The page HTML-entity-encodes "&" as "&amp;" inside the href attribute,
+  // so the separator before cx= is "&amp;cx=", not a bare "&cx=".
+  const linkRegex = /href="https:\/\/e\.justwatch\.com\/a\?[^"]*?(?:\?|&(?:amp;)?)cx=([^"&]+)/g;
+  let match: RegExpExecArray | null;
+  while ((match = linkRegex.exec(html))) {
+    try {
+      const decoded = JSON.parse(Buffer.from(decodeURIComponent(match[1]), 'base64').toString('utf-8'));
+      const clickout = decoded?.data?.find((d: any) => d.schema?.includes('clickout_context'))?.data;
+      if (!clickout?.provider || !clickout?.deeplinkFallback) continue;
+      const type = mapMonetizationType(clickout.monetizationType);
+      const key = `${clickout.provider}-${type}`;
+      if (offers.has(key)) continue;
+      offers.set(key, {
+        provider: clickout.provider,
+        type,
+        url: clickout.deeplinkFallback,
+        price: clickout.priceCent ? `${(clickout.priceCent / 100).toFixed(2)} ${clickout.currency || 'USD'}` : undefined,
+      });
+    } catch {
+      // Malformed/unexpected payload shape — skip this one link, not the whole page.
+    }
+  }
+  return Array.from(offers.values());
+}
+
 export class AIService {
+  /**
+   * Live web search for real, legal streaming links — no API key required.
+   * Searches JustWatch (which itself aggregates real licensing deals) for
+   * the title, then scrapes the actual click-out offers off its title page.
+   */
+  async findWhereToWatch(mediaIdOrSlug: string, mediaType: 'movie' | 'series') {
+    const media =
+      mediaType === 'movie'
+        ? await prisma.movie.findFirst({
+            where: { OR: [{ id: mediaIdOrSlug }, { slug: mediaIdOrSlug }] },
+            include: { availability: { include: { provider: true } } },
+          })
+        : await prisma.series.findFirst({
+            where: { OR: [{ id: mediaIdOrSlug }, { slug: mediaIdOrSlug }] },
+            include: { availability: { include: { provider: true } } },
+          });
+
+    if (!media) throw new NotFoundError('Không tìm thấy tác phẩm');
+
+    const freshCached = media.availability.filter(
+      (a) => Date.now() - a.lastChecked.getTime() < AVAILABILITY_STALE_AFTER_MS
+    );
+    if (freshCached.length > 0) {
+      return {
+        source: 'cache' as const,
+        options: freshCached.map((a) => ({
+          provider: a.provider.name,
+          type: a.type.toLowerCase(),
+          region: a.region,
+          url: a.url,
+          badge: a.badge || undefined,
+        })),
+      };
+    }
+
+    let offers: JustWatchOffer[];
+    try {
+      const pathType = mediaType === 'movie' ? 'movie' : 'tv-show';
+      const searchHtml = await fetchText(`https://www.justwatch.com/us/search?q=${encodeURIComponent(media.title)}`);
+      const linkMatch = searchHtml.match(
+        new RegExp(`href="https://www\\.justwatch\\.com/us/${pathType}/([a-z0-9-]+)"`)
+      );
+      if (!linkMatch) {
+        return { source: 'no_results' as const, options: [] };
+      }
+      const detailHtml = await fetchText(`https://www.justwatch.com/us/${pathType}/${linkMatch[1]}`);
+      offers = extractJustWatchOffers(detailHtml).slice(0, 8);
+    } catch (err) {
+      console.warn('JustWatch web search failed:', err);
+      return { source: 'search_failed' as const, options: [] };
+    }
+
+    if (offers.length === 0) {
+      return { source: 'no_results' as const, options: [] };
+    }
+
+    // Persist so the next visitor for this title gets an instant cache hit
+    // instead of paying for another search.
+    if (mediaType === 'movie') {
+      await prisma.availability.deleteMany({ where: { movieId: media.id } });
+    } else {
+      await prisma.availability.deleteMany({ where: { seriesId: media.id } });
+    }
+    const saved = [];
+    for (const offer of offers) {
+      const slug = offer.provider.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      const provider = await prisma.provider.upsert({
+        where: { slug },
+        update: { name: offer.provider },
+        create: { name: offer.provider, slug },
+      });
+      const availability = await prisma.availability.create({
+        data: {
+          providerId: provider.id,
+          ...(mediaType === 'movie' ? { movieId: media.id } : { seriesId: media.id }),
+          region: 'US',
+          type: offer.type,
+          url: offer.url,
+          price: offer.price,
+          badge: 'Tìm thấy qua tìm kiếm trực tuyến',
+        },
+      });
+      saved.push({
+        provider: offer.provider,
+        type: offer.type.toLowerCase(),
+        region: 'US',
+        url: offer.url,
+        price: offer.price,
+        badge: availability.badge || undefined,
+      });
+    }
+
+    return { source: 'ai_search' as const, options: saved };
+  }
+
   /**
    * Natural Language AI Search:
    * 1. Extract structured criteria using Gemini (or heuristic fallback).

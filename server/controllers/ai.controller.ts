@@ -49,6 +49,16 @@ export class AIController {
       next(err);
     }
   }
+
+  async findWhereToWatch(req: Request, res: Response, next: NextFunction) {
+    try {
+      const mediaType = req.query.type === 'series' ? 'series' : 'movie';
+      const result = await aiService.findWhereToWatch(req.params.id, mediaType);
+      return apiSuccess(res, result);
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 export const aiController = new AIController();
