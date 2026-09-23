@@ -42,7 +42,6 @@ jobs:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_HOST: localhost
-      POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
 
     steps:
       - name: Checkout repository
@@ -69,6 +68,9 @@ jobs:
 
       - name: Compose DATABASE_URL for tests
         if: steps.scripts.outputs.has_test == 'true'
+        env:
+          # The `job` context is only available at step level, not in jobs.<id>.env.
+          POSTGRES_PORT: ${{ job.services.postgres.ports['5432'] }}
         run: |
           proto='postgresql'
           proto="${proto}://"
