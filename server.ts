@@ -22,10 +22,27 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🌊 BIỂN PHIM Modular Monolith server running at http://localhost:${PORT}`);
     console.log(`🚀 REST API available at http://localhost:${PORT}/api/v1`);
     console.log(`🩺 Health check at http://localhost:${PORT}/api/health`);
+  });
+
+  // If an older server still holds the port, it keeps answering requests with
+  // its old routes (e.g. 404 for new endpoints) while this one dies quietly.
+  server.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code !== 'EADDRINUSE') throw err;
+    console.error(
+      [
+        '',
+        `❌ Port ${PORT} is already in use — another (probably older) server is still running`,
+        '   and will keep serving outdated code. Stop it, then start this one again:',
+        `     macOS/Linux:  lsof -ti tcp:${PORT} | xargs kill`,
+        `     Windows:      netstat -ano | findstr :${PORT}   then   taskkill /PID <pid> /F`,
+        '',
+      ].join('\n')
+    );
+    process.exit(1);
   });
 }
 

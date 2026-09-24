@@ -13,6 +13,7 @@ import { prisma } from '../config/prisma.js';
 import { aiController } from '../controllers/ai.controller.js';
 
 export const apiRouter = Router();
+const startedAt = new Date().toISOString();
 
 // Health Check Endpoint
 apiRouter.get('/health', async (_req, res) => {
@@ -29,6 +30,7 @@ apiRouter.get('/health', async (_req, res) => {
     database: dbStatus,
     version: '1.0.0',
     environment: process.env.NODE_ENV || 'development',
+    startedAt,
     timestamp: new Date().toISOString(),
   });
 });
