@@ -6,6 +6,7 @@ import { apiRouter } from './routes/index.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { requestLogger } from './middleware/logger.middleware.js';
 import { env } from './config/env.js';
+import { apiError } from './utils/response.js';
 
 export function createApp(): Express {
   const app = express();
@@ -70,6 +71,13 @@ export function createApp(): Express {
 
   // Mount API
   app.use('/api', apiLimiter, apiRouter);
+
+  // Unknown API routes get a JSON 404 instead of falling through to the SPA
+  // (an empty/HTML 404 the client can't read). In dev this usually means the
+  // server process predates a new route and needs restarting.
+  app.use('/api', (req, res) =>
+    apiError(res, 'NOT_FOUND', `Không tìm thấy API: ${req.method} ${req.originalUrl}`, 404)
+  );
 
   // Centralized Error Handler
   app.use(errorHandler);

@@ -58,11 +58,21 @@ class ApiClient {
       headers,
     });
 
+    const text = await response.text();
     let json: any;
     try {
-      json = await response.json();
+      json = JSON.parse(text);
     } catch {
-      json = { success: false, error: { code: 'PARSE_ERROR', message: 'Không thể đọc dữ liệu máy chủ' } };
+      // Say what actually came back (status + a snippet) so the cause is visible,
+      // e.g. a stale dev server's 404, a proxy error page or a crashed request.
+      const snippet = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
+      json = {
+        success: false,
+        error: {
+          code: 'PARSE_ERROR',
+          message: `Không thể đọc dữ liệu máy chủ (HTTP ${response.status}${snippet ? `: ${snippet}` : ''})`,
+        },
+      };
     }
 
     if (!response.ok && json.success !== false) {

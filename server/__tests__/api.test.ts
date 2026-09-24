@@ -35,6 +35,13 @@ describe('BIỂN PHIM Backend API Integration Tests', () => {
     expect(res.body.version).toBe('1.0.0');
   });
 
+  it('unknown API routes return a JSON 404', async () => {
+    const res = await request(app).post('/api/v1/does-not-exist').send({});
+    expect(res.status).toBe(404);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error.code).toBe('NOT_FOUND');
+  });
+
   // 2. Authentication
   it('POST /api/v1/auth/register creates a new user and returns JWT', async () => {
     const res = await request(app).post('/api/v1/auth/register').send({
