@@ -22,6 +22,8 @@ model User {
   watchHistory WatchHistory[]
   progress     WatchProgress[]
   watchlist    Watchlist[]
+  auditLogs    AdminAuditLog[]
+  jobs         Job[]
 
   @@index([email])
   @@index([username])
@@ -72,13 +74,22 @@ model Movie {
   sourceUrl           String?
   rawTitle            String?
   lastScrapedAt       DateTime?
+  /// Visibility on the public site. Separate from `status` (release status).
+  publishStatus       PublishStatus     @default(PUBLISHED)
+  publishedAt         DateTime?
+  language            String?
+  country             String?
+  ageRating           String?
+  releaseDate         DateTime?
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
   aiInsight           AIInsight?
   availability        Availability[]
   collectionItems     CollectionMovie[]
   creators            MovieCreator[]
+  externalIds         ExternalId[]
   genres              MovieGenre[]
+  mediaAssets         MediaAsset[]
   moods               MovieMood[]
   ratings             Rating[]
   subtitles           Subtitle[]
@@ -92,6 +103,7 @@ model Movie {
   @@index([rating])
   @@index([type])
   @@index([isTrending])
+  @@index([publishStatus, createdAt])
 }
 
 model Series {
@@ -114,11 +126,14 @@ model Series {
   editorialQuote      String?
   normalizedTitle     String?            @unique
   sourceName          String?
+  publishStatus       PublishStatus      @default(PUBLISHED)
+  publishedAt         DateTime?
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
   aiInsight           AIInsight?
   availability        Availability[]
   collectionItems     CollectionSeries[]
+  externalIds         ExternalId[]
   ratings             Rating[]
   seasons             Season[]
   creators            SeriesCreator[]
@@ -133,21 +148,25 @@ model Series {
   @@index([startYear])
   @@index([rating])
   @@index([isTrending])
+  @@index([publishStatus, createdAt])
 }
 
 model Season {
-  id           String    @id @default(uuid())
-  seriesId     String
-  seasonNumber Int
-  title        String
-  overview     String?
-  posterUrl    String?
-  year         Int?
-  episodeCount Int       @default(0)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  episodes     Episode[]
-  series       Series    @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  id            String        @id @default(uuid())
+  seriesId      String
+  seasonNumber  Int
+  title         String
+  overview      String?
+  posterUrl     String?
+  year          Int?
+  episodeCount  Int           @default(0)
+  publishStatus PublishStatus @default(PUBLISHED)
+  publishedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  episodes      Episode[]
+  externalIds   ExternalId[]
+  series        Series        @relation(fields: [seriesId], references: [id], onDelete: Cascade)
 
   @@unique([seriesId, seasonNumber])
   @@index([seriesId])
@@ -175,9 +194,17 @@ model Episode {
   sourceUrl          String?
   rawTitle           String?
   lastScrapedAt      DateTime?
+  /// Replaces the free-text `airDate` once backfilled.
+  airDateAt          DateTime?
+  /// Display order within the season; falls back to episodeNumber when null.
+  sortOrder          Int?
+  publishStatus      PublishStatus   @default(PUBLISHED)
+  publishedAt        DateTime?
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
   aiInsight          AIInsight?
+  externalIds        ExternalId[]
+  mediaAssets        MediaAsset[]
   season             Season          @relation(fields: [seasonId], references: [id], onDelete: Cascade)
   subtitles          Subtitle[]
   watchProgress      WatchProgress[]
@@ -185,6 +212,7 @@ model Episode {
   @@unique([seasonId, episodeNumber])
   @@index([seasonId])
   @@index([slug])
+  @@index([publishStatus])
 }
 
 model Genre {
@@ -280,11 +308,13 @@ model Creator {
 }
 
 model MovieCreator {
-  movieId   String
-  creatorId String
-  role      String  @default("Director")
-  creator   Creator @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  movie     Movie   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  movieId      String
+  creatorId    String
+  role         String  @default("Director")
+  character    String?
+  billingOrder Int     @default(0)
+  creator      Creator @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  movie        Movie   @relation(fields: [movieId], references: [id], onDelete: Cascade)
 
   @@id([movieId, creatorId, role])
   @@index([movieId])
@@ -292,11 +322,13 @@ model MovieCreator {
 }
 
 model SeriesCreator {
-  seriesId  String
-  creatorId String
-  role      String  @default("Creator")
-  creator   Creator @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  series    Series  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  seriesId     String
+  creatorId    String
+  role         String  @default("Creator")
+  character    String?
+  billingOrder Int     @default(0)
+  creator      Creator @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  series       Series  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
 
   @@id([seriesId, creatorId, role])
   @@index([seriesId])
@@ -383,22 +415,31 @@ model Availability {
 }
 
 model Subtitle {
-  id               String   @id @default(uuid())
+  id               String      @id @default(uuid())
   movieId          String?
   seriesId         String?
   episodeId        String?
   language         String
-  isAiAssisted     Boolean  @default(false)
+  isAiAssisted     Boolean     @default(false)
   sampleOriginal   String?
   sampleTranslated String?
-  createdAt        DateTime @default(now())
-  episode          Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
-  movie            Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
-  series           Series?  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  /// Playable text track (WebVTT by default), stored in object storage or at `url`.
+  mediaAssetId     String?
+  label            String?
+  format           String      @default("vtt")
+  storageKey       String?
+  url              String?
+  isDefault        Boolean     @default(false)
+  createdAt        DateTime    @default(now())
+  episode          Episode?    @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  mediaAsset       MediaAsset? @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
+  movie            Movie?      @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  series           Series?     @relation(fields: [seriesId], references: [id], onDelete: Cascade)
 
   @@index([movieId])
   @@index([seriesId])
   @@index([episodeId])
+  @@index([mediaAssetId])
 }
 
 model Watchlist {
@@ -534,4 +575,223 @@ enum StreamType {
   HLS
   FILE
   EMBED
+}
+
+enum PublishStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ProviderKind {
+  METADATA
+  MEDIA
+}
+
+enum MediaAssetStatus {
+  PENDING
+  VALIDATING
+  PROCESSING
+  READY
+  FAILED
+  DISABLED
+}
+
+enum DeliveryType {
+  HLS
+  DASH
+  FILE
+  EMBED
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  SUCCESS
+  FAILED
+  CANCELLED
+  RETRYING
+}
+
+/// A metadata API or an authorized media source. Not the same as `Provider`
+/// (watch providers such as streaming services). Secrets live in env vars only.
+model IngestionProvider {
+  id               String       @id @default(uuid())
+  key              String       @unique
+  name             String
+  kind             ProviderKind
+  enabled          Boolean      @default(true)
+  /// Non-secret settings (rate limits, default language, ...).
+  config           Json         @default("{}")
+  /// Authorization record for MEDIA providers: what allows us to use this content.
+  licenseRef       String?
+  licenseNotes     String?
+  /// Hosts media may be fetched from. Empty means no remote fetching.
+  allowedHosts     String[]     @default([])
+  licenseExpiresAt DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  externalIds      ExternalId[]
+  mediaAssets      MediaAsset[]
+}
+
+/// Provider identity of a title: the primary deduplication key.
+model ExternalId {
+  id           String            @id @default(uuid())
+  providerId   String
+  /// MOVIE | SERIES | SEASON | EPISODE
+  entityType   String
+  externalId   String
+  movieId      String?
+  seriesId     String?
+  seasonId     String?
+  episodeId    String?
+  lastSyncedAt DateTime?
+  createdAt    DateTime          @default(now())
+  episode      Episode?          @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  movie        Movie?            @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  provider     IngestionProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  season       Season?           @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  series       Series?           @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, entityType, externalId])
+  @@index([movieId])
+  @@index([seriesId])
+  @@index([seasonId])
+  @@index([episodeId])
+}
+
+/// One playable version of a movie or episode, from one provider.
+model MediaAsset {
+  id              String            @id @default(uuid())
+  movieId         String?
+  episodeId       String?
+  providerId      String
+  /// UPLOAD | URL | EMBED | OBJECT_STORAGE
+  sourceType      String
+  /// Original URL, or storage key of the original file.
+  sourceRef       String
+  status          MediaAssetStatus  @default(PENDING)
+  deliveryType    DeliveryType
+  /// Object-storage prefix holding renditions and manifests.
+  storagePrefix   String?
+  /// Master manifest key; resolved to a CDN URL when read.
+  manifestKey     String?
+  /// Direct playback URL for assets that are not re-hosted (embeds, external files).
+  playbackUrl     String?
+  durationSeconds Int?
+  width           Int?
+  height          Int?
+  videoCodec      String?
+  audioCodec      String?
+  bitrateKbps     Int?
+  sizeBytes       BigInt?
+  /// sha256 of the original file; detects re-imports of the same media.
+  checksum        String?
+  /// [{ height, bitrateKbps, codec, playlistKey }]
+  renditions      Json?
+  /// ffprobe summary of the original.
+  probe           Json?
+  isPrimary       Boolean           @default(false)
+  priority        Int               @default(0)
+  error           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  episode         Episode?          @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  movie           Movie?            @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  provider        IngestionProvider @relation(fields: [providerId], references: [id])
+  subtitles       Subtitle[]
+
+  @@unique([movieId, providerId, sourceRef])
+  @@unique([episodeId, providerId, sourceRef])
+  @@index([movieId, status])
+  @@index([episodeId, status])
+  @@index([providerId])
+  @@index([status])
+}
+
+/// Background job: imports, metadata refreshes and media processing.
+model Job {
+  id              String     @id @default(uuid())
+  /// IMPORT_MOVIES | IMPORT_SERIES | IMPORT_SEASON | PROCESS_MEDIA | ... (validated in code)
+  type            String
+  status          JobStatus  @default(QUEUED)
+  priority        Int        @default(0)
+  payload         Json
+  result          Json?
+  /// 0..100
+  progress        Int        @default(0)
+  processed       Int        @default(0)
+  succeeded       Int        @default(0)
+  skipped         Int        @default(0)
+  failed          Int        @default(0)
+  attempts        Int        @default(0)
+  maxAttempts     Int        @default(3)
+  /// Earliest time the job may run (used for retry backoff).
+  runAt           DateTime   @default(now())
+  lockedAt        DateTime?
+  lockedBy        String?
+  /// Idempotency key for the kind of work, e.g. "import:tmdb:movie:603".
+  dedupeKey       String?
+  /// Equals dedupeKey while the job is QUEUED/RUNNING/RETRYING, null otherwise,
+  /// so at most one active job exists per key.
+  activeDedupeKey String?    @unique
+  error           String?
+  /// TRANSIENT | PERMANENT
+  errorKind       String?
+  cancelRequested Boolean    @default(false)
+  parentId        String?
+  createdById     String?
+  createdAt       DateTime   @default(now())
+  startedAt       DateTime?
+  completedAt     DateTime?
+  children        Job[]      @relation("JobChildren")
+  createdBy       User?      @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  events          JobEvent[]
+  parent          Job?       @relation("JobChildren", fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@index([status, runAt, priority])
+  @@index([type, status])
+  @@index([parentId])
+  @@index([dedupeKey])
+  @@index([createdAt])
+}
+
+/// Stage-level log line for a job, so every pipeline stage is observable.
+model JobEvent {
+  id         String   @id @default(uuid())
+  jobId      String
+  /// DISCOVER | FETCH_METADATA | NORMALIZE | DEDUPLICATE | VALIDATE | STORE_METADATA | ...
+  stage      String
+  /// info | warn | error
+  level      String
+  message    String
+  data       Json?
+  durationMs Int?
+  createdAt  DateTime @default(now())
+  job        Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, createdAt])
+}
+
+/// Who changed what in the admin area. Kept when the actor account is deleted.
+model AdminAuditLog {
+  id           String   @id @default(uuid())
+  actorId      String?
+  /// Snapshot of the actor, so entries stay readable after the account is gone.
+  actorEmail   String
+  /// movie.update, movie.publish, job.cancel, provider.update, user.role, ...
+  action       String
+  resourceType String
+  resourceId   String?
+  before       Json?
+  after        Json?
+  ip           String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  actor        User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId, createdAt])
+  @@index([resourceType, resourceId])
+  @@index([createdAt])
 }

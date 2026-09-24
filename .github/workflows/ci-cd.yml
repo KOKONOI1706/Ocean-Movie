@@ -81,7 +81,9 @@ jobs:
       - name: Prepare database for tests
         if: steps.scripts.outputs.has_test == 'true'
         run: |
-          pnpm db:push
+          pnpm db:migrate
+          # Fails if schema.prisma changed without a matching migration.
+          pnpm db:drift
           pnpm db:seed
 
       - name: Run lint
