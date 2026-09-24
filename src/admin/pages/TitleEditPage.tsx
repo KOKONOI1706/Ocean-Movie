@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowDown, ArrowLeft, ArrowUp, Archive, ExternalLink, Plus, ScrollText, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowUp, Archive, CloudDownload, ExternalLink, Plus, RefreshCw, ScrollText, Trash2, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
   catalogApi,
+  metadataApi,
   type CatalogMediaType,
+  type MergeMode,
   type CreditInput,
   type Genre,
   type MovieDetail,
@@ -391,6 +393,8 @@ export function TitleEditPage({ kind }: { kind: CatalogKind }) {
             </div>
           </Card>
 
+          {!isNew && <MetadataCard kind={kind} detail={detail!} onRefreshed={loadDetail} />}
+
           {!isNew && hasRole(user?.role, 'ADMIN') && (
             <Card title="Vùng nguy hiểm">
               <div className="space-y-2">
@@ -506,6 +510,78 @@ function MediaPanel({ movie }: { movie: MovieDetail }) {
             <li className="py-2 font-mono text-xs text-slate-500">{movie.streamUrl}</li>
           )}
         </ul>
+      )}
+    </Card>
+  );
+}
+
+const EXTERNAL_LINKS: Record<string, (id: string, kind: CatalogKind) => string> = {
+  tmdb: (id, kind) => `https://www.themoviedb.org/${kind === 'movie' ? 'movie' : 'tv'}/${id}`,
+  imdb: (id) => `https://www.imdb.com/title/${id}/`,
+};
+
+/** Which metadata sources the title is linked to, with a refresh from the source. */
+function MetadataCard({ kind, detail, onRefreshed }: { kind: CatalogKind; detail: MovieDetail | SeriesTree; onRefreshed: () => void }) {
+  const toast = useToast();
+  const confirm = useConfirm();
+  const [busy, setBusy] = useState<MergeMode | null>(null);
+
+  const refresh = async (mode: MergeMode) => {
+    if (
+      mode === 'replace' &&
+      !(await confirm({
+        title: 'Ghi đè bằng dữ liệu từ nguồn?',
+        message: 'Tên, mô tả, hình ảnh, thể loại và đoàn làm phim sẽ được thay bằng dữ liệu từ nguồn. Nội dung bạn đã sửa sẽ mất.',
+        confirmLabel: 'Ghi đè',
+        danger: true,
+      }))
+    ) {
+      return;
+    }
+    setBusy(mode);
+    try {
+      const report = await metadataApi.refresh(kind, detail.id, mode);
+      toast('success', report.updatedFields.length ? `Đã cập nhật: ${report.updatedFields.join(', ')}` : 'Không có trường nào cần cập nhật.');
+      onRefreshed();
+    } catch (err) {
+      toast('error', (err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <Card title="Nguồn metadata">
+      {detail.externalIds.length === 0 ? (
+        <p className="text-sm text-slate-500">
+          Chưa liên kết. <Link to="/admin/metadata" className="text-teal-700 hover:underline">Nhập metadata</Link> để lấy thông tin từ TMDB/OMDb.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          <ul className="space-y-1 text-sm">
+            {detail.externalIds.map((e) => {
+              const href = EXTERNAL_LINKS[e.provider.key]?.(e.externalId, kind);
+              return (
+                <li key={`${e.provider.key}:${e.externalId}`} className="flex items-center justify-between gap-2">
+                  <span className="text-slate-500">{e.provider.name}</span>
+                  {href ? (
+                    <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-mono text-xs text-teal-700 hover:underline">
+                      {e.externalId} <ExternalLink className="h-3 w-3" />
+                    </a>
+                  ) : (
+                    <span className="font-mono text-xs">{e.externalId}</span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <Button type="button" className="w-full" icon={<RefreshCw className="h-4 w-4" />} loading={busy === 'fill-empty'} disabled={!!busy} onClick={() => refresh('fill-empty')}>
+            Điền trường còn trống
+          </Button>
+          <Button type="button" variant="ghost" className="w-full" icon={<CloudDownload className="h-4 w-4" />} loading={busy === 'replace'} disabled={!!busy} onClick={() => refresh('replace')}>
+            Ghi đè từ nguồn
+          </Button>
+        </div>
       )}
     </Card>
   );

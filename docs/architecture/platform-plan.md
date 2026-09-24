@@ -1,7 +1,13 @@
 # Ocean-Movie: admin, ingestion and streaming platform plan
 
-Status: **Phases 1–3 implemented** (domain model + migrations; admin authorization + audit; catalogue
-management + public visibility). Later phases are still proposals.
+Status: **Phases 1–4 implemented** (domain model + migrations; admin authorization + audit; catalogue
+management + public visibility; metadata providers). Later phases are still proposals.
+
+Phase 4 notes: `server/ingestion/metadata/` holds the provider interface (`types.ts`), the HTTP client that
+classifies failures as TRANSIENT / PERMANENT / NOT_FOUND / NOT_CONFIGURED (retries transient ones with
+backoff, for Phase 5 jobs to reuse), TMDB and OMDb adapters, the matcher and the importer. IMDb ids are a
+shared `imdb` ExternalId namespace, so TMDB and OMDb titles link up. Imports run synchronously in the request
+(a full series is one provider call per season); Phase 5 moves bulk/large imports to background jobs.
 
 Phase 3 notes: public reads go through `server/repositories/visibility.ts` (one test per public endpoint in
 `visibility.api.test.ts`). Admin catalogue endpoints live under `/api/v1/admin/{movies,series,seasons,episodes,genres}`;

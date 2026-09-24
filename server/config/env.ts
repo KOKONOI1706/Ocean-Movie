@@ -16,6 +16,13 @@ const rawEnvSchema = z.object({
   AGGREGATOR_ALLOWED_HOSTS: z.string().optional().default(''),
   // Video aggregator: JSON array of search source definitions (see server/aggregator/sources/registry.ts)
   AGGREGATOR_SOURCES: z.string().optional().default('[]'),
+  // Metadata providers (optional; a provider without a key shows as "not configured")
+  TMDB_API_TOKEN: z.string().optional().default(''),
+  /** TMDB response language, e.g. en-US or vi-VN (overviews fall back to en-US when empty). */
+  TMDB_LANGUAGE: z.string().optional().default('en-US'),
+  OMDB_API_KEY: z.string().optional().default(''),
+  /** true: resolve provider hosts via public DNS (for networks that block themoviedb.org). */
+  METADATA_PUBLIC_DNS: z.enum(['true', 'false']).optional().default('false'),
 });
 
 const rawEnv = rawEnvSchema.parse(process.env);

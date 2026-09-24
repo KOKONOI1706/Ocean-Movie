@@ -81,6 +81,7 @@ interface TitleDetailBase {
   updatedAt: string;
   genres: Array<{ genreId: string; genre: { id: string; name: string; slug: string } }>;
   creators: Credit[];
+  externalIds: Array<{ externalId: string; lastSyncedAt: string | null; provider: { key: string; name: string } }>;
 }
 
 export interface MovieDetail extends TitleDetailBase {
@@ -139,11 +140,11 @@ export interface SeriesTree extends TitleDetailBase {
 
 /** Writable fields; the server ignores nothing, so send only what changed. */
 export type MovieInput = Partial<
-  Omit<MovieDetail, 'id' | 'slug' | 'publishedAt' | 'updatedAt' | 'genres' | 'creators' | 'mediaAssets' | 'streamUrl' | 'streamType'>
+  Omit<MovieDetail, 'id' | 'slug' | 'publishedAt' | 'updatedAt' | 'genres' | 'creators' | 'externalIds' | 'mediaAssets' | 'streamUrl' | 'streamType'>
 > & { genreIds?: string[]; credits?: CreditInput[] };
 
 export type SeriesInput = Partial<
-  Omit<SeriesTree, 'id' | 'slug' | 'publishedAt' | 'updatedAt' | 'genres' | 'creators' | 'seasons'>
+  Omit<SeriesTree, 'id' | 'slug' | 'publishedAt' | 'updatedAt' | 'genres' | 'creators' | 'externalIds' | 'seasons'>
 > & { genreIds?: string[]; credits?: CreditInput[] };
 
 export type SeasonInput = Partial<Pick<SeasonNode, 'seasonNumber' | 'title' | 'overview' | 'posterUrl' | 'year' | 'publishStatus'>>;

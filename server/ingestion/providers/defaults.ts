@@ -27,6 +27,15 @@ export const DEFAULT_PROVIDERS: DefaultProvider[] = [
     config: { attribution: 'This product uses the TMDB API but is not endorsed or certified by TMDB.' },
   },
   { key: 'omdb', name: 'OMDb', kind: 'METADATA', enabled: true },
+  {
+    // Not fetched from: the namespace for IMDb ids (tt…), which OMDb uses as its ids
+    // and TMDB reports as a cross-reference, so titles from either source link up.
+    key: 'imdb',
+    name: 'IMDb (mã định danh)',
+    kind: 'METADATA',
+    enabled: true,
+    config: { identityOnly: true },
+  },
   { key: 'manual', name: 'Nhập thủ công', kind: 'METADATA', enabled: true },
   { key: 'admin-upload', name: 'Tệp do quản trị viên tải lên', kind: 'MEDIA', enabled: true },
   {

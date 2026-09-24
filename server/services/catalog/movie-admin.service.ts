@@ -60,6 +60,7 @@ const listSelect = {
 
 const detailInclude = {
   genres: { include: { genre: true } },
+  externalIds: { select: { externalId: true, lastSyncedAt: true, provider: { select: { key: true, name: true } } } },
   creators: {
     orderBy: { billingOrder: 'asc' },
     include: { creator: { select: { id: true, name: true, slug: true } } },

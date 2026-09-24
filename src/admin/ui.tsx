@@ -13,6 +13,9 @@ export const inputClass =
 /** Dropdowns size to their content instead of stretching like text inputs. */
 export const selectClass = inputClass.replace('w-full ', 'w-auto max-w-full ');
 
+/** Text inputs placed inline in a toolbar: size via your own width classes. */
+export const inlineInputClass = inputClass.replace('w-full ', '');
+
 export const labelClass = 'block text-xs font-medium text-slate-600 mb-1';
 
 export function PageHeader({ title, description, actions }: { title: string; description?: string; actions?: React.ReactNode }) {

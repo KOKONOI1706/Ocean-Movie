@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import {
   Clapperboard,
+  CloudDownload,
   ExternalLink,
   Film,
   LayoutDashboard,
@@ -29,6 +30,7 @@ import { AuditPage } from './pages/AuditPage';
 import { CatalogListPage } from './pages/CatalogListPage';
 import { TitleEditPage } from './pages/TitleEditPage';
 import { GenresPage } from './pages/GenresPage';
+import { MetadataImportPage } from './pages/MetadataImportPage';
 import { ROLE_LABELS, hasRole, isStaff, type Role } from '../../shared/roles';
 
 // Hiding items is only convenience: the API checks the role from the database on every request.
@@ -37,6 +39,7 @@ const NAV: Array<{ to: string; end: boolean; label: string; icon: typeof Film; m
   { to: '/admin/movies', end: false, label: 'Phim', icon: Clapperboard, minRole: 'CURATOR' },
   { to: '/admin/series', end: false, label: 'Series', icon: Tv, minRole: 'CURATOR' },
   { to: '/admin/genres', end: false, label: 'Thể loại', icon: Tags, minRole: 'CURATOR' },
+  { to: '/admin/metadata', end: false, label: 'Nhập metadata', icon: CloudDownload, minRole: 'CURATOR' },
   { to: '/admin/crawl', end: false, label: 'Thu thập phim', icon: Radar, minRole: 'CURATOR' },
   { to: '/admin/library', end: false, label: 'Luồng đã thu thập', icon: Library, minRole: 'CURATOR' },
   { to: '/admin/users', end: false, label: 'Người dùng', icon: Users, minRole: 'ADMIN' },
@@ -158,6 +161,7 @@ function AdminShell() {
             <Route path="series/new" element={<React.Fragment key="series-new"><TitleEditPage kind="series" /></React.Fragment>} />
             <Route path="series/:id" element={<React.Fragment key="series-edit"><TitleEditPage kind="series" /></React.Fragment>} />
             <Route path="genres" element={<GenresPage />} />
+            <Route path="metadata" element={<MetadataImportPage />} />
             <Route path="library" element={<LibraryPage />} />
             {hasRole(user!.role, 'ADMIN') && (
               <>

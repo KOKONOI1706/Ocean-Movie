@@ -4,6 +4,8 @@ import { requireMinRole, requireStaff } from '../middleware/auth.middleware.js';
 import { validateBody, validateParams, validateQuery } from '../middleware/validate.middleware.js';
 import { auditQuerySchema, roleChangeSchema, userIdParamSchema, userListQuerySchema } from '../validators/admin.validator.js';
 import { catalogController as catalog } from '../controllers/catalog.controller.js';
+import { metadataController as metadata } from '../controllers/metadata.controller.js';
+import { metadataImportSchema, metadataPreviewSchema, metadataRefreshSchema, metadataSearchQuerySchema } from '../validators/metadata.validator.js';
 import {
   bulkSchema,
   catalogIdParamSchema,
@@ -77,3 +79,10 @@ adminRouter.get('/genres', catalog.listGenres);
 adminRouter.post('/genres', validateBody(genreSchema), catalog.createGenre);
 adminRouter.patch('/genres/:id', id, validateBody(genreSchema), catalog.renameGenre);
 adminRouter.delete('/genres/:id', adminOnly, id, catalog.deleteGenre);
+
+// ── Metadata (CURATOR+) ───────────────────────────────────────────────────
+adminRouter.get('/metadata/providers', metadata.providers);
+adminRouter.get('/metadata/search', validateQuery(metadataSearchQuerySchema), metadata.search);
+adminRouter.post('/metadata/preview', validateBody(metadataPreviewSchema), metadata.preview);
+adminRouter.post('/metadata/import', validateBody(metadataImportSchema), metadata.import);
+adminRouter.post('/metadata/refresh', validateBody(metadataRefreshSchema), metadata.refresh);

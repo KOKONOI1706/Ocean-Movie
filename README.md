@@ -113,6 +113,20 @@ pnpm admin:create --email you@example.com --role SUPER_ADMIN   # existing accoun
   also add seasons and episodes, reorder episodes, publish a season (with its
   episodes) and edit or delete episodes.
 - **Thể loại**: add, rename and delete genres.
+- **Nhập metadata**: import a title's metadata (not video) from TMDB or OMDb.
+  Search or enter a TMDB id / IMDb id, preview what will be written, then
+  import. Duplicates are detected before anything is written:
+  1. the provider id (or the IMDb id, shared by TMDB and OMDb) is already
+     linked to a title → that title is updated;
+  2. OMDb-era slugs ending in an IMDb id (`…-tt1375666`) count as linked;
+  3. exactly one title with the same name and year, confirmed by runtime
+     (±5 min) or exact year → updated;
+  4. several similar titles → you choose one or create a new title;
+  5. nothing similar → a new draft.
+  Updating uses *Chỉ điền trường còn trống* by default (curated edits are
+  kept); *Ghi đè* replaces them. For series, pick which seasons to import.
+  A title's edit page shows its linked ids and can refresh from the source.
+  Keys: `TMDB_API_TOKEN` and/or `OMDB_API_KEY` (see `.env.example`).
 - **Thu thập phim**: crawl in three ways.
   - *Dán liên kết phát*: paste `Title | streamUrl` lines or a JSON array.
   - *Cào trang web*: paste page URLs.
@@ -205,6 +219,7 @@ Schema changes go through Prisma Migrate. `prisma db push` is no longer used.
 | `pnpm db:migrate` | Apply pending migrations (CI, staging, production) |
 | `pnpm db:status` | Show applied / pending migrations |
 | `pnpm db:drift` | Exit non-zero if the database differs from `schema.prisma` |
+| `pnpm metadata:backfill-ids` | Record IMDb ids embedded in OMDb-era slugs as external ids (safe to re-run) |
 | `pnpm media:sync-legacy` | Create default ingestion providers and mirror legacy `streamUrl`s into `MediaAsset` (safe to re-run) |
 
 A fresh database gets everything with `pnpm db:migrate`.
