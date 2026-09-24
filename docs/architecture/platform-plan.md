@@ -1,6 +1,15 @@
 # Ocean-Movie: admin, ingestion and streaming platform plan
 
-Status: **proposal, awaiting approval**. Nothing in this document is implemented yet.
+Status: **Phase 1 implemented** (domain model + migrations). Later phases are still proposals.
+
+Phase 1 deviations from the design below:
+- `Job` idempotency uses a nullable unique `activeDedupeKey` (set while the job is active, cleared when it
+  finishes) instead of a partial unique index, so the schema stays fully expressible in Prisma and
+  `pnpm db:drift` stays exact.
+- `MediaAsset` uniqueness is per owner (`movieId`/`episodeId` + provider + sourceRef), because the same
+  URL can legitimately back two titles.
+- Legacy `streamUrl`s are mirrored into `MediaAsset` under a disabled `legacy-stream` provider by
+  `pnpm media:sync-legacy`; `streamUrl` remains the playback source of truth until Phase 9.
 Scope: admin management, metadata ingestion, authorized media ingestion, media processing, streaming, jobs, observability.
 
 Legal ground rule used everywhere below: the platform only ingests, processes, stores or streams

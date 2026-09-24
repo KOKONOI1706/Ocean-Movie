@@ -37,7 +37,8 @@ Set these in **Settings → Secrets and variables → Actions**:
 
 CI also uses temporary test environment variables for JWT/CORS and starts a PostgreSQL service, then runs:
 
-- `pnpm db:push`
+- `pnpm db:migrate` (apply `prisma/migrations`)
+- `pnpm db:drift` (fails if `schema.prisma` changed without a migration)
 - `pnpm db:seed`
 
 before running tests.
@@ -46,7 +47,7 @@ before running tests.
 
 - **Install fails:** ensure `pnpm-lock.yaml` is in sync (`pnpm install` locally and commit lockfile changes).
 - **Lint fails:** run `pnpm lint` locally and fix TypeScript errors.
-- **Tests fail:** ensure test assumptions still match seeded data; run `pnpm db:push && pnpm db:seed && pnpm test` locally with a PostgreSQL database.
+- **Tests fail:** ensure test assumptions still match seeded data; run `pnpm db:migrate && pnpm db:seed && pnpm test` locally with a PostgreSQL database.
 - **Build fails:** run `pnpm build` locally and fix frontend/backend compile issues.
 - **Deploy job skipped:** confirm you pushed to the protected default branch.
 - **Deploy job fails with missing secret:** add `DEPLOY_WEBHOOK_URL` in repository secrets.
@@ -105,9 +106,9 @@ pnpm admin:create --email you@example.com --password 'at-least-8-chars' [--usern
 `Series` gains `normalizedTitle` (unique dedupe key) and `sourceName`. `Episode`
 gains `slug`, `streamUrl`, `streamType` (`HLS` | `FILE` | `EMBED`), `sourceName`,
 `sourceUrl`, `rawTitle` and `lastScrapedAt`. `Movie` gets the same stream and
-provenance fields, plus a unique `normalizedTitle`, for crawled films. The SQL is
-in `supabase/migrations/`; locally, `pnpm db:push`
-applies the same change from `prisma/schema.prisma`.
+provenance fields, plus a unique `normalizedTitle`, for crawled films. These
+columns are part of the `0_init` baseline in `prisma/migrations/` (the older
+hand-written copies in `supabase/migrations/` are kept for history only).
 
 ### Pipeline (`server/aggregator/`)
 
@@ -162,3 +163,36 @@ episodes that have a stream. These open `SeriesPlayerModal`, where
 plays progressive files natively, and falls back to a sandboxed iframe for
 embeds. Picking an episode in `EpisodeSelector`, or using prev/next, auto-next,
 or Shift+N / Shift+P, swaps the source in place without reloading the page.
+
+## Database migrations
+
+Schema changes go through Prisma Migrate. `prisma db push` is no longer used.
+
+| Command | What it does |
+|---|---|
+| `pnpm db:migrate:dev --name <change>` | Local only: create a migration from your `schema.prisma` edit and apply it |
+| `pnpm db:migrate` | Apply pending migrations (CI, staging, production) |
+| `pnpm db:status` | Show applied / pending migrations |
+| `pnpm db:drift` | Exit non-zero if the database differs from `schema.prisma` |
+| `pnpm media:sync-legacy` | Create default ingestion providers and mirror legacy `streamUrl`s into `MediaAsset` (safe to re-run) |
+
+A fresh database gets everything with `pnpm db:migrate`.
+
+### One-time switch for a database created with `db push`
+
+The production database was built with `db push`, so it has no migration history.
+`0_init` is the exact schema it already has (verified: an md5 of every column,
+index, constraint and enum matches), so it is marked as applied instead of run:
+
+```bash
+# Use the direct connection string (port 5432), not the pooler: migrate needs a session.
+export DATABASE_URL="postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres"
+
+pnpm prisma migrate resolve --applied 0_init   # record the baseline, runs no SQL
+pnpm db:migrate                                # applies 20260924000000_platform_domain (additive)
+pnpm db:drift                                  # expect: No difference detected.
+pnpm media:sync-legacy                         # providers + MediaAsset rows for existing streams
+```
+
+Run this **before** deploying code that needs the new schema. The migration is
+additive, so the currently deployed code keeps working on the migrated database.

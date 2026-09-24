@@ -2,6 +2,7 @@ import { PrismaClient, MediaType, AvailabilityType, WatchlistCategory } from '@p
 import bcrypt from 'bcryptjs';
 import { CINEMA_ITEMS, MOOD_CATEGORIES } from '../src/data/cinemaData.js';
 import { EDITORIAL_COLLECTIONS, CREATORS_DATA } from '../src/data/collectionsData.js';
+import { ensureDefaultProviders } from '../server/ingestion/providers/defaults.js';
 
 // Demo user seed profile — was previously imported from a frontend-only
 // UserTasteProfile mock; inlined here since that mock has been replaced by
@@ -674,6 +675,8 @@ export async function seed() {
     }
   }
   console.log(`⭐ Seeded initial watchlist & ratings for user ${user.username}`);
+  await ensureDefaultProviders(prisma);
+  console.log('🔌 Ensured default ingestion providers');
   console.log('✅ Seed finished successfully!');
 }
 
