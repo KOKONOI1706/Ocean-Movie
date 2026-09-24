@@ -12,3 +12,4 @@ export * from './aggregator.api.js';
 export * from './admin.api.js';
 export * from './catalog.api.js';
 export * from './metadata.api.js';
+export * from './jobs.api.js';

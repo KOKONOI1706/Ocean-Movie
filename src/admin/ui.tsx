@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { CheckCircle2, ChevronLeft, ChevronRight, Loader2, X, XCircle } from 'lucide-react';
 import { ROLE_LABELS, type Role } from '../../shared/roles';
+import { Link } from 'react-router-dom';
 
 /**
  * Admin console design primitives. Deliberately separate from the consumer
@@ -213,10 +214,11 @@ export function Modal({ title, onClose, children, footer, wide = false }: {
 
 // ── Toasts ──────────────────────────────────────────────────────────────────
 
-type Toast = { id: number; tone: 'success' | 'error'; message: string };
-const ToastContext = createContext<(tone: Toast['tone'], message: string) => void>(() => {});
+type ToastAction = { label: string; to: string };
+type Toast = { id: number; tone: 'success' | 'error'; message: string; action?: ToastAction };
+const ToastContext = createContext<(tone: Toast['tone'], message: string, action?: ToastAction) => void>(() => {});
 
-/** `const toast = useToast(); toast('success', 'Đã lưu')` */
+/** `const toast = useToast(); toast('success', 'Đã lưu')`, optionally with a link: `toast('success', 'Đã xếp hàng', { label: 'Xem', to: '/admin/jobs/1' })` */
 export function useToast() {
   return useContext(ToastContext);
 }
@@ -243,10 +245,10 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
   const [request, setRequest] = useState<ConfirmRequest | null>(null);
   const nextId = useRef(1);
 
-  const toast = useCallback((tone: Toast['tone'], message: string) => {
+  const toast = useCallback((tone: Toast['tone'], message: string, action?: ToastAction) => {
     const id = nextId.current++;
-    setToasts((t) => [...t, { id, tone, message }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), tone === 'error' ? 7000 : 4000);
+    setToasts((t) => [...t, { id, tone, message, action }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), tone === 'error' || action ? 7000 : 4000);
   }, []);
 
   const confirm = useCallback(
@@ -287,7 +289,10 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
               }`}
             >
               {t.tone === 'success' ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" /> : <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />}
-              <span>{t.message}</span>
+              <span>
+                {t.message}
+                {t.action && <Link to={t.action.to} className="ml-1.5 font-medium text-teal-700 hover:underline">{t.action.label}</Link>}
+              </span>
             </div>
           ))}
         </div>

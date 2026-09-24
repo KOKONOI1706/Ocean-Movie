@@ -5,8 +5,10 @@ import {
   CloudDownload,
   ExternalLink,
   Film,
+  Layers,
   LayoutDashboard,
   Library,
+  ListChecks,
   Loader2,
   LogOut,
   Menu,
@@ -31,6 +33,9 @@ import { CatalogListPage } from './pages/CatalogListPage';
 import { TitleEditPage } from './pages/TitleEditPage';
 import { GenresPage } from './pages/GenresPage';
 import { MetadataImportPage } from './pages/MetadataImportPage';
+import { ImportsPage } from './pages/ImportsPage';
+import { JobsPage } from './pages/JobsPage';
+import { JobDetailPage } from './pages/JobDetailPage';
 import { ROLE_LABELS, hasRole, isStaff, type Role } from '../../shared/roles';
 
 // Hiding items is only convenience: the API checks the role from the database on every request.
@@ -40,6 +45,8 @@ const NAV: Array<{ to: string; end: boolean; label: string; icon: typeof Film; m
   { to: '/admin/series', end: false, label: 'Series', icon: Tv, minRole: 'CURATOR' },
   { to: '/admin/genres', end: false, label: 'Thể loại', icon: Tags, minRole: 'CURATOR' },
   { to: '/admin/metadata', end: false, label: 'Nhập metadata', icon: CloudDownload, minRole: 'CURATOR' },
+  { to: '/admin/imports', end: false, label: 'Nhập hàng loạt', icon: Layers, minRole: 'CURATOR' },
+  { to: '/admin/jobs', end: false, label: 'Công việc nền', icon: ListChecks, minRole: 'CURATOR' },
   { to: '/admin/crawl', end: false, label: 'Thu thập phim', icon: Radar, minRole: 'CURATOR' },
   { to: '/admin/library', end: false, label: 'Luồng đã thu thập', icon: Library, minRole: 'CURATOR' },
   { to: '/admin/users', end: false, label: 'Người dùng', icon: Users, minRole: 'ADMIN' },
@@ -162,6 +169,9 @@ function AdminShell() {
             <Route path="series/:id" element={<React.Fragment key="series-edit"><TitleEditPage kind="series" /></React.Fragment>} />
             <Route path="genres" element={<GenresPage />} />
             <Route path="metadata" element={<MetadataImportPage />} />
+            <Route path="imports" element={<ImportsPage />} />
+            <Route path="jobs" element={<JobsPage />} />
+            <Route path="jobs/:id" element={<JobDetailPage />} />
             <Route path="library" element={<LibraryPage />} />
             {hasRole(user!.role, 'ADMIN') && (
               <>

@@ -96,7 +96,8 @@ export interface MetadataProvider {
   /** Namespace this provider's own ids live in (`tmdb` for TMDB, `imdb` for OMDb). */
   readonly idNamespace: keyof ExternalIds;
   isConfigured(): boolean;
-  search(query: string, kind: MetadataKind, year?: number): Promise<SearchResult[]>;
+  /** One page of results (TMDB: 20 per page, OMDb: 10); an empty array past the last page. */
+  search(query: string, kind: MetadataKind, year?: number, page?: number): Promise<SearchResult[]>;
   getMovie(externalId: string): Promise<NormalizedMovie>;
   getSeries(externalId: string): Promise<NormalizedSeries>;
   getSeason(seriesExternalId: string, seasonNumber: number): Promise<NormalizedSeason>;

@@ -1,7 +1,18 @@
 # Ocean-Movie: admin, ingestion and streaming platform plan
 
-Status: **Phases 1–4 implemented** (domain model + migrations; admin authorization + audit; catalogue
-management + public visibility; metadata providers). Later phases are still proposals.
+Status: **Phases 1–5 implemented** (domain model + migrations; admin authorization + audit; catalogue
+management + public visibility; metadata providers; background jobs). Later phases are still proposals.
+
+Phase 5 notes: the queue is the Postgres `Job` table (`server/jobs/queue.ts`). Jobs are claimed with
+`FOR UPDATE SKIP LOCKED`, duplicates are blocked by a unique `activeDedupeKey`, and retries use exponential
+backoff with jitter. Crashed workers are handled by stale-lock reclaim, and cancelling is cooperative. The worker
+(`server/jobs/worker.ts`, `pnpm worker`) runs on the owner's computer for now (decision 13.1). It writes a
+`WorkerHeartbeat` row, so the dashboard can say whether anything is processing. `--once` drains the queue and
+exits, for cron or GitHub Actions later. Handlers: `IMPORT_TITLE`, `IMPORT_MOVIES` / `IMPORT_SERIES` (explicit
+ids or a search walked page by page, where each item succeeds, is skipped or fails on its own) and
+`REFRESH_METADATA` (selected titles, or a daily schedule for titles not synced in 30 days). Admin pages:
+**Nhập hàng loạt**, **Công việc nền** (list + detail with a stage timeline), plus background actions on the
+metadata and catalogue pages.
 
 Phase 4 notes: `server/ingestion/metadata/` holds the provider interface (`types.ts`), the HTTP client that
 classifies failures as TRANSIENT / PERMANENT / NOT_FOUND / NOT_CONFIGURED (retries transient ones with
@@ -684,7 +695,7 @@ caching, or if we need a shared cache for personalized data. Keys would then be
 
 ## 13. Open decisions (needed before Phase 5–8)
 
-1. **Worker host:** Render / Fly.io / Railway / a VPS (anything that runs a Docker container)?
+1. **Worker host:** ~~Render / Fly.io / Railway / a VPS?~~ Decided: the owner's computer (`pnpm worker`) for now; `--once` keeps GitHub Actions / a VM open for later.
 2. **Object storage + CDN:** Cloudflare R2 + Cloudflare CDN (no egress fees), AWS S3 + CloudFront, or
    Supabase Storage?
 3. **Authorized media sources you have today:** your own uploads, a licensor's files or feed,

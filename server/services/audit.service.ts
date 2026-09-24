@@ -6,7 +6,8 @@ type Db = PrismaClient | Prisma.TransactionClient;
 
 /** Who did it, and from where. Built once per request with `auditActor(req)`. */
 export interface AuditActor {
-  userId: string;
+  /** null for the system (scheduled background jobs). */
+  userId: string | null;
   email: string;
   ip?: string;
   userAgent?: string;
@@ -29,6 +30,9 @@ export interface AuditQuery {
   page: number;
   limit: number;
 }
+
+/** Actor for work nobody clicked (scheduled jobs). */
+export const SYSTEM_ACTOR: AuditActor = { userId: null, email: 'system@worker' };
 
 /** Must run after `requireStaff`, which sets `req.user` from the database. */
 export function auditActor(req: Request): AuditActor {

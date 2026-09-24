@@ -209,6 +209,60 @@ plays progressive files natively, and falls back to a sandboxed iframe for
 embeds. Picking an episode in `EpisodeSelector`, or using prev/next, auto-next,
 or Shift+N / Shift+P, swaps the source in place without reloading the page.
 
+## Background worker (bulk imports, metadata refresh)
+
+Bulk imports (**Nhập hàng loạt**), background single-title imports and
+**Làm mới metadata** only queue a job in the `Job` table; the request answers
+at once. A separate worker process claims the jobs and runs them. Vercel can't
+run long processes, so the worker runs elsewhere. For now that's your own
+computer. The worker only makes outgoing connections (database, TMDB/OMDb), so
+you don't need to open ports or have a public IP.
+
+**Run it on your computer**
+
+1. In your clone of the repo, put the production values in `.env`:
+   ```bash
+   DATABASE_URL="postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?pgbouncer=true"
+   TMDB_API_TOKEN="…"          # and/or OMDB_API_KEY
+   METADATA_PUBLIC_DNS="true"  # if your ISP's DNS blocks themoviedb.org
+   ```
+   Use the same `DATABASE_URL` as the site (the pooler URL works; the worker
+   needs no session-level features).
+2. Run `pnpm install` once, then `pnpm worker`.
+3. Leave the terminal open. **/admin/jobs** shows "Worker đang chạy: <tên máy>"
+   within a few seconds. Jobs queued while the worker is off wait in the queue
+   and start when it comes back.
+4. Stop it with Ctrl+C. It finishes the current item (up to 30 s) and hands any
+   unfinished job back to the queue. Nothing is lost. If the computer sleeps or
+   crashes, the job is picked up again after 5 minutes.
+
+| Command / env | Effect |
+|---|---|
+| `pnpm worker` | Run until stopped |
+| `pnpm worker --once` | Run every due job, then exit (for cron, Task Scheduler, GitHub Actions) |
+| `pnpm worker --concurrency 2` / `WORKER_CONCURRENCY=2` | Jobs in parallel (default 1; keep it low, since TMDB rate-limits) |
+| `WORKER_SCHEDULES=off` | Skip the daily "refresh stale metadata" job (queued after 19:00 UTC, i.e. 02:00 in Vietnam) |
+| `LOG_FORMAT=pretty` | Readable log lines instead of JSON |
+
+**How a job behaves**
+
+- Each item of a batch succeeds, is skipped or fails on its own. A skipped item
+  matches several existing titles and needs a person to choose. Failed items
+  can be re-run alone with **Chạy lại N mục lỗi**.
+- A whole job is retried automatically (30 s, 1 min, 2 min… up to 1 h, 3
+  attempts) only when every item failed for a temporary reason (TMDB down, rate
+  limited).
+- Submitting the same import again while it's still queued or running returns
+  the existing job instead of a duplicate.
+- **Hủy** stops a running job after its current item. Items already imported
+  stay.
+
+**Moving it off your computer later.** The same code runs anywhere Node 20+
+runs: a free Oracle Cloud VM (`pnpm worker` under systemd or pm2), Render /
+Railway / Fly.io, or a scheduled GitHub Actions workflow running `pnpm worker
+--once` every 15–30 minutes with `DATABASE_URL` and `TMDB_API_TOKEN` as
+repository secrets.
+
 ## Database migrations
 
 Schema changes go through Prisma Migrate. `prisma db push` is no longer used.
@@ -220,6 +274,7 @@ Schema changes go through Prisma Migrate. `prisma db push` is no longer used.
 | `pnpm db:status` | Show applied / pending migrations |
 | `pnpm db:drift` | Exit non-zero if the database differs from `schema.prisma` |
 | `pnpm metadata:backfill-ids` | Record IMDb ids embedded in OMDb-era slugs as external ids (safe to re-run) |
+| `pnpm worker` | Run background jobs (see *Background worker* above) |
 | `pnpm media:sync-legacy` | Create default ingestion providers and mirror legacy `streamUrl`s into `MediaAsset` (safe to re-run) |
 
 A fresh database gets everything with `pnpm db:migrate`.

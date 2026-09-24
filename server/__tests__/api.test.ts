@@ -12,8 +12,10 @@ describe('BIỂN PHIM Backend API Integration Tests', () => {
   const testEmail = `test_${Date.now()}@bienphim.vn`;
 
   beforeAll(async () => {
-    const movie = await prisma.movie.findFirst({ orderBy: { rating: 'desc' } });
-    const series = await prisma.series.findFirst({ orderBy: { rating: 'desc' } });
+    // A published seed title: other test files create (and delete) temporary, often draft, titles in parallel.
+    const seeded = { where: { publishStatus: 'PUBLISHED' as const }, orderBy: [{ createdAt: 'asc' as const }, { id: 'asc' as const }] };
+    const movie = await prisma.movie.findFirst(seeded);
+    const series = await prisma.series.findFirst(seeded);
     realMovieSlug = movie?.slug || '';
     realSeriesSlug = series?.slug || '';
   });

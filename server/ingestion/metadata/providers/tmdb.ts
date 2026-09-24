@@ -120,11 +120,12 @@ export class TmdbProvider implements MetadataProvider {
     return en.overview ?? '';
   }
 
-  async search(query: string, kind: MetadataKind, year?: number): Promise<SearchResult[]> {
+  async search(query: string, kind: MetadataKind, year?: number, page = 1): Promise<SearchResult[]> {
     type Hit = { id: number; title?: string; name?: string; original_title?: string; original_name?: string; release_date?: string; first_air_date?: string; overview?: string; poster_path?: string | null };
     const path = kind === 'movie' ? '/search/movie' : '/search/tv';
     const res = await this.get<{ results?: Hit[] }>(path, {
       query,
+      page,
       include_adult: 'false',
       ...(year ? { [kind === 'movie' ? 'year' : 'first_air_date_year']: year } : {}),
     });

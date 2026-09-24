@@ -89,10 +89,10 @@ export class OmdbProvider implements MetadataProvider {
     return t;
   }
 
-  async search(query: string, kind: MetadataKind, year?: number): Promise<SearchResult[]> {
+  async search(query: string, kind: MetadataKind, year?: number, page = 1): Promise<SearchResult[]> {
     try {
       const res = await this.get<{ Response: string; Search?: Array<{ Title: string; Year: string; imdbID: string; Poster?: string }> }>(
-        { s: query, type: kind === 'movie' ? 'movie' : 'series', y: year },
+        { s: query, type: kind === 'movie' ? 'movie' : 'series', y: year, page },
         `search "${query}"`
       );
       return (res.Search ?? []).map((h) => ({

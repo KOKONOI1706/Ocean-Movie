@@ -5,6 +5,8 @@ import { validateBody, validateParams, validateQuery } from '../middleware/valid
 import { auditQuerySchema, roleChangeSchema, userIdParamSchema, userListQuerySchema } from '../validators/admin.validator.js';
 import { catalogController as catalog } from '../controllers/catalog.controller.js';
 import { metadataController as metadata } from '../controllers/metadata.controller.js';
+import { jobController as jobs } from '../controllers/job.controller.js';
+import { batchImportBodySchema, bulkRetrySchema, eventsQuerySchema, jobListQuerySchema, refreshBodySchema, titleImportBodySchema } from '../validators/job.validator.js';
 import { metadataImportSchema, metadataPreviewSchema, metadataRefreshSchema, metadataSearchQuerySchema } from '../validators/metadata.validator.js';
 import {
   bulkSchema,
@@ -86,3 +88,18 @@ adminRouter.get('/metadata/search', validateQuery(metadataSearchQuerySchema), me
 adminRouter.post('/metadata/preview', validateBody(metadataPreviewSchema), metadata.preview);
 adminRouter.post('/metadata/import', validateBody(metadataImportSchema), metadata.import);
 adminRouter.post('/metadata/refresh', validateBody(metadataRefreshSchema), metadata.refresh);
+
+// ── Background jobs (CURATOR+) ────────────────────────────────────────────
+// Enqueue endpoints answer 202 with a job id at once; a worker does the work.
+adminRouter.post('/imports', validateBody(batchImportBodySchema), jobs.batchImport);
+adminRouter.post('/imports/title', validateBody(titleImportBodySchema), jobs.titleImport);
+adminRouter.post('/metadata/refresh-bulk', validateBody(refreshBodySchema), jobs.refresh);
+
+adminRouter.get('/jobs', validateQuery(jobListQuerySchema), jobs.list);
+adminRouter.get('/jobs/summary', jobs.summary);
+adminRouter.post('/jobs/bulk-retry', validateBody(bulkRetrySchema), jobs.bulkRetry);
+adminRouter.get('/jobs/:id', id, jobs.get);
+adminRouter.get('/jobs/:id/events', id, validateQuery(eventsQuerySchema), jobs.events);
+adminRouter.post('/jobs/:id/cancel', id, jobs.cancel);
+adminRouter.post('/jobs/:id/retry', id, jobs.retry);
+adminRouter.post('/jobs/:id/retry-failed', id, jobs.retryFailed);

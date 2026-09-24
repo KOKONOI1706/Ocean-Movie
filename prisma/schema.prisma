@@ -795,3 +795,19 @@ model AdminAuditLog {
   @@index([resourceType, resourceId])
   @@index([createdAt])
 }
+
+/// One row per running worker process, refreshed every few seconds, so the
+/// admin can see whether any worker is online to run queued jobs.
+model WorkerHeartbeat {
+  /// hostname-pid-random, chosen by the worker at start.
+  id           String   @id
+  hostname     String
+  pid          Int
+  startedAt    DateTime @default(now())
+  lastSeenAt   DateTime @default(now())
+  currentJobId String?
+  /// continuous | once
+  mode         String   @default("continuous")
+
+  @@index([lastSeenAt])
+}

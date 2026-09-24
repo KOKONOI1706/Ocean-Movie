@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Archive, Eye, EyeOff, Film, ImageOff, Plus, Search, Star, StarOff, Tv } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Archive, Eye, EyeOff, Film, ImageOff, Plus, RefreshCw, Search, Star, StarOff, Tv } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
   catalogApi,
+  jobsApi,
   type BulkAction,
   type CatalogMediaType,
   type CatalogMovieRow,
@@ -73,10 +74,14 @@ export function CatalogListPage({ kind }: { kind: CatalogKind }) {
   const toast = useToast();
   const confirm = useConfirm();
   const copy = COPY[kind];
+  const [searchParams] = useSearchParams();
 
   const [q, setQ] = useState('');
   const [query, setQuery] = useState('');
-  const [publishStatus, setPublishStatus] = useState<PublishStatus | ''>('');
+  const [publishStatus, setPublishStatus] = useState<PublishStatus | ''>(() => {
+    const s = searchParams.get('status');
+    return s === 'DRAFT' || s === 'PUBLISHED' || s === 'ARCHIVED' ? s : '';
+  });
   const [type, setType] = useState<CatalogMediaType | ''>('');
   const [sort, setSort] = useState<CatalogSort>('updated_desc');
   const [page, setPage] = useState(1);
@@ -139,6 +144,20 @@ export function CatalogListPage({ kind }: { kind: CatalogKind }) {
       toast('success', `${label}: ${result.updated} thay đổi${result.unchanged ? `, ${result.unchanged} giữ nguyên` : ''}.`);
       setSelected(new Set());
       setReload((n) => n + 1);
+    } catch (err) {
+      toast('error', (err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Queues a background job; titles without a linked provider id are skipped by it. */
+  const refreshMetadata = async () => {
+    setBusy(true);
+    try {
+      const res = await jobsApi.refreshMetadata(kind, [...selected]);
+      toast('success', res.deduplicated ? 'Đã có công việc làm mới giống vậy đang chạy.' : `Đã xếp hàng làm mới metadata cho ${selected.size} ${copy.noun}.`, { label: 'Xem tiến độ', to: `/admin/jobs/${res.jobId}` });
+      setSelected(new Set());
     } catch (err) {
       toast('error', (err as Error).message);
     } finally {
@@ -212,6 +231,9 @@ export function CatalogListPage({ kind }: { kind: CatalogKind }) {
                 {b.label}
               </Button>
             ))}
+            <Button icon={<RefreshCw className="h-4 w-4" />} disabled={busy} onClick={refreshMetadata} title="Chạy nền: cập nhật từ TMDB/OMDb cho các tác phẩm đã liên kết">
+              Làm mới metadata
+            </Button>
             <Button variant="ghost" onClick={() => setSelected(new Set())}>Bỏ chọn</Button>
           </div>
         )}

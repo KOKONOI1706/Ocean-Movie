@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, CloudDownload, ExternalLink, Search } from 'lucide-react';
+import { CheckCircle2, CloudDownload, ExternalLink, Layers, Search } from 'lucide-react';
 import {
+  jobsApi,
   metadataApi,
   type ImportReport,
   type MatchResult,
@@ -31,6 +32,9 @@ export function MetadataImportPage() {
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState('');
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [queueing, setQueueing] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     metadataApi
@@ -49,10 +53,25 @@ export function MetadataImportPage() {
     setError('');
     try {
       setResults(await metadataApi.search(provider, kind, q.trim(), year ? Number(year) : undefined));
+      setPicked(new Set());
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setSearching(false);
+    }
+  };
+
+  const queuePicked = async () => {
+    setQueueing(true);
+    try {
+      const externalIds = [...picked];
+      const res = await jobsApi.batchImport({ kind, provider, externalIds, maxItems: externalIds.length });
+      toast('success', res.deduplicated ? 'Yêu cầu giống vậy đang chạy.' : `Đã xếp hàng nhập ${externalIds.length} mục.`, { label: 'Xem tiến độ', to: `/admin/jobs/${res.jobId}` });
+      setPicked(new Set());
+    } catch (err) {
+      toast('error', (err as Error).message);
+    } finally {
+      setQueueing(false);
     }
   };
 
@@ -132,13 +151,46 @@ export function MetadataImportPage() {
       {error && <div className="mt-4"><Alert>{error}</Alert></div>}
 
       {results && (
-        <Card className="mt-5" padded={false} title={`${results.length} kết quả`}>
+        <Card
+          className="mt-5"
+          padded={false}
+          title={`${results.length} kết quả`}
+          actions={
+            results.length > 0 && (
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-1.5 text-xs text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={picked.size === results.length}
+                    onChange={(e) => setPicked(e.target.checked ? new Set(results.map((r) => r.externalId)) : new Set())}
+                  />
+                  Chọn tất cả
+                </label>
+                <Button icon={<Layers className="h-4 w-4" />} disabled={picked.size === 0} loading={queueing} onClick={queuePicked}>
+                  Nhập {picked.size || ''} mục đã chọn (chạy nền)
+                </Button>
+              </div>
+            )
+          }
+        >
           {results.length === 0 ? (
             <EmptyState icon={<Search className="h-5 w-5" />} title="Không tìm thấy">Thử tên gốc tiếng Anh, bỏ năm, hoặc nhập theo mã.</EmptyState>
           ) : (
             <ul className="divide-y divide-slate-100">
               {results.map((r) => (
                 <li key={r.externalId} className="flex items-start gap-3 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    aria-label={`Chọn ${r.title}`}
+                    checked={picked.has(r.externalId)}
+                    onChange={(e) => setPicked((prev) => {
+                      const next = new Set(prev);
+                      if (e.target.checked) next.add(r.externalId);
+                      else next.delete(r.externalId);
+                      return next;
+                    })}
+                  />
                   <Poster url={r.posterUrl} />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
@@ -198,6 +250,7 @@ function PreviewDialog({ provider, kind, externalId, onClose, onImported }: {
   const [publish, setPublish] = useState(false);
   const [seasons, setSeasons] = useState<number[] | null>(null);
   const [importing, setImporting] = useState(false);
+  const [queueing, setQueueing] = useState(false);
   const [report, setReport] = useState<ImportReport | null>(null);
 
   useEffect(() => {
@@ -225,6 +278,19 @@ function PreviewDialog({ provider, kind, externalId, onClose, onImported }: {
     }
   };
 
+  /** Same import, run by the worker (useful for long series). */
+  const runInBackground = async () => {
+    setQueueing(true);
+    try {
+      const res = await jobsApi.titleImport({ provider, kind, externalId, target, mode, publish, ...(seasons ? { seasons } : {}) });
+      toast('success', res.deduplicated ? 'Tác phẩm này đang được nhập.' : 'Đã xếp hàng nhập chạy nền.', { label: 'Xem tiến độ', to: `/admin/jobs/${res.jobId}` });
+      onClose();
+    } catch (err) {
+      toast('error', (err as Error).message);
+      setQueueing(false);
+    }
+  };
+
   const m = data?.metadata;
   const match = data?.match;
   const creating = match && (target === 'new' || (target === 'auto' && match.decision === 'new'));
@@ -246,7 +312,10 @@ function PreviewDialog({ provider, kind, externalId, onClose, onImported }: {
         ) : (
           <>
             <Button onClick={onClose}>Hủy</Button>
-            <Button variant="primary" icon={<CloudDownload className="h-4 w-4" />} loading={importing} disabled={!data} onClick={run}>
+            <Button icon={<Layers className="h-4 w-4" />} loading={queueing} disabled={!data || importing} onClick={runInBackground} title="Worker thực hiện; theo dõi ở trang Công việc nền">
+              Chạy nền
+            </Button>
+            <Button variant="primary" icon={<CloudDownload className="h-4 w-4" />} loading={importing} disabled={!data || queueing} onClick={run}>
               {creating ? 'Tạo mới' : 'Cập nhật'}
             </Button>
           </>
