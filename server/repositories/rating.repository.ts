@@ -1,9 +1,10 @@
 import { prisma } from '../config/prisma.js';
+import { publicMovie, publicMovieByIdOrSlug } from './visibility.js';
 
 export class RatingRepository {
   async findByMovieId(movieId: string) {
     return prisma.rating.findMany({
-      where: { movieId },
+      where: { movieId, movie: publicMovie },
       orderBy: { updatedAt: 'desc' },
       include: {
         user: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
@@ -28,7 +29,7 @@ export class RatingRepository {
 
   async rateMovie(userId: string, movieIdOrSlug: string, score: number, note?: string) {
     const movie = await prisma.movie.findFirst({
-      where: { OR: [{ id: movieIdOrSlug }, { slug: movieIdOrSlug }] },
+      where: publicMovieByIdOrSlug(movieIdOrSlug),
       select: { id: true },
     });
     if (!movie) return null;

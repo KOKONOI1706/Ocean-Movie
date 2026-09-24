@@ -1,5 +1,6 @@
 import { progressRepository } from '../repositories/progress.repository.js';
 import { prisma } from '../config/prisma.js';
+import { publicEpisodeChain, publicMovieByIdOrSlug } from '../repositories/visibility.js';
 import { NotFoundError } from '../utils/errors.js';
 
 export class ProgressService {
@@ -24,7 +25,7 @@ export class ProgressService {
   ) {
     if (data.type === 'movie') {
       const movie = await prisma.movie.findFirst({
-        where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }] },
+        where: publicMovieByIdOrSlug(idOrSlug),
         select: { id: true },
       });
       if (!movie) throw new NotFoundError('Phim không tồn tại');
@@ -32,7 +33,7 @@ export class ProgressService {
     }
 
     const episode = await prisma.episode.findFirst({
-      where: { id: idOrSlug },
+      where: { ...publicEpisodeChain, id: idOrSlug },
       select: { id: true },
     });
     if (!episode) throw new NotFoundError('Tập phim không tồn tại');

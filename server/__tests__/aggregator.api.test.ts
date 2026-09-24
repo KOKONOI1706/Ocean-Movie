@@ -90,6 +90,23 @@ describe('Video aggregator API', () => {
     expect(res.body.data.episodesUpdated).toBe(2);
   });
 
+  it('saves new imports as drafts, hidden until an editor publishes them', async () => {
+    expect((await request(app).get(`/api/v1/series/${seriesSlug}`)).status).toBe(404);
+
+    const series = await prisma.series.findUniqueOrThrow({ where: { slug: seriesSlug }, include: { seasons: { include: { episodes: true } } } });
+    expect(series.publishStatus).toBe('DRAFT');
+    expect(series.seasons[0].publishStatus).toBe('DRAFT');
+    expect(series.seasons[0].episodes.every((e) => e.publishStatus === 'DRAFT')).toBe(true);
+
+    const auth = { Authorization: `Bearer ${adminToken}` };
+    await request(app).patch(`/api/v1/admin/series/${series.id}`).set(auth).send({ publishStatus: 'PUBLISHED' }).expect(200);
+    await request(app)
+      .post(`/api/v1/admin/seasons/${series.seasons[0].id}/publish`)
+      .set(auth)
+      .send({ publishStatus: 'PUBLISHED', cascade: true })
+      .expect(200);
+  });
+
   it('serves stream URLs through the public series endpoint', async () => {
     const res = await request(app).get(`/api/v1/series/${seriesSlug}`);
     expect(res.status).toBe(200);
@@ -161,6 +178,7 @@ describe('Video aggregator API — films', () => {
       .send({
         mode: 'auto',
         movieType: 'AI_FILM',
+        publish: true,
         items: [
           { title: `${filmTitle} (2025) [AI Film] 1080p`, streamUrl: 'https://player.example.com/embed/neon' },
           { title: `${filmTitle} - 2025`, streamUrl: 'https://cdn.example.com/neon/index.m3u8' },
@@ -176,8 +194,10 @@ describe('Video aggregator API — films', () => {
     expect(res.body.data.movies[1]).toMatchObject({ slug: `station-${stamp}-9`, title: `Station ${stamp} 9` });
     expect(res.body.data.series[0]).toMatchObject({ slug: seriesSlug, episodes: 1 });
 
+    // publish: true — new films are live straight away.
     const movie = await request(app).get(`/api/v1/movies/${filmSlug}`);
     expect(movie.body.data).toMatchObject({
+      publishStatus: 'PUBLISHED',
       type: 'AI_FILM',
       isAiFilm: true,
       year: 2025,

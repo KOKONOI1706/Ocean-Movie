@@ -1,4 +1,4 @@
-import { MediaType, Prisma } from '@prisma/client';
+import { MediaType, Prisma, type PublishStatus } from '@prisma/client';
 import { prisma } from '../config/prisma.js';
 import { parseEpisodeTitle, parseMovieTitle, type ParsedEpisodeTitle, type ParsedMovieTitle } from './normalizer.js';
 import { STREAM_TYPE_RANK, detectStreamType } from './stream.js';
@@ -39,6 +39,16 @@ export interface IngestOptions {
   mode?: IngestMode;
   /** Movie type used for films created by this batch (default AI_FILM). */
   movieType?: MediaType;
+  /**
+   * Status of titles, seasons and episodes this batch creates (default DRAFT,
+   * so imports are reviewed before they go live). Existing records keep theirs.
+   */
+  publishStatus?: PublishStatus;
+}
+
+/** Fields for a newly created record with the batch's publish status. */
+function newRecordStatus(publishStatus: PublishStatus) {
+  return { publishStatus, publishedAt: publishStatus === 'PUBLISHED' ? new Date() : null };
 }
 
 export const MOVIE_TYPES = ['MOVIE', 'AI_FILM', 'SHORT', 'DOCUMENTARY', 'ANIME'] as const satisfies readonly MediaType[];
@@ -88,7 +98,7 @@ export function normalizeItems(items: RawScrapedItem[]) {
 
 type Tx = Prisma.TransactionClient;
 
-async function findOrCreateSeries(tx: Tx, group: NormalizedSeriesGroup) {
+async function findOrCreateSeries(tx: Tx, group: NormalizedSeriesGroup, publishStatus: PublishStatus) {
   const first = group.episodes[0].item;
 
   // 1. Previously aggregated series; 2. a curated series whose slug matches the title.
@@ -113,13 +123,14 @@ async function findOrCreateSeries(tx: Tx, group: NormalizedSeriesGroup) {
       posterUrl: first.posterUrl || first.thumbnailUrl || '',
       backdropUrl: first.thumbnailUrl || first.posterUrl || '',
       sourceName: first.sourceName,
+      ...newRecordStatus(publishStatus),
     },
   });
   return { series, created: true };
 }
 
-async function upsertGroup(tx: Tx, group: NormalizedSeriesGroup) {
-  const { series, created } = await findOrCreateSeries(tx, group);
+async function upsertGroup(tx: Tx, group: NormalizedSeriesGroup, publishStatus: PublishStatus) {
+  const { series, created } = await findOrCreateSeries(tx, group, publishStatus);
   const scrapedAt = new Date();
   let episodesCreated = 0;
   let episodesUpdated = 0;
@@ -130,7 +141,7 @@ async function upsertGroup(tx: Tx, group: NormalizedSeriesGroup) {
     if (!seasonId) {
       const season = await tx.season.upsert({
         where: { seriesId_seasonNumber: { seriesId: series.id, seasonNumber: ep.seasonNumber } },
-        create: { seriesId: series.id, seasonNumber: ep.seasonNumber, title: `Mùa ${ep.seasonNumber}` },
+        create: { seriesId: series.id, seasonNumber: ep.seasonNumber, title: `Mùa ${ep.seasonNumber}`, ...newRecordStatus(publishStatus) },
         update: {},
         select: { id: true },
       });
@@ -170,6 +181,7 @@ async function upsertGroup(tx: Tx, group: NormalizedSeriesGroup) {
           overview: ep.item.synopsis || '',
           runtimeMinutes: ep.item.runtimeMinutes ?? 0,
           thumbnailUrl: ep.item.thumbnailUrl,
+          ...newRecordStatus(publishStatus),
         },
       });
       episodesCreated++;
@@ -217,7 +229,7 @@ export function normalizeMovies(items: RawScrapedItem[]) {
   return { movies: [...movies.values()], skipped };
 }
 
-async function upsertMovie(movie: NormalizedMovie, type: MediaType) {
+async function upsertMovie(movie: NormalizedMovie, type: MediaType, publishStatus: PublishStatus) {
   const { item } = movie;
   const streamData = {
     streamUrl: item.streamUrl,
@@ -254,6 +266,7 @@ async function upsertMovie(movie: NormalizedMovie, type: MediaType) {
       backdropUrl: item.thumbnailUrl || item.posterUrl || '',
       type,
       isAiFilm: type === 'AI_FILM',
+      ...newRecordStatus(publishStatus),
     },
   });
   return { id: created.id, slug: created.slug, title: created.title, type: created.type, created: true };
@@ -266,7 +279,7 @@ function isUniqueViolation(err: unknown) {
 export class AggregatorService {
   /** Normalize and upsert pre-scraped items. Safe to re-run: records are deduped by natural keys. */
   async ingest(items: RawScrapedItem[], options: IngestOptions = {}): Promise<IngestReport> {
-    const { mode = 'series', movieType = 'AI_FILM' } = options;
+    const { mode = 'series', movieType = 'AI_FILM', publishStatus = 'DRAFT' } = options;
     // Video-site page links (youtube.com/watch, vimeo.com/123…) refuse to be
     // framed; store their embed URL instead.
     const withSource = items.map((i) => ({
@@ -298,7 +311,7 @@ export class AggregatorService {
     };
 
     for (const group of groups) {
-      const run = () => prisma.$transaction((tx) => upsertGroup(tx, group), { timeout: 30_000 });
+      const run = () => prisma.$transaction((tx) => upsertGroup(tx, group, publishStatus), { timeout: 30_000 });
       let result: Awaited<ReturnType<typeof upsertGroup>>;
       try {
         result = await run();
@@ -314,10 +327,10 @@ export class AggregatorService {
 
     for (const movie of normalizedMovies.movies) {
       try {
-        report.movies.push(await upsertMovie(movie, movieType));
+        report.movies.push(await upsertMovie(movie, movieType, publishStatus));
       } catch (err) {
         if (!isUniqueViolation(err)) throw err;
-        report.movies.push(await upsertMovie(movie, movieType));
+        report.movies.push(await upsertMovie(movie, movieType, publishStatus));
       }
     }
 

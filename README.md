@@ -69,14 +69,19 @@ has none of the consumer site's ocean background, header, footer or bottom nav.
 - Going to `/admin` directly shows the dashboard's own sign-in screen.
 - Non-staff accounts get a "no access" screen.
 
+**Publishing.** Movies, series, seasons and episodes are `DRAFT`, `PUBLISHED`
+or `ARCHIVED`. The public site and every public API endpoint show only
+`PUBLISHED` titles; an episode shows only when it, its season and its series are
+all published. Titles created in the dashboard or by imports start as drafts.
+
 **Roles** (each includes the ones above it)
 
 | Role | Can |
 |---|---|
 | `USER` | Watch |
-| `CURATOR` | Crawl/import, edit titles, remove streams |
-| `ADMIN` | + see users (**Người dùng**) and the audit log (**Nhật ký**) |
-| `SUPER_ADMIN` | + change anyone's role (except their own; there is always at least one `SUPER_ADMIN`) |
+| `CURATOR` | Crawl/import; create, edit, publish, feature and reorder titles, seasons, episodes and genres |
+| `ADMIN` | + archive titles, delete seasons/episodes/genres, see users (**Người dùng**) and the audit log (**Nhật ký**) |
+| `SUPER_ADMIN` | + delete titles permanently, change anyone's role (except their own; there is always at least one `SUPER_ADMIN`) |
 
 Staff routes (`/api/v1/admin/*`, `/api/v1/aggregator/*`) read the role from the
 database on each request (cached for 60 s per server instance), not from the
@@ -101,6 +106,27 @@ pnpm admin:create --email you@example.com --role SUPER_ADMIN   # existing accoun
 **Pages**
 - **Tổng quan**: catalogue totals, streams by type, sources, and the latest
   crawled items.
+- **Phim** / **Series**: every title, including drafts and archived ones.
+  Search, filter by status/type, sort, select rows for bulk actions (publish,
+  back to draft, feature, unfeature, archive). Open a title to edit its details,
+  genres, cast and crew, images and trailer, and its visibility. On a series you
+  also add seasons and episodes, reorder episodes, publish a season (with its
+  episodes) and edit or delete episodes.
+- **Thể loại**: add, rename and delete genres.
+- **Nhập metadata**: import a title's metadata (not video) from TMDB or OMDb.
+  Search or enter a TMDB id / IMDb id, preview what will be written, then
+  import. Duplicates are detected before anything is written:
+  1. the provider id (or the IMDb id, shared by TMDB and OMDb) is already
+     linked to a title → that title is updated;
+  2. OMDb-era slugs ending in an IMDb id (`…-tt1375666`) count as linked;
+  3. exactly one title with the same name and year, confirmed by runtime
+     (±5 min) or exact year → updated;
+  4. several similar titles → you choose one or create a new title;
+  5. nothing similar → a new draft.
+  Updating uses *Chỉ điền trường còn trống* by default (curated edits are
+  kept); *Ghi đè* replaces them. For series, pick which seasons to import.
+  A title's edit page shows its linked ids and can refresh from the source.
+  Keys: `TMDB_API_TOKEN` and/or `OMDB_API_KEY` (see `.env.example`).
 - **Thu thập phim**: crawl in three ways.
   - *Dán liên kết phát*: paste `Title | streamUrl` lines or a JSON array.
   - *Cào trang web*: paste page URLs.
@@ -113,7 +139,10 @@ pnpm admin:create --email you@example.com --role SUPER_ADMIN   # existing accoun
     - *Series*: every item is saved as an episode; bare trailing numbers are
       read as episode numbers.
   - *Xem trước* shows how each line will be saved before anything is written.
-- **Kho nội dung**: crawled films and series. Fill in the title, year,
+  - *Xuất bản ngay*: off by default, so new titles, seasons and episodes are
+    saved as drafts to review under Phim / Series. Existing records keep their
+    status.
+- **Luồng đã thu thập**: crawled films and series. Fill in the title, year,
   synopsis, poster or backdrop, or remove a dead stream. Removing a stream
   keeps the record.
 
@@ -190,6 +219,7 @@ Schema changes go through Prisma Migrate. `prisma db push` is no longer used.
 | `pnpm db:migrate` | Apply pending migrations (CI, staging, production) |
 | `pnpm db:status` | Show applied / pending migrations |
 | `pnpm db:drift` | Exit non-zero if the database differs from `schema.prisma` |
+| `pnpm metadata:backfill-ids` | Record IMDb ids embedded in OMDb-era slugs as external ids (safe to re-run) |
 | `pnpm media:sync-legacy` | Create default ingestion providers and mirror legacy `streamUrl`s into `MediaAsset` (safe to re-run) |
 
 A fresh database gets everything with `pnpm db:migrate`.

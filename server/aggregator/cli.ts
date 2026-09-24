@@ -7,7 +7,8 @@
  *   pnpm aggregator --parse "Show - Ep 3"     # dry run: print the normalized title only
  *
  * Add `--mode movie --movie-type AI_FILM` to store standalone films instead of
- * episodes, or `--mode auto` to decide per title.
+ * episodes, or `--mode auto` to decide per title. New records are drafts;
+ * add `--publish` to make them visible on the site immediately.
  */
 import { readFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
@@ -29,6 +30,7 @@ async function main() {
       'source-name': { type: 'string' },
       mode: { type: 'string', default: 'series' },
       'movie-type': { type: 'string', default: 'AI_FILM' },
+      publish: { type: 'boolean', default: false },
     },
   });
 
@@ -41,6 +43,7 @@ async function main() {
     sourceName: values['source-name'],
     mode: z.enum(['auto', 'series', 'movie']).parse(values.mode),
     movieType: z.enum(MOVIE_TYPES).parse(values['movie-type']),
+    publishStatus: values.publish ? ('PUBLISHED' as const) : ('DRAFT' as const),
   };
 
   let report;

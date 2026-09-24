@@ -1,4 +1,5 @@
 import { prisma } from '../config/prisma.js';
+import { publicMovie, publicSeason, publicSeries } from './visibility.js';
 
 export class SearchRepository {
   async searchAcrossAll(query: string, limit: number = 20) {
@@ -8,6 +9,7 @@ export class SearchRepository {
     const [movies, series, creators] = await Promise.all([
       prisma.movie.findMany({
         where: {
+          ...publicMovie,
           OR: [
             { title: { contains: q, mode: 'insensitive' } },
             { originalTitle: { contains: q, mode: 'insensitive' } },
@@ -27,6 +29,7 @@ export class SearchRepository {
 
       prisma.series.findMany({
         where: {
+          ...publicSeries,
           OR: [
             { title: { contains: q, mode: 'insensitive' } },
             { originalTitle: { contains: q, mode: 'insensitive' } },
@@ -41,7 +44,7 @@ export class SearchRepository {
         include: {
           genres: { include: { genre: true } },
           availability: { include: { provider: true } },
-          seasons: { select: { id: true, seasonNumber: true, episodeCount: true } },
+          seasons: { where: publicSeason, select: { id: true, seasonNumber: true, episodeCount: true } },
         },
       }),
 

@@ -1,4 +1,5 @@
 import { prisma } from '../config/prisma.js';
+import { publicMovie, publicSeason, publicSeries } from './visibility.js';
 
 export class CollectionRepository {
   async findMany() {
@@ -6,6 +7,7 @@ export class CollectionRepository {
       orderBy: { createdAt: 'desc' },
       include: {
         movies: {
+          where: { movie: publicMovie },
           orderBy: { order: 'asc' },
           include: {
             movie: {
@@ -17,13 +19,14 @@ export class CollectionRepository {
           },
         },
         series: {
+          where: { series: publicSeries },
           orderBy: { order: 'asc' },
           include: {
             series: {
               include: {
                 genres: { include: { genre: true } },
                 availability: { include: { provider: true } },
-                seasons: { select: { id: true, seasonNumber: true, episodeCount: true } },
+                seasons: { where: publicSeason, select: { id: true, seasonNumber: true, episodeCount: true } },
               },
             },
           },
@@ -39,6 +42,7 @@ export class CollectionRepository {
       },
       include: {
         movies: {
+          where: { movie: publicMovie },
           orderBy: { order: 'asc' },
           include: {
             movie: {
@@ -51,6 +55,7 @@ export class CollectionRepository {
           },
         },
         series: {
+          where: { series: publicSeries },
           orderBy: { order: 'asc' },
           include: {
             series: {
@@ -58,7 +63,7 @@ export class CollectionRepository {
                 genres: { include: { genre: true } },
                 availability: { include: { provider: true } },
                 creators: { include: { creator: true } },
-                seasons: { select: { id: true, seasonNumber: true, episodeCount: true } },
+                seasons: { where: publicSeason, select: { id: true, seasonNumber: true, episodeCount: true } },
               },
             },
           },

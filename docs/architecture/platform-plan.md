@@ -1,6 +1,19 @@
 # Ocean-Movie: admin, ingestion and streaming platform plan
 
-Status: **Phases 1–2 implemented** (domain model + migrations; admin authorization + audit). Later phases are still proposals.
+Status: **Phases 1–4 implemented** (domain model + migrations; admin authorization + audit; catalogue
+management + public visibility; metadata providers). Later phases are still proposals.
+
+Phase 4 notes: `server/ingestion/metadata/` holds the provider interface (`types.ts`), the HTTP client that
+classifies failures as TRANSIENT / PERMANENT / NOT_FOUND / NOT_CONFIGURED (retries transient ones with
+backoff, for Phase 5 jobs to reuse), TMDB and OMDb adapters, the matcher and the importer. IMDb ids are a
+shared `imdb` ExternalId namespace, so TMDB and OMDb titles link up. Imports run synchronously in the request
+(a full series is one provider call per season); Phase 5 moves bulk/large imports to background jobs.
+
+Phase 3 notes: public reads go through `server/repositories/visibility.ts` (one test per public endpoint in
+`visibility.api.test.ts`). Admin catalogue endpoints live under `/api/v1/admin/{movies,series,seasons,episodes,genres}`;
+every mutation writes its audit entry in the same transaction. Imports create drafts unless `publish: true`.
+"Bulk refresh metadata", "bulk import" and "bulk retry failed jobs" need the job system and metadata
+providers (Phases 4–5), so they are not in the bulk menu yet.
 
 Phase 2 notes: roles live in `shared/roles.ts` (used by API and UI). `requireStaff()` re-reads the role
 from the database (60 s per-instance cache, cleared on role changes made through the API). Role changes

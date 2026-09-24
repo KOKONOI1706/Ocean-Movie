@@ -7,6 +7,8 @@ export interface IngestOptions {
   mode: IngestMode;
   movieType: MovieType;
   sourceName?: string;
+  /** New titles go live immediately instead of being saved as drafts. */
+  publish?: boolean;
 }
 
 export interface RawItemInput {

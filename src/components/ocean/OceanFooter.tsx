@@ -50,6 +50,11 @@ export const OceanFooter: React.FC<OceanFooterProps> = ({ onNavigate }) => {
         {/* Legal & Copyright */}
         <div className="text-center md:text-right text-[11px] text-gray-500 space-y-1">
           <div>© {new Date().getFullYear()} BIỂN PHIM. Tất cả quyền được bảo lưu.</div>
+          {/* Required attribution: metadata and images come from TMDB's API (and OMDb). */}
+          <div className="text-[10px] text-gray-600">
+            Dữ liệu phim từ <a href="https://www.themoviedb.org" target="_blank" rel="noreferrer" className="hover:text-gray-400 underline-offset-2 hover:underline">TMDB</a>.
+            This product uses the TMDB API but is not endorsed or certified by TMDB.
+          </div>
           <div className="flex items-center justify-center md:justify-end gap-3 text-[10px]">
             <span className="hover:text-gray-400 cursor-pointer">Điều khoản sử dụng</span>
             <span>·</span>
