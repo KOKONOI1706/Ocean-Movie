@@ -4,7 +4,10 @@ import { parseEpisodeTitle, parseMovieTitle } from '../aggregator/normalizer.js'
 import { libraryService } from '../aggregator/library.service.js';
 import { apiPaginated, apiSuccess } from '../utils/response.js';
 import { auditActor, auditService } from '../services/audit.service.js';
+import type { PublishStatus } from '@prisma/client';
 import type { IngestReport } from '../aggregator/aggregator.service.js';
+
+const publishStatusFor = (publish: boolean): PublishStatus => (publish ? 'PUBLISHED' : 'DRAFT');
 
 /** What an import changed, small enough for the audit log (ids, not full payloads). */
 function reportSummary(report: IngestReport) {
@@ -35,12 +38,12 @@ export class AggregatorController {
 
   async ingest(req: Request, res: Response, next: NextFunction) {
     try {
-      const { items, sourceName, mode, movieType } = req.body;
-      const report = await aggregatorService.ingest(items, { sourceName, mode, movieType });
+      const { items, sourceName, mode, movieType, publish } = req.body;
+      const report = await aggregatorService.ingest(items, { sourceName, mode, movieType, publishStatus: publishStatusFor(publish) });
       await auditService.record(auditActor(req), {
         action: 'aggregator.ingest',
         resourceType: 'Import',
-        before: { items: items.length, sourceName, mode, movieType },
+        before: { items: items.length, sourceName, mode, movieType, publish },
         after: reportSummary(report),
       });
       return apiSuccess(res, report, 201);
@@ -51,12 +54,12 @@ export class AggregatorController {
 
   async scrape(req: Request, res: Response, next: NextFunction) {
     try {
-      const { urls, sourceName, mode, movieType } = req.body;
-      const report = await aggregatorService.scrapeUrls(urls, { sourceName, mode, movieType });
+      const { urls, sourceName, mode, movieType, publish } = req.body;
+      const report = await aggregatorService.scrapeUrls(urls, { sourceName, mode, movieType, publishStatus: publishStatusFor(publish) });
       await auditService.record(auditActor(req), {
         action: 'aggregator.scrape',
         resourceType: 'Import',
-        before: { urls, sourceName, mode, movieType },
+        before: { urls, sourceName, mode, movieType, publish },
         after: reportSummary(report),
       });
       return apiSuccess(res, report, 201);
@@ -67,12 +70,12 @@ export class AggregatorController {
 
   async search(req: Request, res: Response, next: NextFunction) {
     try {
-      const { query, sources, limit, sourceName, mode, movieType } = req.body;
-      const report = await aggregatorService.search(query, sources, limit, { sourceName, mode, movieType });
+      const { query, sources, limit, sourceName, mode, movieType, publish } = req.body;
+      const report = await aggregatorService.search(query, sources, limit, { sourceName, mode, movieType, publishStatus: publishStatusFor(publish) });
       await auditService.record(auditActor(req), {
         action: 'aggregator.search',
         resourceType: 'Import',
-        before: { query, sources, limit, sourceName, mode, movieType },
+        before: { query, sources, limit, sourceName, mode, movieType, publish },
         after: reportSummary(report),
       });
       return apiSuccess(res, report, 201);

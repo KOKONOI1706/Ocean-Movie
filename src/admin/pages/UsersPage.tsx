@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ScrollText, Search, Users } from 'lucide-react';
 import { adminApi, AdminUser } from '../../lib/api';
 import { ROLES, ROLE_LABELS, type Role } from '../../../shared/roles';
-import { Alert, Card, EmptyState, PageHeader, Pagination, RoleBadge, Spinner, formatDateTime, inputClass, selectClass } from '../ui';
+import { Alert, Card, EmptyState, PageHeader, Pagination, RoleBadge, Spinner, formatDateTime, inputClass, selectClass, useConfirm } from '../ui';
 
 const PAGE_SIZE = 20;
 
@@ -20,6 +20,7 @@ export function UsersPage({ canManageRoles, currentUserId }: { canManageRoles: b
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [savingId, setSavingId] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   useEffect(() => {
     setLoading(true);
@@ -37,9 +38,12 @@ export function UsersPage({ canManageRoles, currentUserId }: { canManageRoles: b
 
   const changeRole = async (user: AdminUser, next: Role) => {
     if (next === user.role) return;
-    const ok = window.confirm(
-      `Đổi vai trò của ${user.displayName || user.username} (${user.email}) từ “${ROLE_LABELS[user.role]}” thành “${ROLE_LABELS[next]}”?`
-    );
+    const ok = await confirm({
+      title: 'Đổi vai trò?',
+      message: `${user.displayName || user.username} (${user.email}): “${ROLE_LABELS[user.role]}” → “${ROLE_LABELS[next]}”.`,
+      confirmLabel: 'Đổi vai trò',
+      danger: next === 'SUPER_ADMIN' || user.role === 'SUPER_ADMIN',
+    });
     if (!ok) return;
     setSavingId(user.id);
     setError('');

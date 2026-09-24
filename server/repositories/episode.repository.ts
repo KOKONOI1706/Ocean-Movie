@@ -1,9 +1,10 @@
 import { prisma } from '../config/prisma.js';
+import { publicEpisode, publicEpisodeChain } from './visibility.js';
 
 export class EpisodeRepository {
   async findById(episodeId: string) {
-    const episode = await prisma.episode.findUnique({
-      where: { id: episodeId },
+    const episode = await prisma.episode.findFirst({
+      where: { ...publicEpisodeChain, id: episodeId },
       include: {
         season: {
           include: {
@@ -25,6 +26,7 @@ export class EpisodeRepository {
     const [prevEpisode, nextEpisode] = await Promise.all([
       prisma.episode.findFirst({
         where: {
+          ...publicEpisode,
           seasonId: episode.seasonId,
           episodeNumber: episode.episodeNumber - 1,
         },
@@ -32,6 +34,7 @@ export class EpisodeRepository {
       }),
       prisma.episode.findFirst({
         where: {
+          ...publicEpisode,
           seasonId: episode.seasonId,
           episodeNumber: episode.episodeNumber + 1,
         },
@@ -48,8 +51,8 @@ export class EpisodeRepository {
 
   async findBySeasonId(seasonId: string) {
     return prisma.episode.findMany({
-      where: { seasonId },
-      orderBy: { episodeNumber: 'asc' },
+      where: { ...publicEpisodeChain, seasonId },
+      orderBy: [{ sortOrder: 'asc' }, { episodeNumber: 'asc' }],
       include: {
         subtitles: true,
       },

@@ -1,6 +1,7 @@
 import { movieRepository } from '../repositories/movie.repository.js';
 import { seriesRepository } from '../repositories/series.repository.js';
 import { prisma } from '../config/prisma.js';
+import { publicMovie } from '../repositories/visibility.js';
 
 export class DiscoverService {
   async getTrending() {
@@ -59,6 +60,7 @@ export class DiscoverService {
         const queryGenres = Array.from(favoredGenreSlugs);
         const candidates = await prisma.movie.findMany({
           where: {
+            ...publicMovie,
             OR: [
               { genres: { some: { genre: { slug: { in: queryGenres } } } } },
               { rating: { gte: 8.5 } },
@@ -79,6 +81,7 @@ export class DiscoverService {
     // Default top curated recommendations
     return prisma.movie.findMany({
       where: {
+        ...publicMovie,
         OR: [{ isCoverFeature: true }, { rating: { gte: 8.8 } }],
       },
       take: 10,

@@ -1,5 +1,6 @@
 import { watchlistRepository } from '../repositories/watchlist.repository.js';
 import { prisma } from '../config/prisma.js';
+import { publicMovieByIdOrSlug, publicSeriesByIdOrSlug } from '../repositories/visibility.js';
 import { WatchlistCategory } from '@prisma/client';
 import { NotFoundError } from '../utils/errors.js';
 
@@ -20,7 +21,7 @@ export class WatchlistService {
     if (data.movieId) {
       // Resolve ID or slug
       const movie = await prisma.movie.findFirst({
-        where: { OR: [{ id: data.movieId }, { slug: data.movieId }] },
+        where: publicMovieByIdOrSlug(data.movieId),
         select: { id: true },
       });
       if (!movie) throw new NotFoundError('Phim không tồn tại');
@@ -30,7 +31,7 @@ export class WatchlistService {
     if (data.seriesId) {
       // Resolve ID or slug
       const series = await prisma.series.findFirst({
-        where: { OR: [{ id: data.seriesId }, { slug: data.seriesId }] },
+        where: publicSeriesByIdOrSlug(data.seriesId),
         select: { id: true },
       });
       if (!series) throw new NotFoundError('Series không tồn tại');

@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { prisma } from '../config/prisma.js';
+import { publicEpisodeChain, publicMovie, publicMovieByIdOrSlug, publicSeriesByIdOrSlug } from '../repositories/visibility.js';
 import { env } from '../config/env.js';
 import { NotFoundError } from '../utils/errors.js';
 
@@ -91,11 +92,11 @@ export class AIService {
     const media =
       mediaType === 'movie'
         ? await prisma.movie.findFirst({
-            where: { OR: [{ id: mediaIdOrSlug }, { slug: mediaIdOrSlug }] },
+            where: publicMovieByIdOrSlug(mediaIdOrSlug),
             include: { availability: { include: { provider: true } } },
           })
         : await prisma.series.findFirst({
-            where: { OR: [{ id: mediaIdOrSlug }, { slug: mediaIdOrSlug }] },
+            where: publicSeriesByIdOrSlug(mediaIdOrSlug),
             include: { availability: { include: { provider: true } } },
           });
 
@@ -283,6 +284,7 @@ Chỉ trả về JSON thuần túy, không dùng markdown.`;
     let candidates = await prisma.movie.findMany({
       where: {
         AND: [
+          publicMovie,
           ...(whereConditions.length ? whereConditions : []),
           { OR: orClauses },
         ],
@@ -299,7 +301,7 @@ Chỉ trả về JSON thuần túy, không dùng markdown.`;
     // Fallback if strict query produced too few results
     if (candidates.length < 3) {
       const fallback = await prisma.movie.findMany({
-        where: whereConditions.length ? { AND: whereConditions } : {},
+        where: { AND: [publicMovie, ...whereConditions] },
         take: 6,
         orderBy: { rating: 'desc' },
         include: {
@@ -334,7 +336,7 @@ Chỉ trả về JSON thuần túy, không dùng markdown.`;
    */
   async getFilmInsight(movieIdOrSlug: string) {
     const movie = await prisma.movie.findFirst({
-      where: { OR: [{ id: movieIdOrSlug }, { slug: movieIdOrSlug }] },
+      where: publicMovieByIdOrSlug(movieIdOrSlug),
       include: {
         aiInsight: true,
         genres: { include: { genre: true } },
@@ -419,7 +421,7 @@ Chỉ trả về JSON thuần túy.`;
    */
   async getSeriesInsight(seriesIdOrSlug: string) {
     const series = await prisma.series.findFirst({
-      where: { OR: [{ id: seriesIdOrSlug }, { slug: seriesIdOrSlug }] },
+      where: publicSeriesByIdOrSlug(seriesIdOrSlug),
       include: {
         aiInsight: true,
         genres: { include: { genre: true } },
@@ -456,8 +458,8 @@ Chỉ trả về JSON thuần túy.`;
    * AI Episode Recap (Distinct from DB summary, no hallucinations)
    */
   async getEpisodeRecap(episodeId: string) {
-    const episode = await prisma.episode.findUnique({
-      where: { id: episodeId },
+    const episode = await prisma.episode.findFirst({
+      where: { ...publicEpisodeChain, id: episodeId },
       include: {
         season: { include: { series: true } },
       },

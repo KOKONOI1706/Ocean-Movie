@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import {
+  Clapperboard,
   ExternalLink,
   Film,
   LayoutDashboard,
@@ -12,24 +13,32 @@ import {
   ScrollText,
   ShieldAlert,
   ShieldCheck,
+  Tags,
+  Tv,
   Users,
   X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { userApi } from '../lib/api';
-import { Button, buttonClass, inputClass, labelClass } from './ui';
+import { AdminFeedbackProvider, Button, buttonClass, inputClass, labelClass } from './ui';
 import { OverviewPage } from './pages/OverviewPage';
 import { CrawlPage } from './pages/CrawlPage';
 import { LibraryPage } from './pages/LibraryPage';
 import { UsersPage } from './pages/UsersPage';
 import { AuditPage } from './pages/AuditPage';
+import { CatalogListPage } from './pages/CatalogListPage';
+import { TitleEditPage } from './pages/TitleEditPage';
+import { GenresPage } from './pages/GenresPage';
 import { ROLE_LABELS, hasRole, isStaff, type Role } from '../../shared/roles';
 
 // Hiding items is only convenience: the API checks the role from the database on every request.
 const NAV: Array<{ to: string; end: boolean; label: string; icon: typeof Film; minRole: Role }> = [
   { to: '/admin', end: true, label: 'Tổng quan', icon: LayoutDashboard, minRole: 'CURATOR' },
+  { to: '/admin/movies', end: false, label: 'Phim', icon: Clapperboard, minRole: 'CURATOR' },
+  { to: '/admin/series', end: false, label: 'Series', icon: Tv, minRole: 'CURATOR' },
+  { to: '/admin/genres', end: false, label: 'Thể loại', icon: Tags, minRole: 'CURATOR' },
   { to: '/admin/crawl', end: false, label: 'Thu thập phim', icon: Radar, minRole: 'CURATOR' },
-  { to: '/admin/library', end: false, label: 'Kho nội dung', icon: Library, minRole: 'CURATOR' },
+  { to: '/admin/library', end: false, label: 'Luồng đã thu thập', icon: Library, minRole: 'CURATOR' },
   { to: '/admin/users', end: false, label: 'Người dùng', icon: Users, minRole: 'ADMIN' },
   { to: '/admin/audit', end: false, label: 'Nhật ký', icon: ScrollText, minRole: 'ADMIN' },
 ];
@@ -137,10 +146,18 @@ function AdminShell() {
           <span className="text-sm font-semibold">Biển Phim · Quản trị</span>
         </header>
 
-        <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
+        <AdminFeedbackProvider>
+          <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
           <Routes>
             <Route index element={<OverviewPage />} />
             <Route path="crawl" element={<CrawlPage />} />
+            <Route path="movies" element={<React.Fragment key="movies"><CatalogListPage kind="movie" /></React.Fragment>} />
+            <Route path="movies/new" element={<React.Fragment key="movie-new"><TitleEditPage kind="movie" /></React.Fragment>} />
+            <Route path="movies/:id" element={<React.Fragment key="movie-edit"><TitleEditPage kind="movie" /></React.Fragment>} />
+            <Route path="series" element={<React.Fragment key="series"><CatalogListPage kind="series" /></React.Fragment>} />
+            <Route path="series/new" element={<React.Fragment key="series-new"><TitleEditPage kind="series" /></React.Fragment>} />
+            <Route path="series/:id" element={<React.Fragment key="series-edit"><TitleEditPage kind="series" /></React.Fragment>} />
+            <Route path="genres" element={<GenresPage />} />
             <Route path="library" element={<LibraryPage />} />
             {hasRole(user!.role, 'ADMIN') && (
               <>
@@ -154,6 +171,7 @@ function AdminShell() {
             <Route path="*" element={<Navigate to="/admin" replace />} />
           </Routes>
         </main>
+        </AdminFeedbackProvider>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { prisma } from '../config/prisma.js';
+import { publicMovie, publicSeason, publicSeries } from './visibility.js';
 import { WatchlistCategory } from '@prisma/client';
 
 export class WatchlistRepository {
@@ -7,6 +8,8 @@ export class WatchlistRepository {
       where: {
         userId,
         ...(category ? { category } : {}),
+        // Entries stay stored if a title is unpublished; they reappear when it is republished.
+        OR: [{ movie: publicMovie }, { series: publicSeries }],
       },
       orderBy: { updatedAt: 'desc' },
       include: {
@@ -20,7 +23,7 @@ export class WatchlistRepository {
           include: {
             genres: { include: { genre: true } },
             availability: { include: { provider: true } },
-            seasons: { select: { id: true, seasonNumber: true, episodeCount: true } },
+            seasons: { where: publicSeason, select: { id: true, seasonNumber: true, episodeCount: true } },
           },
         },
       },

@@ -1,4 +1,5 @@
 import { prisma } from '../config/prisma.js';
+import { publicSeason, publicSeasonsInclude, publicSeries, publicSeriesByIdOrSlug } from './visibility.js';
 import { Prisma } from '@prisma/client';
 
 export interface SeriesFilterParams {
@@ -19,7 +20,7 @@ export class SeriesRepository {
     const limit = Math.min(100, Math.max(1, params.limit || 20));
     const skip = (page - 1) * limit;
 
-    const where: Prisma.SeriesWhereInput = {};
+    const where: Prisma.SeriesWhereInput = { ...publicSeries };
 
     if (params.isTrending !== undefined) where.isTrending = params.isTrending;
     if (params.minRating !== undefined) where.rating = { gte: params.minRating };
@@ -70,10 +71,7 @@ export class SeriesRepository {
           moods: { include: { mood: true } },
           creators: { include: { creator: true } },
           availability: { include: { provider: true } },
-          seasons: {
-            orderBy: { seasonNumber: 'asc' },
-            include: { episodes: { orderBy: { episodeNumber: 'asc' } } },
-          },
+          seasons: publicSeasonsInclude,
           aiInsight: true,
         },
       }),
@@ -92,9 +90,7 @@ export class SeriesRepository {
 
   async findByIdOrSlug(idOrSlug: string) {
     return prisma.series.findFirst({
-      where: {
-        OR: [{ id: idOrSlug }, { slug: idOrSlug }],
-      },
+      where: publicSeriesByIdOrSlug(idOrSlug),
       include: {
         genres: { include: { genre: true } },
         moods: { include: { mood: true } },
@@ -102,55 +98,31 @@ export class SeriesRepository {
         availability: { include: { provider: true } },
         subtitles: true,
         aiInsight: true,
-        seasons: {
-          orderBy: { seasonNumber: 'asc' },
-          include: {
-            episodes: {
-              orderBy: { episodeNumber: 'asc' },
-            },
-          },
-        },
+        seasons: publicSeasonsInclude,
       },
     });
   }
 
   async findSeasons(seriesIdOrSlug: string) {
     const series = await prisma.series.findFirst({
-      where: { OR: [{ id: seriesIdOrSlug }, { slug: seriesIdOrSlug }] },
+      where: publicSeriesByIdOrSlug(seriesIdOrSlug),
       select: { id: true },
     });
     if (!series) return null;
 
-    return prisma.season.findMany({
-      where: { seriesId: series.id },
-      orderBy: { seasonNumber: 'asc' },
-      include: {
-        episodes: {
-          orderBy: { episodeNumber: 'asc' },
-        },
-      },
-    });
+    return prisma.season.findMany({ ...publicSeasonsInclude, where: { ...publicSeason, seriesId: series.id } });
   }
 
   async findSeasonByNumber(seriesIdOrSlug: string, seasonNumber: number) {
     const series = await prisma.series.findFirst({
-      where: { OR: [{ id: seriesIdOrSlug }, { slug: seriesIdOrSlug }] },
+      where: publicSeriesByIdOrSlug(seriesIdOrSlug),
       select: { id: true },
     });
     if (!series) return null;
 
-    return prisma.season.findUnique({
-      where: {
-        seriesId_seasonNumber: {
-          seriesId: series.id,
-          seasonNumber,
-        },
-      },
-      include: {
-        episodes: {
-          orderBy: { episodeNumber: 'asc' },
-        },
-      },
+    return prisma.season.findFirst({
+      where: { ...publicSeason, seriesId: series.id, seasonNumber },
+      include: publicSeasonsInclude.include,
     });
   }
 }

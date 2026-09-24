@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ExternalLink, Film, ImageOff, Library, Search, Tv, Unlink, X } from 'lucide-react';
 import { aggregatorApi, LibraryMovie, LibrarySeries, MediaPatch } from '../../lib/api';
-import { Alert, Badge, Button, buttonClass, Card, EmptyState, PageHeader, Spinner, StreamBadge, formatDateTime, inputClass, labelClass, Pagination } from '../ui';
+import { Alert, Badge, Button, buttonClass, Card, EmptyState, PageHeader, Spinner, StreamBadge, formatDateTime, inputClass, labelClass, Pagination, useConfirm } from '../ui';
 
 type Kind = 'movie' | 'series';
 type Row = LibraryMovie | LibrarySeries;
@@ -198,6 +198,7 @@ function EditDrawer({ kind, row, onClose, onSaved, onChanged }: {
   const [error, setError] = useState('');
   const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [busyId, setBusyId] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -229,7 +230,7 @@ function EditDrawer({ kind, row, onClose, onSaved, onChanged }: {
   };
 
   const removeStream = async (target: 'movie' | 'episode', id: string, label: string) => {
-    if (!window.confirm(`Gỡ luồng phát của “${label}”? Bản ghi vẫn được giữ lại.`)) return;
+    if (!(await confirm({ title: `Gỡ luồng phát của “${label}”?`, message: 'Bản ghi và thông tin phim vẫn được giữ lại.', confirmLabel: 'Gỡ luồng', danger: true }))) return;
     setBusyId(id);
     try {
       await aggregatorApi.removeStream(target, id);

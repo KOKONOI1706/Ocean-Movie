@@ -74,6 +74,7 @@ export function CrawlPage() {
   const [mode, setMode] = useState<IngestMode>('auto');
   const [movieType, setMovieType] = useState<MovieType>('AI_FILM');
   const [sourceName, setSourceName] = useState('');
+  const [publish, setPublish] = useState(false);
   const [pasteText, setPasteText] = useState('');
   const [urlText, setUrlText] = useState('');
   const [query, setQuery] = useState('');
@@ -95,7 +96,7 @@ export function CrawlPage() {
     [urlText]
   );
 
-  const options = { mode, movieType, sourceName: sourceName.trim() || undefined };
+  const options = { mode, movieType, sourceName: sourceName.trim() || undefined, publish };
 
   const run = async (task: () => Promise<IngestReport>) => {
     setRunning(true);
@@ -336,6 +337,21 @@ export function CrawlPage() {
                 placeholder="vd. partner-feed"
               />
             </div>
+
+            <label className="mt-4 flex items-start gap-2.5 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
+                checked={publish}
+                onChange={(e) => setPublish(e.target.checked)}
+              />
+              <span>
+                Xuất bản ngay
+                <span className="block text-xs text-slate-500">
+                  Bỏ chọn: nội dung mới được lưu dạng nháp, duyệt và xuất bản ở mục Phim / Series. Nội dung đã có giữ nguyên trạng thái.
+                </span>
+              </span>
+            </label>
 
             <Button
               variant="primary"

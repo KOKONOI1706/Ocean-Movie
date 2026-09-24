@@ -1,4 +1,5 @@
 import { prisma } from '../config/prisma.js';
+import { publicMovie, publicMovieByIdOrSlug } from './visibility.js';
 import { Prisma, MediaType } from '@prisma/client';
 
 export interface MovieFilterParams {
@@ -24,7 +25,7 @@ export class MovieRepository {
     const limit = Math.min(100, Math.max(1, params.limit || 20));
     const skip = (page - 1) * limit;
 
-    const where: Prisma.MovieWhereInput = {};
+    const where: Prisma.MovieWhereInput = { ...publicMovie };
 
     if (params.type) where.type = params.type;
     if (params.isAiFilm !== undefined) where.isAiFilm = params.isAiFilm;
@@ -104,9 +105,7 @@ export class MovieRepository {
 
   async findByIdOrSlug(idOrSlug: string) {
     return prisma.movie.findFirst({
-      where: {
-        OR: [{ id: idOrSlug }, { slug: idOrSlug }],
-      },
+      where: publicMovieByIdOrSlug(idOrSlug),
       include: {
         genres: { include: { genre: true } },
         moods: { include: { mood: true } },
@@ -121,7 +120,7 @@ export class MovieRepository {
 
   async findTrending(limit: number = 10) {
     return prisma.movie.findMany({
-      where: { OR: [{ isTrending: true }, { rating: { gte: 8.5 } }] },
+      where: { ...publicMovie, OR: [{ isTrending: true }, { rating: { gte: 8.5 } }] },
       take: limit,
       orderBy: [{ isTrending: 'desc' }, { rating: 'desc' }],
       include: {
@@ -134,7 +133,7 @@ export class MovieRepository {
 
   async findNew(limit: number = 10) {
     return prisma.movie.findMany({
-      where: { year: { gte: 2025 } },
+      where: { ...publicMovie, year: { gte: 2025 } },
       take: limit,
       orderBy: { year: 'desc' },
       include: {
@@ -148,6 +147,7 @@ export class MovieRepository {
   async findHiddenGems(limit: number = 10) {
     return prisma.movie.findMany({
       where: {
+        ...publicMovie,
         OR: [
           { moods: { some: { mood: { slug: { in: ['philosophical', 'lonely', 'curious'] } } } } },
           { genres: { some: { genre: { slug: { in: ['drama', 'mystery', 'experimental-short'] } } } } },
@@ -166,6 +166,7 @@ export class MovieRepository {
   async findShortFilms(limit: number = 10) {
     return prisma.movie.findMany({
       where: {
+        ...publicMovie,
         OR: [{ type: MediaType.SHORT }, { runtimeMinutes: { lte: 40 } }],
       },
       take: limit,
@@ -181,6 +182,7 @@ export class MovieRepository {
   async findAiFilms(limit: number = 10) {
     return prisma.movie.findMany({
       where: {
+        ...publicMovie,
         OR: [{ type: MediaType.AI_FILM }, { isAiFilm: true }],
       },
       take: limit,

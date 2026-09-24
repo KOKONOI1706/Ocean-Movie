@@ -7,6 +7,8 @@ const ingestOptions = {
   /** series (default): episodes only · movie: standalone films · auto: decide per title */
   mode: z.enum(['auto', 'series', 'movie']).default('series'),
   movieType: z.enum(MOVIE_TYPES).default('AI_FILM'),
+  /** New titles/seasons/episodes go live immediately instead of waiting as drafts. */
+  publish: z.boolean().default(false),
 };
 
 export const ingestBodySchema = z.object({

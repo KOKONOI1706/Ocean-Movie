@@ -69,14 +69,19 @@ has none of the consumer site's ocean background, header, footer or bottom nav.
 - Going to `/admin` directly shows the dashboard's own sign-in screen.
 - Non-staff accounts get a "no access" screen.
 
+**Publishing.** Movies, series, seasons and episodes are `DRAFT`, `PUBLISHED`
+or `ARCHIVED`. The public site and every public API endpoint show only
+`PUBLISHED` titles; an episode shows only when it, its season and its series are
+all published. Titles created in the dashboard or by imports start as drafts.
+
 **Roles** (each includes the ones above it)
 
 | Role | Can |
 |---|---|
 | `USER` | Watch |
-| `CURATOR` | Crawl/import, edit titles, remove streams |
-| `ADMIN` | + see users (**Người dùng**) and the audit log (**Nhật ký**) |
-| `SUPER_ADMIN` | + change anyone's role (except their own; there is always at least one `SUPER_ADMIN`) |
+| `CURATOR` | Crawl/import; create, edit, publish, feature and reorder titles, seasons, episodes and genres |
+| `ADMIN` | + archive titles, delete seasons/episodes/genres, see users (**Người dùng**) and the audit log (**Nhật ký**) |
+| `SUPER_ADMIN` | + delete titles permanently, change anyone's role (except their own; there is always at least one `SUPER_ADMIN`) |
 
 Staff routes (`/api/v1/admin/*`, `/api/v1/aggregator/*`) read the role from the
 database on each request (cached for 60 s per server instance), not from the
@@ -101,6 +106,13 @@ pnpm admin:create --email you@example.com --role SUPER_ADMIN   # existing accoun
 **Pages**
 - **Tổng quan**: catalogue totals, streams by type, sources, and the latest
   crawled items.
+- **Phim** / **Series**: every title, including drafts and archived ones.
+  Search, filter by status/type, sort, select rows for bulk actions (publish,
+  back to draft, feature, unfeature, archive). Open a title to edit its details,
+  genres, cast and crew, images and trailer, and its visibility. On a series you
+  also add seasons and episodes, reorder episodes, publish a season (with its
+  episodes) and edit or delete episodes.
+- **Thể loại**: add, rename and delete genres.
 - **Thu thập phim**: crawl in three ways.
   - *Dán liên kết phát*: paste `Title | streamUrl` lines or a JSON array.
   - *Cào trang web*: paste page URLs.
@@ -113,7 +125,10 @@ pnpm admin:create --email you@example.com --role SUPER_ADMIN   # existing accoun
     - *Series*: every item is saved as an episode; bare trailing numbers are
       read as episode numbers.
   - *Xem trước* shows how each line will be saved before anything is written.
-- **Kho nội dung**: crawled films and series. Fill in the title, year,
+  - *Xuất bản ngay*: off by default, so new titles, seasons and episodes are
+    saved as drafts to review under Phim / Series. Existing records keep their
+    status.
+- **Luồng đã thu thập**: crawled films and series. Fill in the title, year,
   synopsis, poster or backdrop, or remove a dead stream. Removing a stream
   keeps the record.
 
