@@ -9,6 +9,7 @@ import { searchRouter } from './search.routes.js';
 import { collectionRouter } from './collection.routes.js';
 import { aiRouter } from './ai.routes.js';
 import { aggregatorRouter } from './aggregator.routes.js';
+import { adminRouter } from './admin.routes.js';
 import { prisma } from '../config/prisma.js';
 import { aiController } from '../controllers/ai.controller.js';
 
@@ -47,6 +48,7 @@ v1Router.use('/search', searchRouter);
 v1Router.use('/collections', collectionRouter);
 v1Router.use('/ai', aiRouter);
 v1Router.use('/aggregator', aggregatorRouter);
+v1Router.use('/admin', adminRouter);
 
 apiRouter.use('/v1', v1Router);
 

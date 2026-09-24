@@ -1,4 +1,4 @@
-import { apiClient } from './client.js';
+import { apiClient, unwrap } from './client.js';
 
 export type IngestMode = 'auto' | 'series' | 'movie';
 export type MovieType = 'MOVIE' | 'AI_FILM' | 'SHORT' | 'DOCUMENTARY' | 'ANIME';
@@ -102,16 +102,6 @@ export interface MediaPatch {
   posterUrl?: string;
   backdropUrl?: string;
   year?: number;
-}
-
-function unwrap<T>(res: { success: boolean; data: T; error?: { message: string; details?: unknown } }): T {
-  if (!res.success) {
-    const details = Array.isArray(res.error?.details)
-      ? ` (${(res.error!.details as Array<{ path: string; message: string }>).map((d) => `${d.path}: ${d.message}`).join('; ')})`
-      : '';
-    throw new Error((res.error?.message || 'Yêu cầu thất bại') + details);
-  }
-  return res.data;
 }
 
 export const aggregatorApi = {

@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../config/prisma.js';
 import { NotFoundError } from '../utils/errors.js';
+import { auditService, pick, type AuditActor } from '../services/audit.service.js';
 
 /**
  * Read/edit side of the aggregator for the admin dashboard: catalogue stats,
@@ -8,6 +9,8 @@ import { NotFoundError } from '../utils/errors.js';
  */
 
 const hasStream = { streamUrl: { not: null } } satisfies Prisma.MovieWhereInput;
+const DETACHED_STREAM = { streamUrl: null, streamType: null, sourceUrl: null };
+const STREAM_KEYS = Object.keys(DETACHED_STREAM);
 
 export interface LibraryQuery {
   kind: 'movie' | 'series';
@@ -178,26 +181,63 @@ export class LibraryService {
     return { items, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
 
-  async updateMovie(id: string, patch: MediaPatch) {
-    await this.ensure(prisma.movie.findUnique({ where: { id }, select: { id: true } }), 'phim');
-    return prisma.movie.update({ where: { id }, data: patch });
+  // Every edit below writes its audit entry in the same transaction as the change.
+
+  async updateMovie(actor: AuditActor, id: string, patch: MediaPatch) {
+    return prisma.$transaction(async (tx) => {
+      const before = await this.ensure(tx.movie.findUnique({ where: { id } }), 'phim');
+      const after = await tx.movie.update({ where: { id }, data: patch });
+      const keys = Object.keys(patch);
+      await auditService.record(
+        actor,
+        { action: 'movie.update', resourceType: 'Movie', resourceId: id, before: pick(before, keys), after: pick(after, keys) },
+        tx
+      );
+      return after;
+    });
   }
 
-  async updateSeries(id: string, patch: MediaPatch) {
-    await this.ensure(prisma.series.findUnique({ where: { id }, select: { id: true } }), 'series');
+  async updateSeries(actor: AuditActor, id: string, patch: MediaPatch) {
     const { year, ...rest } = patch;
-    return prisma.series.update({ where: { id }, data: { ...rest, ...(year !== undefined ? { startYear: year } : {}) } });
+    const data = { ...rest, ...(year !== undefined ? { startYear: year } : {}) };
+    return prisma.$transaction(async (tx) => {
+      const before = await this.ensure(tx.series.findUnique({ where: { id } }), 'series');
+      const after = await tx.series.update({ where: { id }, data });
+      const keys = Object.keys(data);
+      await auditService.record(
+        actor,
+        { action: 'series.update', resourceType: 'Series', resourceId: id, before: pick(before, keys), after: pick(after, keys) },
+        tx
+      );
+      return after;
+    });
   }
 
   /** Detach the stream but keep the record (and any curated metadata). */
-  async removeMovieStream(id: string) {
-    await this.ensure(prisma.movie.findUnique({ where: { id }, select: { id: true } }), 'phim');
-    return prisma.movie.update({ where: { id }, data: { streamUrl: null, streamType: null, sourceUrl: null } });
+  async removeMovieStream(actor: AuditActor, id: string) {
+    return prisma.$transaction(async (tx) => {
+      const before = await this.ensure(tx.movie.findUnique({ where: { id } }), 'phim');
+      const after = await tx.movie.update({ where: { id }, data: DETACHED_STREAM });
+      await auditService.record(
+        actor,
+        { action: 'movie.stream.remove', resourceType: 'Movie', resourceId: id, before: pick(before, STREAM_KEYS), after: DETACHED_STREAM },
+        tx
+      );
+      return after;
+    });
   }
 
-  async removeEpisodeStream(id: string) {
-    await this.ensure(prisma.episode.findUnique({ where: { id }, select: { id: true } }), 'tập');
-    return prisma.episode.update({ where: { id }, data: { streamUrl: null, streamType: null, sourceUrl: null } });
+  async removeEpisodeStream(actor: AuditActor, id: string) {
+    return prisma.$transaction(async (tx) => {
+      const before = await this.ensure(tx.episode.findUnique({ where: { id } }), 'tập');
+      const after = await tx.episode.update({ where: { id }, data: DETACHED_STREAM });
+      await auditService.record(
+        actor,
+        { action: 'episode.stream.remove', resourceType: 'Episode', resourceId: id, before: pick(before, STREAM_KEYS), after: DETACHED_STREAM },
+        tx
+      );
+      return after;
+    });
   }
 
   private async ensure<T>(lookup: Promise<T | null>, label: string): Promise<T> {

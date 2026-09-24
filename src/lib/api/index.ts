@@ -9,3 +9,4 @@ export * from './watchlist.api.js';
 export * from './progress.api.ts';
 export * from './ai.api.js';
 export * from './aggregator.api.js';
+export * from './admin.api.js';

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { aggregatorController, aggregatorLibraryController as library } from '../controllers/aggregator.controller.js';
-import { requireAuth, requireRole } from '../middleware/auth.middleware.js';
+import { requireStaff } from '../middleware/auth.middleware.js';
 import { validateBody, validateParams, validateQuery } from '../middleware/validate.middleware.js';
 import {
   idParamSchema,
@@ -15,7 +15,7 @@ import {
 export const aggregatorRouter = Router();
 
 // Scraping reaches out to third-party hosts and writes to the catalogue: staff only.
-aggregatorRouter.use(requireAuth, requireRole('ADMIN', 'CURATOR'));
+aggregatorRouter.use(requireStaff('CURATOR'));
 
 aggregatorRouter.get('/sources', aggregatorController.listSources);
 aggregatorRouter.post('/parse', validateBody(parseBodySchema), aggregatorController.parse);

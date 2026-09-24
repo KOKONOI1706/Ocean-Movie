@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ExternalLink, Film, ImageOff, Library, Search, Tv, Unlink, X } from 'lucide-react';
+import { ExternalLink, Film, ImageOff, Library, Search, Tv, Unlink, X } from 'lucide-react';
 import { aggregatorApi, LibraryMovie, LibrarySeries, MediaPatch } from '../../lib/api';
-import { Alert, Badge, Button, buttonClass, Card, EmptyState, PageHeader, Spinner, StreamBadge, formatDateTime, inputClass, labelClass } from '../ui';
+import { Alert, Badge, Button, buttonClass, Card, EmptyState, PageHeader, Spinner, StreamBadge, formatDateTime, inputClass, labelClass, Pagination } from '../ui';
 
 type Kind = 'movie' | 'series';
 type Row = LibraryMovie | LibrarySeries;
@@ -144,14 +144,7 @@ export function LibraryPage() {
           </div>
         )}
 
-        <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-sm text-slate-600">
-          <span>{total} mục</span>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" icon={<ChevronLeft className="h-4 w-4" />} disabled={page <= 1} onClick={() => setPage((p) => p - 1)} aria-label="Trang trước" />
-            <span className="tabular-nums">{page} / {totalPages}</span>
-            <Button variant="ghost" icon={<ChevronRight className="h-4 w-4" />} disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} aria-label="Trang sau" />
-          </div>
-        </div>
+        <Pagination total={total} page={page} totalPages={totalPages} onPage={setPage} />
       </Card>
 
       {editing && (

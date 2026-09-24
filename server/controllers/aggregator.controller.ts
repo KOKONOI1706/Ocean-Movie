@@ -3,6 +3,19 @@ import { aggregatorService } from '../aggregator/aggregator.service.js';
 import { parseEpisodeTitle, parseMovieTitle } from '../aggregator/normalizer.js';
 import { libraryService } from '../aggregator/library.service.js';
 import { apiPaginated, apiSuccess } from '../utils/response.js';
+import { auditActor, auditService } from '../services/audit.service.js';
+import type { IngestReport } from '../aggregator/aggregator.service.js';
+
+/** What an import changed, small enough for the audit log (ids, not full payloads). */
+function reportSummary(report: IngestReport) {
+  return {
+    seriesIds: report.series.map((s) => s.id),
+    movieIds: report.movies.map((m) => m.id),
+    episodesCreated: report.episodesCreated,
+    episodesUpdated: report.episodesUpdated,
+    skipped: report.skipped.length,
+  };
+}
 
 export class AggregatorController {
   async parse(req: Request, res: Response, next: NextFunction) {
@@ -24,6 +37,12 @@ export class AggregatorController {
     try {
       const { items, sourceName, mode, movieType } = req.body;
       const report = await aggregatorService.ingest(items, { sourceName, mode, movieType });
+      await auditService.record(auditActor(req), {
+        action: 'aggregator.ingest',
+        resourceType: 'Import',
+        before: { items: items.length, sourceName, mode, movieType },
+        after: reportSummary(report),
+      });
       return apiSuccess(res, report, 201);
     } catch (err) {
       next(err);
@@ -34,6 +53,12 @@ export class AggregatorController {
     try {
       const { urls, sourceName, mode, movieType } = req.body;
       const report = await aggregatorService.scrapeUrls(urls, { sourceName, mode, movieType });
+      await auditService.record(auditActor(req), {
+        action: 'aggregator.scrape',
+        resourceType: 'Import',
+        before: { urls, sourceName, mode, movieType },
+        after: reportSummary(report),
+      });
       return apiSuccess(res, report, 201);
     } catch (err) {
       next(err);
@@ -44,6 +69,12 @@ export class AggregatorController {
     try {
       const { query, sources, limit, sourceName, mode, movieType } = req.body;
       const report = await aggregatorService.search(query, sources, limit, { sourceName, mode, movieType });
+      await auditService.record(auditActor(req), {
+        action: 'aggregator.search',
+        resourceType: 'Import',
+        before: { query, sources, limit, sourceName, mode, movieType },
+        after: reportSummary(report),
+      });
       return apiSuccess(res, report, 201);
     } catch (err) {
       next(err);
@@ -79,7 +110,7 @@ export class AggregatorLibraryController {
 
   async updateMovie(req: Request, res: Response, next: NextFunction) {
     try {
-      return apiSuccess(res, await libraryService.updateMovie(req.params.id, req.body));
+      return apiSuccess(res, await libraryService.updateMovie(auditActor(req), req.params.id, req.body));
     } catch (err) {
       next(err);
     }
@@ -87,7 +118,7 @@ export class AggregatorLibraryController {
 
   async updateSeries(req: Request, res: Response, next: NextFunction) {
     try {
-      return apiSuccess(res, await libraryService.updateSeries(req.params.id, req.body));
+      return apiSuccess(res, await libraryService.updateSeries(auditActor(req), req.params.id, req.body));
     } catch (err) {
       next(err);
     }
@@ -95,7 +126,7 @@ export class AggregatorLibraryController {
 
   async removeMovieStream(req: Request, res: Response, next: NextFunction) {
     try {
-      return apiSuccess(res, await libraryService.removeMovieStream(req.params.id));
+      return apiSuccess(res, await libraryService.removeMovieStream(auditActor(req), req.params.id));
     } catch (err) {
       next(err);
     }
@@ -103,7 +134,7 @@ export class AggregatorLibraryController {
 
   async removeEpisodeStream(req: Request, res: Response, next: NextFunction) {
     try {
-      return apiSuccess(res, await libraryService.removeEpisodeStream(req.params.id));
+      return apiSuccess(res, await libraryService.removeEpisodeStream(auditActor(req), req.params.id));
     } catch (err) {
       next(err);
     }

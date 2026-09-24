@@ -1,6 +1,11 @@
 # Ocean-Movie: admin, ingestion and streaming platform plan
 
-Status: **Phase 1 implemented** (domain model + migrations). Later phases are still proposals.
+Status: **Phases 1–2 implemented** (domain model + migrations; admin authorization + audit). Later phases are still proposals.
+
+Phase 2 notes: roles live in `shared/roles.ts` (used by API and UI). `requireStaff()` re-reads the role
+from the database (60 s per-instance cache, cleared on role changes made through the API). Role changes
+lock all `SUPER_ADMIN` rows in one transaction, so concurrent demotions can never leave zero super admins.
+The existing `/api/v1/aggregator/*` routes stay where they are, now behind `requireStaff()` and audited.
 
 Phase 1 deviations from the design below:
 - `Job` idempotency uses a nullable unique `activeDedupeKey` (set while the job is active, cleared when it
