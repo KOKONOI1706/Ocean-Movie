@@ -1,5 +1,6 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { ROLE_LABELS, type Role } from '../../shared/roles';
 
 /**
  * Admin console design primitives. Deliberately separate from the consumer
@@ -8,6 +9,9 @@ import { Loader2 } from 'lucide-react';
 
 export const inputClass =
   'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20 disabled:bg-slate-50';
+
+/** Dropdowns size to their content instead of stretching like text inputs. */
+export const selectClass = inputClass.replace('w-full ', 'w-auto max-w-full ');
 
 export const labelClass = 'block text-xs font-medium text-slate-600 mb-1';
 
@@ -128,4 +132,31 @@ export function EmptyState({ icon, title, children }: { icon: React.ReactNode; t
 export function formatDateTime(value: string | null | undefined) {
   if (!value) return '—';
   return new Date(value).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+/** Table footer: item count and previous/next page. */
+export function Pagination({ total, page, totalPages, onPage, unit = 'mục' }: {
+  total: number;
+  page: number;
+  totalPages: number;
+  onPage: (page: number) => void;
+  unit?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-sm text-slate-600">
+      <span>{total} {unit}</span>
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" icon={<ChevronLeft className="h-4 w-4" />} disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Trang trước" />
+        <span className="tabular-nums">{page} / {totalPages}</span>
+        <Button variant="ghost" icon={<ChevronRight className="h-4 w-4" />} disabled={page >= totalPages} onClick={() => onPage(page + 1)} aria-label="Trang sau" />
+      </div>
+    </div>
+  );
+}
+
+const ROLE_TONES = { USER: 'neutral', CURATOR: 'teal', ADMIN: 'amber', SUPER_ADMIN: 'red' } as const;
+
+export function RoleBadge({ role }: { role: string }) {
+  const tone = ROLE_TONES[role as keyof typeof ROLE_TONES] ?? 'neutral';
+  return <Badge tone={tone}>{ROLE_LABELS[role as Role] ?? role}</Badge>;
 }

@@ -25,7 +25,8 @@ import { TrailerPlayerModal } from './components/TrailerPlayerModal';
 import { UserProfilePage } from './components/UserProfilePage';
 import { CreatorDetailModal } from './components/CreatorDetailModal';
 import { BottomNav } from './components/BottomNav';
-import { AdminApp, STAFF_ROLES } from './admin/AdminApp';
+import { AdminApp } from './admin/AdminApp';
+import { isStaff } from '../shared/roles';
 
 import { CINEMA_ITEMS } from './data/cinemaData';
 import { MediaItem, SavedMediaItem, Creator } from './types';
@@ -428,7 +429,7 @@ function AppContent() {
         onSuccess={async () => {
           // Staff land on the admin dashboard; everyone else goes home.
           const me = await userApi.getMe().catch(() => null);
-          handleNavigate(me && STAFF_ROLES.includes(me.role) ? 'admin' : 'discover');
+          handleNavigate(me && isStaff(me.role) ? 'admin' : 'discover');
         }}
         onNavigate={handleNavigate}
       />
@@ -582,7 +583,7 @@ function AppContent() {
         onOpenSearch={handleOpenSearch}
         onOpenProfile={() => handleNavigate('profile')}
         savedCount={savedItems.length}
-        isStaff={STAFF_ROLES.includes(user?.role ?? '')}
+        isStaff={isStaff(user?.role)}
       />
 
       {/* ─── Main Content ─── */}

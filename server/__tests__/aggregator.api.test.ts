@@ -20,7 +20,15 @@ describe('Video aggregator API', () => {
       password: 'password123',
       displayName: 'Aggregator Tester',
     });
-    userToken = reg.body.data.accessToken;
+    // Non-staff caller: a separate account. Promoting the same user would not
+    // do, since staff checks read the role from the database, not the token.
+    const viewer = await request(app).post('/api/v1/auth/register').send({
+      email: `viewer_${email}`,
+      username: `aggregator_viewer_${stamp}`,
+      password: 'password123',
+      displayName: 'Viewer',
+    });
+    userToken = viewer.body.data.accessToken;
 
     await prisma.user.update({ where: { email }, data: { role: 'ADMIN' } });
     const login = await request(app).post('/api/v1/auth/login').send({ identifier: email, password: 'password123' });
@@ -29,7 +37,7 @@ describe('Video aggregator API', () => {
 
   afterAll(async () => {
     await prisma.series.deleteMany({ where: { slug: seriesSlug } });
-    await prisma.user.deleteMany({ where: { email } });
+    await prisma.user.deleteMany({ where: { email: { in: [email, `viewer_${email}`] } } });
     await prisma.$disconnect();
   });
 
@@ -223,7 +231,13 @@ describe('Admin dashboard API', () => {
       password: 'password123',
       displayName: 'Dashboard Tester',
     });
-    userToken = reg.body.data.accessToken;
+    const viewer = await request(app).post('/api/v1/auth/register').send({
+      email: `viewer_${email}`,
+      username: `aggregator_dash_viewer_${stamp}`,
+      password: 'password123',
+      displayName: 'Viewer',
+    });
+    userToken = viewer.body.data.accessToken;
     await prisma.user.update({ where: { email }, data: { role: 'ADMIN' } });
     const login = await request(app).post('/api/v1/auth/login').send({ identifier: email, password: 'password123' });
     staffToken = login.body.data.accessToken;
@@ -237,7 +251,7 @@ describe('Admin dashboard API', () => {
 
   afterAll(async () => {
     await prisma.movie.deleteMany({ where: { slug: filmSlug } });
-    await prisma.user.deleteMany({ where: { email } });
+    await prisma.user.deleteMany({ where: { email: { in: [email, `viewer_${email}`] } } });
     await prisma.$disconnect();
   });
 

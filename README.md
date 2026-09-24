@@ -63,17 +63,33 @@ A separate staff app with its own layout: a light workspace with a sidebar. It
 has none of the consumer site's ocean background, header, footer or bottom nav.
 
 **How to get there**
-- Sign in on the normal login page (`/auth`) with an `ADMIN` or `CURATOR`
-  account and you land on `/admin`.
+- Sign in on the normal login page (`/auth`) with a staff account (`CURATOR`,
+  `ADMIN` or `SUPER_ADMIN`) and you land on `/admin`.
 - Staff also see a **Quản trị** button in the site header.
 - Going to `/admin` directly shows the dashboard's own sign-in screen.
 - Non-staff accounts get a "no access" screen.
 
-Create an admin account, or promote an existing one and reset its password,
-against the database in `DATABASE_URL`:
+**Roles** (each includes the ones above it)
+
+| Role | Can |
+|---|---|
+| `USER` | Watch |
+| `CURATOR` | Crawl/import, edit titles, remove streams |
+| `ADMIN` | + see users (**Người dùng**) and the audit log (**Nhật ký**) |
+| `SUPER_ADMIN` | + change anyone's role (except their own; there is always at least one `SUPER_ADMIN`) |
+
+Staff routes (`/api/v1/admin/*`, `/api/v1/aggregator/*`) read the role from the
+database on each request (cached for 60 s per server instance), not from the
+login token, so a demotion applies right away. Every admin change (edits,
+stream removals, imports, role changes) is written to `AdminAuditLog` with
+who, when, IP, and the data before and after.
+
+Create a staff account, or change an existing account's role, against the
+database in `DATABASE_URL`:
 
 ```bash
-pnpm admin:create --email you@example.com --password 'at-least-8-chars' [--username you] [--role ADMIN|CURATOR]
+pnpm admin:create --email you@example.com --password 'at-least-8-chars' [--username you] [--role CURATOR|ADMIN|SUPER_ADMIN]
+pnpm admin:create --email you@example.com --role SUPER_ADMIN   # existing account: role only, password unchanged
 ```
 
 `pnpm db:seed` with `ADMIN_EMAIL` / `ADMIN_PASSWORD` also creates one (see `.env.example`).

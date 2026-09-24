@@ -124,3 +124,14 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient();
+
+/** Return `data` from a `{ success, data }` envelope, or throw with the server's message (and field errors). */
+export function unwrap<T>(res: { success: boolean; data: T; error?: { message: string; details?: unknown } }): T {
+  if (!res.success) {
+    const details = Array.isArray(res.error?.details)
+      ? ` (${(res.error!.details as Array<{ path: string; message: string }>).map((d) => `${d.path}: ${d.message}`).join('; ')})`
+      : '';
+    throw new Error((res.error?.message || 'Yêu cầu thất bại') + details);
+  }
+  return res.data;
+}

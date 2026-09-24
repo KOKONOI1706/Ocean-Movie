@@ -9,8 +9,10 @@ import {
   LogOut,
   Menu,
   Radar,
+  ScrollText,
   ShieldAlert,
   ShieldCheck,
+  Users,
   X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -19,13 +21,17 @@ import { Button, buttonClass, inputClass, labelClass } from './ui';
 import { OverviewPage } from './pages/OverviewPage';
 import { CrawlPage } from './pages/CrawlPage';
 import { LibraryPage } from './pages/LibraryPage';
+import { UsersPage } from './pages/UsersPage';
+import { AuditPage } from './pages/AuditPage';
+import { ROLE_LABELS, hasRole, isStaff, type Role } from '../../shared/roles';
 
-export const STAFF_ROLES = ['ADMIN', 'CURATOR'];
-
-const NAV = [
-  { to: '/admin', end: true, label: 'Tổng quan', icon: LayoutDashboard },
-  { to: '/admin/crawl', end: false, label: 'Thu thập phim', icon: Radar },
-  { to: '/admin/library', end: false, label: 'Kho nội dung', icon: Library },
+// Hiding items is only convenience: the API checks the role from the database on every request.
+const NAV: Array<{ to: string; end: boolean; label: string; icon: typeof Film; minRole: Role }> = [
+  { to: '/admin', end: true, label: 'Tổng quan', icon: LayoutDashboard, minRole: 'CURATOR' },
+  { to: '/admin/crawl', end: false, label: 'Thu thập phim', icon: Radar, minRole: 'CURATOR' },
+  { to: '/admin/library', end: false, label: 'Kho nội dung', icon: Library, minRole: 'CURATOR' },
+  { to: '/admin/users', end: false, label: 'Người dùng', icon: Users, minRole: 'ADMIN' },
+  { to: '/admin/audit', end: false, label: 'Nhật ký', icon: ScrollText, minRole: 'ADMIN' },
 ];
 
 /**
@@ -35,7 +41,7 @@ const NAV = [
 export function AdminApp() {
   const { user } = useAuth();
   if (!user) return <AdminSignIn />;
-  if (!STAFF_ROLES.includes(user.role)) return <NoAccess />;
+  if (!isStaff(user.role)) return <NoAccess />;
   return <AdminShell />;
 }
 
@@ -57,7 +63,7 @@ function AdminShell() {
       </div>
 
       <div className="flex-1 space-y-1 px-3 py-4">
-        {NAV.map(({ to, end, label, icon: Icon }) => (
+        {NAV.filter((item) => hasRole(user!.role, item.minRole)).map(({ to, end, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -88,7 +94,7 @@ function AdminShell() {
         <div className="flex items-center justify-between gap-2 rounded-lg px-3 py-2">
           <div className="min-w-0">
             <div className="truncate text-sm font-medium text-white">{user!.displayName || user!.username}</div>
-            <div className="text-[11px] text-teal-300">{user!.role}</div>
+            <div className="text-[11px] text-teal-300">{ROLE_LABELS[user!.role as Role] ?? user!.role}</div>
           </div>
           <button
             onClick={async () => {
@@ -136,6 +142,15 @@ function AdminShell() {
             <Route index element={<OverviewPage />} />
             <Route path="crawl" element={<CrawlPage />} />
             <Route path="library" element={<LibraryPage />} />
+            {hasRole(user!.role, 'ADMIN') && (
+              <>
+                <Route
+                  path="users"
+                  element={<UsersPage canManageRoles={hasRole(user!.role, 'SUPER_ADMIN')} currentUserId={user!.id} />}
+                />
+                <Route path="audit" element={<AuditPage />} />
+              </>
+            )}
             <Route path="*" element={<Navigate to="/admin" replace />} />
           </Routes>
         </main>
@@ -185,7 +200,7 @@ function AdminSignIn() {
         </div>
         <div>
           <h1 className="text-base font-semibold">Đăng nhập quản trị</h1>
-          <p className="text-xs text-slate-500">Dành cho tài khoản ADMIN hoặc CURATOR</p>
+          <p className="text-xs text-slate-500">Dành cho biên tập viên và quản trị viên</p>
         </div>
       </div>
       <form onSubmit={submit} className="space-y-4">

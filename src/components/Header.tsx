@@ -8,7 +8,7 @@ interface HeaderProps {
   onOpenSearch: (initialQuery?: string) => void;
   onOpenProfile?: () => void;
   savedCount: number;
-  /** Logged-in ADMIN/CURATOR: shows the crawl console entry. */
+  /** Logged-in staff (CURATOR and above): shows the admin console entry. */
   isStaff?: boolean;
 }
 

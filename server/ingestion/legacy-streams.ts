@@ -1,4 +1,4 @@
-import type { DeliveryType, Prisma, PrismaClient, StreamType } from '@prisma/client';
+import { Prisma, type DeliveryType, type PrismaClient, type StreamType } from '@prisma/client';
 import { detectStreamType } from '../aggregator/stream.js';
 import { LEGACY_STREAM_PROVIDER, ensureDefaultProviders } from './providers/defaults.js';
 
@@ -95,18 +95,31 @@ async function syncOwner(
   return { created: toCreate.length, reenabled: toEnable.length, disabled: toDisable.length };
 }
 
+const MAX_ATTEMPTS = 3;
+
+// A title deleted between our read and the insert fails the insert's foreign key (P2003).
+function isMissingOwner(err: unknown) {
+  return err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2003';
+}
+
 export async function syncLegacyStreams(db: PrismaClient): Promise<LegacySyncReport> {
   const providers = await ensureDefaultProviders(db);
   const providerId = providers.get(LEGACY_STREAM_PROVIDER)!;
   const select = { id: true, streamUrl: true, streamType: true } as const;
 
-  const [movies, episodes] = await Promise.all([
-    db.movie.findMany({ where: { streamUrl: { not: null } }, select }),
-    db.episode.findMany({ where: { streamUrl: { not: null } }, select }),
-  ]);
+  // Each pass re-reads current state, so retrying after a concurrent delete is safe.
+  const withRetry = async (owner: Owner, read: () => Promise<StreamRow[]>) => {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await syncOwner(db, providerId, owner, await read());
+      } catch (err) {
+        if (!isMissingOwner(err) || attempt >= MAX_ATTEMPTS) throw err;
+      }
+    }
+  };
 
   return {
-    movies: await syncOwner(db, providerId, 'movieId', movies),
-    episodes: await syncOwner(db, providerId, 'episodeId', episodes),
+    movies: await withRetry('movieId', () => db.movie.findMany({ where: { streamUrl: { not: null } }, select })),
+    episodes: await withRetry('episodeId', () => db.episode.findMany({ where: { streamUrl: { not: null } }, select })),
   };
 }

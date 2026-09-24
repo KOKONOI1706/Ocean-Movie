@@ -3,6 +3,7 @@ import {
   Compass, Film, Tv, Sparkles, Star, Clock, LogOut, Pencil, Check, X, Loader2, CircleUser, Bookmark, Radar,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { ROLE_LABELS, isStaff as isStaffRole, type Role } from '../../shared/roles';
 import { useAuth } from '../context/AuthContext';
 import { userApi } from '../lib/api';
 import { UserPreferences } from '../types';
@@ -61,7 +62,7 @@ function formatMemberSince(iso: string): string {
 export const UserProfilePage: React.FC<UserProfilePageProps> = ({ savedCount, ratedCount }) => {
   const { user, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
-  const isStaff = user?.role === 'ADMIN' || user?.role === 'CURATOR';
+  const isStaff = isStaffRole(user?.role);
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [displayName, setDisplayName] = useState(user?.displayName || '');
@@ -183,7 +184,7 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({ savedCount, ra
                 <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="text-xl sm:text-2xl font-extrabold text-white">{user.displayName}</h1>
                   <span className="px-2.5 py-0.5 rounded-full bg-[#087EA4]/20 text-[#35C2C8] border border-[#35C2C8]/30 text-[10px] font-extrabold uppercase">
-                    {user.role === 'ADMIN' ? 'Quản trị viên' : 'Thủy thủ đoàn'}
+                    {isStaff ? ROLE_LABELS[user.role as Role] : 'Thủy thủ đoàn'}
                   </span>
                 </div>
                 <p className="text-xs text-[#8BA7B8] mt-1">@{user.username} · {user.email}</p>
